@@ -1,0 +1,132 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "An AI-generated web application project created by a user in Craftable.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the owning Firebase Auth user."
+        },
+        "title": {
+          "type": "string",
+          "description": "Display title of the generated project."
+        },
+        "description": {
+          "type": "string",
+          "description": "Short summary of the project."
+        },
+        "initialPrompt": {
+          "type": "string",
+          "description": "Original prompt that created the project."
+        },
+        "templateType": {
+          "type": "string",
+          "enum": ["web_app", "dashboard", "landing_page", "utility"],
+          "description": "Category/template style for the generated application."
+        },
+        "isStarred": {
+          "type": "boolean",
+          "description": "Whether the project is starred by the user."
+        },
+        "version": {
+          "type": "integer",
+          "description": "Current iteration version number (>= 1)."
+        },
+        "htmlCode": {
+          "type": "string",
+          "description": "Generated HTML source code (index.html)."
+        },
+        "cssCode": {
+          "type": "string",
+          "description": "Generated CSS source code (styles.css)."
+        },
+        "jsCode": {
+          "type": "string",
+          "description": "Generated JavaScript source code (app.js)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the project was created (written via FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the project was last updated (written via FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "title",
+        "description",
+        "initialPrompt",
+        "templateType",
+        "isStarred",
+        "version",
+        "htmlCode",
+        "cssCode",
+        "jsCode",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A prompt or AI builder response message inside a project conversation.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of the owning Firebase Auth user."
+        },
+        "projectId": {
+          "type": "string",
+          "description": "Parent project document ID."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "assistant"],
+          "description": "Sender role in the builder conversation."
+        },
+        "content": {
+          "type": "string",
+          "description": "Message text or AI build summary."
+        },
+        "filesChanged": {
+          "type": "array",
+          "description": "Bounded list of filenames updated in this turn."
+        },
+        "versionTag": {
+          "type": "integer",
+          "description": "Project version number associated with this message."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the message was created (written via FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "projectId",
+        "role",
+        "content",
+        "filesChanged",
+        "versionTag",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "User-scoped Craftable projects storing generated HTML/CSS/JS bundles and metadata."
+    },
+    "/users/{userId}/projects/{projectId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Conversation history of user prompts and AI build turns for a project."
+    }
+  }
+}

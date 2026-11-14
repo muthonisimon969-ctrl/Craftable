@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">Craftable</string>
+    <string name="tagline">Idea to interactive app in seconds</string>
+    <string name="prompt_hero_title">What do you want to craft?</string>
+    <string name="prompt_hint">Describe an app, dashboard, or landing page...</string>
+    <string name="build_cta">Craft App</string>
+    <string name="building_label">Crafting your app...</string>
+    <string name="recent_projects">Your Projects</string>
+    <string name="empty_projects_title">Your canvas is ready</string>
+    <string name="empty_projects_subtitle">Describe an idea above or tap a starter prompt to generate your first live interactive app.</string>
+    <string name="tab_chat">Chat</string>
+    <string name="tab_preview">Preview</string>
+    <string name="tab_code">Code</string>
+    <string name="export_html">Export HTML</string>
+    <string name="console_logs">Console</string>
+    <string name="apply_code">Save &amp; Run</string>
+    <string name="delete_project">Delete Project</string>
+    <string name="rename_project">Rename Project</string>
+</resources>

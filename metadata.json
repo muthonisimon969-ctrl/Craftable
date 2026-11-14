@@ -1,0 +1,6 @@
+{
+  "name": "Craftable",
+  "description": "AI-powered prompt-to-app builder with live interactive web preview, multi-file code explorer, and local project workspace.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
