@@ -4,6 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.ai.AppBuilderAiService
+import com.example.data.ai.DesignTemplate
+import com.example.data.ai.DesignTemplateLibrary
+import com.example.data.ai.StarterTemplateBundles
 import com.example.data.model.AppProject
 import com.example.data.model.TemplateType
 import com.example.data.repository.ProjectRepository
@@ -69,28 +72,42 @@ class HomeViewModel(
     private val _navigateToProject = MutableSharedFlow<String>()
     val navigateToProject: SharedFlow<String> = _navigateToProject.asSharedFlow()
 
+    val curatedTemplates: List<DesignTemplate> = DesignTemplateLibrary.templates
+
     val starterPrompts = listOf(
         StarterPrompt(
-            title = "SaaS Revenue Pulse",
-            subtitle = "MRR charts, cohort cards & live plan calculator",
-            prompt = "Build a sleek SaaS analytics dashboard with MRR metrics, an SVG revenue trend chart, customer tier breakdown, and an interactive pricing calculator.",
-            templateType = TemplateType.DASHBOARD,
-        ),
-        StarterPrompt(
-            title = "Zen Focus Studio",
-            subtitle = "Pomodoro timer, task queue & ambient progress ring",
-            prompt = "Create a minimalist Pomodoro focus & task tracker app with a circular SVG timer ring, customizable focus/break durations, task checklist, and daily focus streak counter.",
+            title = "Savanna Manual Pay",
+            subtitle = "Kenyan KSh store with Till/Paybill & manual verification",
+            prompt = "Build a modern Kenyan specialty market web store in Nairobi with KSh pricing, category filters, cart drawer, delivery zone selector, and manual M-Pesa payments (show Till and Paybill details with copy button, let customers enter their +254 phone and M-Pesa confirmation code without Daraja API, and include an owner verification tab).",
             templateType = TemplateType.WEB_APP,
         ),
         StarterPrompt(
-            title = "Roast & Bloom Cafe",
-            subtitle = "Artisanal coffee shop landing page & cart drawer",
-            prompt = "Design a warm editorial landing page for a specialty coffee roastery called Roast & Bloom with hero showcase, roast filter menu, tasting notes, and interactive bag drawer.",
+            title = "Maison Vesper Atelier",
+            subtitle = "Editorial luxury fashion house & lookbook bag",
+            prompt = "Create an editorial luxury fashion brand site for Maison Vesper with quiet serif typography, seasonal collection lookbook, fabric provenance story, size selector modal, and shopping bag drawer.",
             templateType = TemplateType.LANDING_PAGE,
         ),
         StarterPrompt(
+            title = "SaaS Revenue Pulse",
+            subtitle = "Precision tech dashboard, SVG charts & plan toggle",
+            prompt = "Build a sleek SaaS analytics dashboard with MRR metrics, an SVG revenue trend chart, customer tier breakdown, and an interactive monthly/annual pricing calculator.",
+            templateType = TemplateType.DASHBOARD,
+        ),
+        StarterPrompt(
+            title = "Osteria Solis Bistro",
+            subtitle = "Warm restaurant menu, dietary filters & table booking",
+            prompt = "Design an inviting artisanal restaurant website called Osteria Solis with seasonal menu filtering, dietary tags, signature dish visuals, and an interactive table reservation form.",
+            templateType = TemplateType.LANDING_PAGE,
+        ),
+        StarterPrompt(
+            title = "Meridian Advisory",
+            subtitle = "Corporate consulting firm & retainer estimator",
+            prompt = "Create an authoritative corporate financial advisory site called Meridian Advisory with practice pillars, impact metrics, client case studies, and an interactive consultation request form.",
+            templateType = TemplateType.WEB_APP,
+        ),
+        StarterPrompt(
             title = "SplitEase Bill Tool",
-            subtitle = "Smart dinner bill & tip splitter with item assignment",
+            subtitle = "Tactile bill & tip splitter with instant totals",
             prompt = "Build a clean bill and tip splitter utility where users add diners, enter line items, pick tip percentages, and view exact per-person totals instantly.",
             templateType = TemplateType.UTILITY,
         ),
@@ -122,6 +139,64 @@ class HomeViewModel(
         }
     }
 
+    fun applyDesignTemplatePrompt(template: DesignTemplate) {
+        _uiState.update {
+            it.copy(
+                promptText = template.starterPrompt,
+                selectedTemplate = template.defaultTemplateType,
+                errorMessage = null,
+            )
+        }
+    }
+
+    fun launchTemplateProject(template: DesignTemplate) {
+        if (_uiState.value.isBuilding) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isBuilding = true,
+                    buildStatusMessage = "Opening ${template.name} template...",
+                    errorMessage = null,
+                )
+            }
+            try {
+                val bundle = StarterTemplateBundles.buildForTemplate(template.id)
+                val projectId = repository.createProject(
+                    prompt = template.starterPrompt,
+                    templateType = template.defaultTemplateType,
+                    bundle = bundle,
+                ).getOrElse { err ->
+                    _uiState.update {
+                        it.copy(
+                            isBuilding = false,
+                            buildStatusMessage = "",
+                            errorMessage = err.localizedMessage ?: "Failed to open template.",
+                        )
+                    }
+                    return@launch
+                }
+                _uiState.update {
+                    it.copy(
+                        isBuilding = false,
+                        buildStatusMessage = "",
+                    )
+                }
+                _navigateToProject.emit(projectId)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to launch template", e)
+                _uiState.update {
+                    it.copy(
+                        isBuilding = false,
+                        buildStatusMessage = "",
+                        errorMessage = e.localizedMessage ?: "Unexpected error opening template.",
+                    )
+                }
+            }
+        }
+    }
+
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
@@ -135,18 +210,24 @@ class HomeViewModel(
             _uiState.update {
                 it.copy(
                     isBuilding = true,
-                    buildStatusMessage = "Designing layout & writing interactive code...",
+                    buildStatusMessage = "Connecting to Craft AI...",
                     errorMessage = null,
                 )
             }
             try {
-                val bundleResult = aiService.generateNewApp(prompt, template)
+                val bundleResult = aiService.generateNewApp(
+                    prompt = prompt,
+                    templateType = template,
+                    onStageUpdate = { stage ->
+                        _uiState.update { it.copy(buildStatusMessage = stage) }
+                    },
+                )
                 val bundle = bundleResult.getOrElse { err ->
                     _uiState.update {
                         it.copy(
                             isBuilding = false,
                             buildStatusMessage = "",
-                            errorMessage = err.localizedMessage ?: "AI generation failed.",
+                            errorMessage = err.localizedMessage ?: "Craft AI did not complete this request.",
                         )
                     }
                     return@launch

@@ -39,14 +39,17 @@ data class ConsoleEntry(
 data class WorkspaceUiState(
     val activeTab: WorkspaceTab = WorkspaceTab.PREVIEW,
     val selectedCodeFile: CodeFileTab = CodeFileTab.INDEX_HTML,
-    val isMobileViewport: Boolean = true,
+    val isMobileViewport: Boolean = false,
+    val isFullscreenPreview: Boolean = false,
     val promptInput: String = "",
+    val pendingUserPrompt: String? = null,
+    val failedUserPrompt: String? = null,
     val isGenerating: Boolean = false,
     val generationStage: String = "",
     val followUpSuggestions: List<String> = listOf(
-        "Add dark/light theme toggle",
-        "Enhance visual polish & shadows",
-        "Add interactive search filter",
+        "Use manual M-Pesa Till payment",
+        "Make it look more luxurious",
+        "Make the design cleaner",
     ),
     val draftHtml: String = "",
     val draftCss: String = "",
@@ -118,7 +121,12 @@ class WorkspaceViewModel(
     }
 
     fun selectTab(tab: WorkspaceTab) {
-        _uiState.update { it.copy(activeTab = tab) }
+        _uiState.update {
+            it.copy(
+                activeTab = tab,
+                isFullscreenPreview = if (tab != WorkspaceTab.PREVIEW) false else it.isFullscreenPreview,
+            )
+        }
     }
 
     fun selectCodeFile(file: CodeFileTab) {
@@ -127,6 +135,14 @@ class WorkspaceViewModel(
 
     fun toggleViewportMode() {
         _uiState.update { it.copy(isMobileViewport = !it.isMobileViewport) }
+    }
+
+    fun toggleFullscreenPreview() {
+        _uiState.update { it.copy(isFullscreenPreview = !it.isFullscreenPreview) }
+    }
+
+    fun setFullscreenPreview(enabled: Boolean) {
+        _uiState.update { it.copy(isFullscreenPreview = enabled) }
     }
 
     fun reloadPreview() {
@@ -168,7 +184,12 @@ class WorkspaceViewModel(
     }
 
     fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
+        _uiState.update { it.copy(errorMessage = null, failedUserPrompt = null) }
+    }
+
+    fun retryLastPrompt(project: AppProject) {
+        val failed = _uiState.value.failedUserPrompt ?: return
+        sendIterationPrompt(project, failed)
     }
 
     fun sendIterationPrompt(project: AppProject, overridePrompt: String? = null) {
@@ -179,19 +200,35 @@ class WorkspaceViewModel(
             _uiState.update {
                 it.copy(
                     promptInput = if (overridePrompt == null) "" else it.promptInput,
+                    pendingUserPrompt = prompt,
+                    failedUserPrompt = null,
                     isGenerating = true,
-                    generationStage = "Analyzing current code & crafting updates...",
+                    generationStage = "Connecting to Craft AI...",
                     errorMessage = null,
                 )
             }
 
             try {
-                val bundle = aiService.iterateExistingApp(project, prompt).getOrElse { err ->
+                val recentMessages = (messagesState.value as? UiState.Success)?.data ?: emptyList()
+                val activeState = _uiState.value
+                val bundle = aiService.iterateExistingApp(
+                    project = project,
+                    userPrompt = prompt,
+                    recentMessages = recentMessages,
+                    activeHtml = if (activeState.isCodeInitialized) activeState.draftHtml else project.htmlCode,
+                    activeCss = if (activeState.isCodeInitialized) activeState.draftCss else project.cssCode,
+                    activeJs = if (activeState.isCodeInitialized) activeState.draftJs else project.jsCode,
+                    onStageUpdate = { stage ->
+                        _uiState.update { it.copy(generationStage = stage) }
+                    },
+                ).getOrElse { err ->
                     _uiState.update {
                         it.copy(
                             isGenerating = false,
+                            pendingUserPrompt = null,
+                            failedUserPrompt = prompt,
                             generationStage = "",
-                            errorMessage = err.localizedMessage ?: "Failed to update app.",
+                            errorMessage = err.localizedMessage ?: "Craft AI could not complete this request.",
                         )
                     }
                     return@launch
@@ -208,6 +245,8 @@ class WorkspaceViewModel(
                     _uiState.update {
                         it.copy(
                             isGenerating = false,
+                            pendingUserPrompt = null,
+                            failedUserPrompt = prompt,
                             generationStage = "",
                             errorMessage = err.localizedMessage ?: "Failed to save updated code.",
                         )
@@ -219,6 +258,8 @@ class WorkspaceViewModel(
                 _uiState.update {
                     it.copy(
                         isGenerating = false,
+                        pendingUserPrompt = null,
+                        failedUserPrompt = null,
                         generationStage = "",
                         draftHtml = bundle.htmlCode,
                         draftCss = bundle.cssCode,
@@ -236,6 +277,8 @@ class WorkspaceViewModel(
                 _uiState.update {
                     it.copy(
                         isGenerating = false,
+                        pendingUserPrompt = null,
+                        failedUserPrompt = prompt,
                         generationStage = "",
                         errorMessage = e.localizedMessage ?: "Unexpected error during build.",
                     )

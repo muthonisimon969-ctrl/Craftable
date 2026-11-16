@@ -51,4 +51,8 @@ data class GeneratedAppBundle(
     val jsCode: String,
     val changedFiles: List<String>,
     val followUpSuggestions: List<String>,
+    val designStrategy: String = "original",
+    val templateId: String = "",
+    val designDirection: String = "",
+    val qaSummary: String = "",
 )

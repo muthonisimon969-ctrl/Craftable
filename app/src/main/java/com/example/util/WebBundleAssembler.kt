@@ -19,11 +19,25 @@ object WebBundleAssembler {
             <html lang="en">
             <head>
               <meta charset="UTF-8" />
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+              <meta name="viewport" content="width=device-width, initial-scale=1.0" />
               <title>$escapedTitle</title>
               <style>
                 *, *::before, *::after { box-sizing: border-box; }
-                html, body { margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+                html { font-size: 16px; scroll-behavior: smooth; }
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  -webkit-tap-highlight-color: transparent;
+                  -webkit-font-smoothing: antialiased;
+                  -moz-osx-font-smoothing: grayscale;
+                  text-rendering: optimizeLegibility;
+                }
+                button, [role="button"], input, select, textarea {
+                  min-height: 44px;
+                  font-size: 1rem;
+                  touch-action: manipulation;
+                }
+                img, svg { max-width: 100%; height: auto; }
                 $cssCode
               </style>
             </head>
@@ -83,6 +97,16 @@ object WebBundleAssembler {
               <meta name="viewport" content="width=device-width, initial-scale=1.0" />
               <title>$escapedTitle — Crafted with Craftable</title>
               <style>
+                *, *::before, *::after { box-sizing: border-box; }
+                html { scroll-behavior: smooth; }
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  -webkit-font-smoothing: antialiased;
+                  -moz-osx-font-smoothing: grayscale;
+                  text-rendering: optimizeLegibility;
+                }
+                img, svg { max-width: 100%; height: auto; }
             $cssCode
               </style>
             </head>

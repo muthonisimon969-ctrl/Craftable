@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -12,11 +13,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -26,11 +27,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -82,6 +92,7 @@ fun WorkspaceScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     var showRenameDialog by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
 
     val loadedProject = (projectState as? UiState.Success)?.data
 
@@ -91,11 +102,16 @@ fun WorkspaceScreen(
         }
     }
 
+    BackHandler(enabled = uiState.isFullscreenPreview) {
+        viewModel.setFullscreenPreview(false)
+    }
+
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
+            if (!uiState.isFullscreenPreview) {
+                TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                 ),
@@ -143,59 +159,142 @@ fun WorkspaceScreen(
                 },
                 actions = {
                     if (loadedProject != null) {
-                        IconButton(
-                            onClick = { viewModel.toggleStar(loadedProject) },
-                            modifier = Modifier.testTag("workspace_star_button"),
-                        ) {
-                            Icon(
-                                imageVector = if (loadedProject.isStarred) {
-                                    Icons.Filled.Star
-                                } else {
-                                    Icons.Outlined.StarBorder
-                                },
-                                contentDescription = "Toggle favorite",
-                                tint = if (loadedProject.isStarred) {
-                                    AmberSpark
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
+                        if (uiState.activeTab == WorkspaceTab.PREVIEW) {
+                            IconButton(
+                                onClick = viewModel::reloadPreview,
+                                modifier = Modifier.testTag("reload_preview_button"),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = "Reload live preview",
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { viewModel.setShowConsoleSheet(true) },
+                                modifier = Modifier.testTag("open_console_button"),
+                            ) {
+                                BadgedBox(
+                                    badge = {
+                                        if (uiState.consoleLogs.isNotEmpty()) {
+                                            Badge {
+                                                Text("${uiState.consoleLogs.size}")
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Terminal,
+                                        contentDescription = "View console logs",
+                                    )
+                                }
+                            }
+
+                            IconButton(
+                                onClick = viewModel::toggleFullscreenPreview,
+                                modifier = Modifier.testTag("fullscreen_preview_button"),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Fullscreen,
+                                    contentDescription = "Expand preview fullscreen",
+                                )
+                            }
                         }
 
-                        IconButton(
-                            onClick = {
-                                val exportedHtml = WebBundleAssembler.assembleStandaloneExport(
-                                    title = loadedProject.title,
-                                    htmlCode = uiState.draftHtml.ifBlank { loadedProject.htmlCode },
-                                    cssCode = uiState.draftCss.ifBlank { loadedProject.cssCode },
-                                    jsCode = uiState.draftJs.ifBlank { loadedProject.jsCode },
+                        Box {
+                            IconButton(
+                                onClick = { showOverflowMenu = true },
+                                modifier = Modifier.testTag("workspace_more_button"),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.MoreVert,
+                                    contentDescription = "Project actions",
                                 )
-                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/html"
-                                    putExtra(Intent.EXTRA_SUBJECT, "${loadedProject.title} — Craftable App")
-                                    putExtra(Intent.EXTRA_TEXT, exportedHtml)
-                                }
-                                context.startActivity(
-                                    Intent.createChooser(shareIntent, "Export Standalone HTML")
+                            }
+                            DropdownMenu(
+                                expanded = showOverflowMenu,
+                                onDismissRequest = { showOverflowMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            if (loadedProject.isStarred) "Remove from Starred" else "Add to Starred"
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = if (loadedProject.isStarred) {
+                                                Icons.Filled.Star
+                                            } else {
+                                                Icons.Outlined.StarBorder
+                                            },
+                                            contentDescription = null,
+                                            tint = if (loadedProject.isStarred) {
+                                                AmberSpark
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            },
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        viewModel.toggleStar(loadedProject)
+                                    },
+                                    modifier = Modifier.testTag("workspace_star_button"),
                                 )
-                            },
-                            modifier = Modifier.testTag("export_html_button"),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Share,
-                                contentDescription = stringResource(id = R.string.export_html),
-                            )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(id = R.string.rename_project)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Edit,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        showRenameDialog = true
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(id = R.string.export_html)) },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Share,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        val exportedHtml = WebBundleAssembler.assembleStandaloneExport(
+                                            title = loadedProject.title,
+                                            htmlCode = uiState.draftHtml.ifBlank { loadedProject.htmlCode },
+                                            cssCode = uiState.draftCss.ifBlank { loadedProject.cssCode },
+                                            jsCode = uiState.draftJs.ifBlank { loadedProject.jsCode },
+                                        )
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/html"
+                                            putExtra(Intent.EXTRA_SUBJECT, "${loadedProject.title} — Craftable App")
+                                            putExtra(Intent.EXTRA_TEXT, exportedHtml)
+                                        }
+                                        context.startActivity(
+                                            Intent.createChooser(shareIntent, "Export Standalone HTML")
+                                        )
+                                    },
+                                    modifier = Modifier.testTag("export_html_button"),
+                                )
+                            }
                         }
                     }
                 },
-            )
+                )
+            }
         },
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .imePadding(),
+                .consumeWindowInsets(innerPadding),
         ) {
             when (val pState = projectState) {
                 is UiState.Loading -> {
@@ -256,7 +355,9 @@ fun WorkspaceScreen(
                             BoxWithConstraints(modifier = Modifier.weight(1f)) {
                                 val isWideScreen = maxWidth >= 840.dp
 
-                                if (isWideScreen) {
+                                if (uiState.isFullscreenPreview && (!isWideScreen && uiState.activeTab == WorkspaceTab.PREVIEW || isWideScreen)) {
+                                    WebPreviewSection(project, uiState, viewModel)
+                                } else if (isWideScreen) {
                                     // Tablet / Desktop Split-Pane Workspace
                                     Row(modifier = Modifier.fillMaxSize()) {
                                         Box(
@@ -277,6 +378,11 @@ fun WorkspaceScreen(
                                                 onTapSuggestion = { suggestion ->
                                                     viewModel.sendIterationPrompt(project, suggestion)
                                                 },
+                                                pendingUserPrompt = uiState.pendingUserPrompt,
+                                                failedUserPrompt = uiState.failedUserPrompt,
+                                                errorMessage = uiState.errorMessage,
+                                                onRetryFailedPrompt = { viewModel.retryLastPrompt(project) },
+                                                onDismissError = viewModel::clearError,
                                             )
                                         }
 
@@ -330,13 +436,14 @@ fun WorkspaceScreen(
                                 } else {
                                     // Mobile Compact Workspace with 3-Mode Segmented Switcher
                                     Column(modifier = Modifier.fillMaxSize()) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .background(MaterialTheme.colorScheme.surface)
-                                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                                            contentAlignment = Alignment.Center,
-                                        ) {
+                                        if (!uiState.isFullscreenPreview) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .background(MaterialTheme.colorScheme.surface)
+                                                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                                                contentAlignment = Alignment.Center,
+                                            ) {
                                             SingleChoiceSegmentedButtonRow(
                                                 modifier = Modifier.fillMaxWidth(),
                                             ) {
@@ -371,6 +478,7 @@ fun WorkspaceScreen(
                                                 }
                                             }
                                         }
+                                        }
 
                                         Box(modifier = Modifier.weight(1f)) {
                                             when (uiState.activeTab) {
@@ -387,6 +495,14 @@ fun WorkspaceScreen(
                                                         },
                                                         onTapSuggestion = { suggestion ->
                                                             viewModel.sendIterationPrompt(project, suggestion)
+                                                        },
+                                                        pendingUserPrompt = uiState.pendingUserPrompt,
+                                                        failedUserPrompt = uiState.failedUserPrompt,
+                                                        errorMessage = uiState.errorMessage,
+                                                        onRetryFailedPrompt = { viewModel.retryLastPrompt(project) },
+                                                        onDismissError = viewModel::clearError,
+                                                        onOpenPreview = {
+                                                            viewModel.selectTab(WorkspaceTab.PREVIEW)
                                                         },
                                                     )
                                                 }
@@ -435,12 +551,10 @@ private fun WebPreviewSection(
         cssCode = if (uiState.isCodeInitialized) uiState.draftCss else project.cssCode,
         jsCode = if (uiState.isCodeInitialized) uiState.draftJs else project.jsCode,
         reloadNonce = uiState.reloadNonce,
-        isMobileViewport = uiState.isMobileViewport,
+        isFullscreen = uiState.isFullscreenPreview,
         consoleLogs = uiState.consoleLogs,
         showConsoleSheet = uiState.showConsoleSheet,
-        onToggleViewport = viewModel::toggleViewportMode,
-        onReload = viewModel::reloadPreview,
-        onOpenConsole = { viewModel.setShowConsoleSheet(true) },
+        onToggleFullscreen = viewModel::toggleFullscreenPreview,
         onDismissConsole = { viewModel.setShowConsoleSheet(false) },
         onClearConsole = viewModel::clearConsoleLogs,
         onConsoleMessage = viewModel::appendConsoleLog,

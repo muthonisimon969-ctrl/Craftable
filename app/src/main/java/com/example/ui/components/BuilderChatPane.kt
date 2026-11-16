@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,13 +28,18 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -43,6 +49,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.data.model.ProjectMessage
@@ -60,13 +68,25 @@ fun BuilderChatPane(
     onPromptChanged: (String) -> Unit,
     onSendPrompt: () -> Unit,
     onTapSuggestion: (String) -> Unit,
+    pendingUserPrompt: String? = null,
+    failedUserPrompt: String? = null,
+    errorMessage: String? = null,
+    onRetryFailedPrompt: (() -> Unit)? = null,
+    onDismissError: (() -> Unit)? = null,
+    onOpenPreview: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
 
-    LaunchedEffect(messages.size, isGenerating) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
+    LaunchedEffect(messages.size, isGenerating, pendingUserPrompt, errorMessage) {
+        val total = messages.size +
+            (if (!pendingUserPrompt.isNullOrBlank()) 1 else 0) +
+            (if (isGenerating) 1 else 0) +
+            (if (!isGenerating && !errorMessage.isNullOrBlank()) 1 else 0)
+        if (total > 0) {
+            listState.animateScrollToItem((total - 1).coerceAtLeast(0))
         }
     }
 
@@ -86,9 +106,19 @@ fun BuilderChatPane(
         ) {
             items(messages, key = { it.id.ifBlank { "${it.role}_${it.versionTag}_${it.content.hashCode()}" } }) { msg ->
                 if (msg.role == ProjectMessage.ROLE_USER) {
-                    UserPromptBubble(msg)
+                    UserPromptBubble(msg.content)
                 } else {
-                    AssistantBuildCard(msg)
+                    val isLatestAssistant = msg == messages.lastOrNull { it.role == ProjectMessage.ROLE_ASSISTANT }
+                    AssistantBuildCard(
+                        msg = msg,
+                        onOpenPreview = if (isLatestAssistant) onOpenPreview else null,
+                    )
+                }
+            }
+
+            if (!pendingUserPrompt.isNullOrBlank()) {
+                item(key = "pending_user_prompt") {
+                    UserPromptBubble(pendingUserPrompt)
                 }
             }
 
@@ -105,22 +135,86 @@ fun BuilderChatPane(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(22.dp),
                                 strokeWidth = 2.5.dp,
                                 color = CoralPrimary,
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Craftable AI is building...",
+                                    text = "Craftable AI is working...",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                                 Text(
-                                    text = generationStage.ifBlank { "Generating updated HTML, CSS & JS..." },
+                                    text = generationStage.ifBlank { "Waiting for Craft AI response..." },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!isGenerating && !errorMessage.isNullOrBlank()) {
+                item(key = "chat_error_card") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (!failedUserPrompt.isNullOrBlank()) {
+                            UserPromptBubble(failedUserPrompt)
+                        }
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f)),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Filled.ErrorOutline,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Craft AI did not complete this reply",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = errorMessage,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    if (onRetryFailedPrompt != null && !failedUserPrompt.isNullOrBlank()) {
+                                        Button(
+                                            onClick = onRetryFailedPrompt,
+                                            modifier = Modifier.heightIn(min = 48.dp),
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Refresh,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(18.dp),
+                                            )
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Retry")
+                                        }
+                                    }
+                                    if (onDismissError != null) {
+                                        OutlinedButton(
+                                            onClick = onDismissError,
+                                            modifier = Modifier.heightIn(min = 48.dp),
+                                        ) {
+                                            Text("Dismiss")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -139,7 +233,11 @@ fun BuilderChatPane(
             ) {
                 followUpSuggestions.forEach { suggestion ->
                     AssistChip(
-                        onClick = { onTapSuggestion(suggestion) },
+                        onClick = {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                            onTapSuggestion(suggestion)
+                        },
                         label = {
                             Text(
                                 text = suggestion,
@@ -183,7 +281,7 @@ fun BuilderChatPane(
                     onValueChange = onPromptChanged,
                     placeholder = {
                         Text(
-                            text = "Ask Craftable to iterate or add features...",
+                            text = "Tell Craftable what to build or change...",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     },
@@ -200,7 +298,11 @@ fun BuilderChatPane(
                 )
 
                 IconButton(
-                    onClick = onSendPrompt,
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onSendPrompt()
+                    },
                     enabled = promptInput.isNotBlank() && !isGenerating,
                     colors = IconButtonDefaults.iconButtonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -208,14 +310,14 @@ fun BuilderChatPane(
                         disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     ),
                     modifier = Modifier
-                        .padding(bottom = 4.dp)
-                        .size(44.dp)
+                        .padding(bottom = 2.dp)
+                        .size(48.dp)
                         .testTag("workspace_send_prompt_button"),
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send build prompt",
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(20.dp),
                     )
                 }
             }
@@ -224,7 +326,7 @@ fun BuilderChatPane(
 }
 
 @Composable
-private fun UserPromptBubble(msg: ProjectMessage) {
+private fun UserPromptBubble(text: String) {
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.CenterEnd,
@@ -236,7 +338,7 @@ private fun UserPromptBubble(msg: ProjectMessage) {
             modifier = Modifier.widthIn(max = 320.dp),
         ) {
             Text(
-                text = msg.content,
+                text = text,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -246,7 +348,10 @@ private fun UserPromptBubble(msg: ProjectMessage) {
 }
 
 @Composable
-private fun AssistantBuildCard(msg: ProjectMessage) {
+private fun AssistantBuildCard(
+    msg: ProjectMessage,
+    onOpenPreview: (() -> Unit)? = null,
+) {
     Surface(
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -324,6 +429,18 @@ private fun AssistantBuildCard(msg: ProjectMessage) {
                             )
                         }
                     }
+                }
+            }
+
+            if (onOpenPreview != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                FilledTonalButton(
+                    onClick = onOpenPreview,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                ) {
+                    Text("Open Full Live Preview", style = MaterialTheme.typography.labelLarge)
                 }
             }
         }

@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -23,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,12 +67,18 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -78,6 +87,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.R
+import com.example.data.ai.DesignTemplate
 import com.example.data.model.AppProject
 import com.example.data.model.TemplateType
 import com.example.ui.theme.AmberSpark
@@ -86,8 +96,8 @@ import com.example.ui.theme.EmeraldLive
 import com.example.ui.theme.IndigoAccent
 import com.example.ui.theme.JetBrainsMonoFamily
 import com.example.ui.viewmodel.HomeViewModel
-import com.example.ui.viewmodel.StarterPrompt
 import com.example.ui.viewmodel.UiState
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -105,6 +115,8 @@ fun HomeScreen(
 
     var projectToRename by remember { mutableStateOf<AppProject?>(null) }
     var projectToDelete by remember { mutableStateOf<AppProject?>(null) }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
         viewModel.navigateToProject.collect { newProjectId ->
@@ -180,10 +192,12 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding),
             contentAlignment = Alignment.TopCenter,
         ) {
             LazyColumn(
+                state = listState,
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier
@@ -205,12 +219,18 @@ fun HomeScreen(
                     )
                 }
 
-                // Starter Ideas Carousel
+                // Curated Studio Templates Gallery
                 item(key = "starter_ideas") {
                     Column {
                         Text(
-                            text = "Start from a spark",
+                            text = "Curated studio templates",
                             style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Open a ready-to-use app immediately or load its prompt into Craft AI",
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Spacer(modifier = Modifier.height(10.dp))
@@ -218,12 +238,17 @@ fun HomeScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .horizontalScroll(rememberScrollState()),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            viewModel.starterPrompts.forEach { starter ->
-                                StarterPromptCard(
-                                    starter = starter,
-                                    onClick = { viewModel.applyStarterPrompt(starter) },
+                            viewModel.curatedTemplates.forEach { template ->
+                                CuratedTemplateCard(
+                                    template = template,
+                                    enabled = !uiState.isBuilding,
+                                    onOpenLiveApp = { viewModel.launchTemplateProject(template) },
+                                    onUsePrompt = {
+                                        viewModel.applyDesignTemplatePrompt(template)
+                                        coroutineScope.launch { listState.animateScrollToItem(0) }
+                                    },
                                 )
                             }
                         }
@@ -483,28 +508,76 @@ private fun PromptComposerHero(
                 }
             }
 
+            val focusManager = LocalFocusManager.current
+            val keyboardController = LocalSoftwareKeyboardController.current
+
             AnimatedVisibility(visible = errorMessage != null) {
                 Surface(
                     color = MaterialTheme.colorScheme.error.copy(alpha = 0.14f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.45f)),
                     shape = MaterialTheme.shapes.small,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 10.dp)
-                        .clickable { onDismissError() },
+                        .padding(top = 10.dp),
                 ) {
-                    Text(
-                        text = errorMessage.orEmpty(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(10.dp),
-                    )
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.ErrorOutline,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Craft AI did not complete this request",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = errorMessage.orEmpty(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            androidx.compose.material3.OutlinedButton(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    keyboardController?.hide()
+                                    onCraftClick()
+                                },
+                                modifier = Modifier.heightIn(min = 48.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Retry")
+                            }
+                            TextButton(
+                                onClick = onDismissError,
+                                modifier = Modifier.heightIn(min = 48.dp),
+                            ) {
+                                Text("Dismiss")
+                            }
+                        }
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
             Button(
-                onClick = onCraftClick,
+                onClick = {
+                    focusManager.clearFocus()
+                    keyboardController?.hide()
+                    onCraftClick()
+                },
                 enabled = promptText.isNotBlank() && !isBuilding,
                 shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(
@@ -546,35 +619,54 @@ private fun PromptComposerHero(
 }
 
 @Composable
-private fun StarterPromptCard(
-    starter: StarterPrompt,
-    onClick: () -> Unit,
+private fun CuratedTemplateCard(
+    template: DesignTemplate,
+    enabled: Boolean,
+    onOpenLiveApp: () -> Unit,
+    onUsePrompt: () -> Unit,
 ) {
     Surface(
-        shape = MaterialTheme.shapes.medium,
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
-            .width(220.dp)
-            .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick)
-            .testTag("starter_prompt_${starter.templateType.wireValue}"),
+            .width(292.dp)
+            .testTag("template_card_${template.id}"),
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Surface(
-                shape = RoundedCornerShape(6.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer,
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = starter.templateType.displayName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
-                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                ) {
+                    Text(
+                        text = template.badgeLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                    )
+                }
+
+                // 3-dot palette swatch preview
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    listOf(template.canvasHex, template.surfaceHex, template.accentHex).forEach { hex ->
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(Color(hex))
+                        )
+                    }
+                }
             }
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = starter.title,
+                text = template.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
@@ -582,12 +674,42 @@ private fun StarterPromptCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = starter.subtitle,
+                text = template.shortSummary,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    onClick = onOpenLiveApp,
+                    enabled = enabled,
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp),
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = 48.dp)
+                        .testTag("open_template_${template.id}"),
+                ) {
+                    Text("Open App", style = MaterialTheme.typography.labelLarge)
+                }
+                androidx.compose.material3.OutlinedButton(
+                    onClick = onUsePrompt,
+                    enabled = enabled,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .testTag("prompt_template_${template.id}"),
+                ) {
+                    Text("Prompt", style = MaterialTheme.typography.labelLarge)
+                }
+            }
         }
     }
 }
