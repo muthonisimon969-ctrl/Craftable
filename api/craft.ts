@@ -17,6 +17,8 @@ interface VercelResponse {
 const MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'] as const;
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
+  res.setHeader('Cache-Control', 'no-store');
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     res.status(405).json({ error: 'Method not allowed' });
@@ -55,10 +57,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   let lastError = 'Craft AI failed to respond.';
 
   for (const model of MODELS) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45_000);
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45_000);
-
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
       const upstream = await fetch(endpoint, {
         method: 'POST',
@@ -83,8 +84,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
           },
         }),
       });
-
-      clearTimeout(timeout);
 
       const payload = (await upstream.json().catch(() => null)) as {
         candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
@@ -113,6 +112,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       lastError = 'Craft AI returned an empty response.';
     } catch (err) {
       lastError = err instanceof Error ? err.message : 'Craft AI upstream request failed.';
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
