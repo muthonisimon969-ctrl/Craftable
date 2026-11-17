@@ -19,6 +19,7 @@ RULE #0 — STRICTLY OBEY THE USER'S PROMPT:
 - Crisp, spacious mobile-first UI: :root CSS custom properties (--bg, --surface, --ink, --muted, --accent, --border), intentional typography pairing, 16px+ readable body text, large clickable buttons (min-height: 44px), and fluid widths (max-width, never fixed widths > 900px).
 - Self-contained: NO external http(s) <img> URLs or CDN scripts; use crisp inline SVGs. Wire all buttons, forms, tabs, modals, and localStorage state with real vanilla JS event listeners. Never use alert(), confirm(), or prompt().
 - HTML section must contain ONLY inner <body> markup (no <!DOCTYPE>, <html>, <head>, <body>, <style>, or <script> tags).
+- When building or editing a 2D game (platformer, runner, puzzle, or arcade): make it look like a finished indie mobile/browser game, NEVER flat plain boxes. Include multi-layer parallax backgrounds (sky gradients, stars/glow, distant silhouettes, foreground trim), expressive detailed vector sprites with squash-and-stretch/bobbing animations, beveled platforms/tiles, particle bursts, floating score popups, subtle screen shake, cohesive palette, styled glassmorphic HUD (Score, Best, Lives/Level), polished Start & Game Over summary overlays, responsive 16:10 canvas, and both keyboard + on-screen mobile touch controls.
 
 3. REQUIRED OUTPUT FORMAT (use these exact section markers):
 <<<TITLE>>>

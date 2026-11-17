@@ -131,25 +131,25 @@ export const DESIGN_TEMPLATES: DesignTemplate[] = [
   {
     id: '2d_game_studio',
     name: '2D Game Studio',
-    badgeLabel: 'Playable 2D Games',
-    shortSummary: 'Build playable 2D platformers, endless runners, puzzle & arcade games with keyboard & touch controls',
-    industries: ['2D Platformer', 'Endless Runner', 'Puzzle Game', 'Arcade Game', 'HTML5 Canvas', 'Browser Game'],
+    badgeLabel: 'Indie 2D Games',
+    shortSummary: 'Finished-feel 2D platformers, endless runners, puzzle & arcade games with parallax worlds, particles & touch controls',
+    industries: ['2D Platformer', 'Endless Runner', 'Puzzle Game', 'Arcade Game', 'HTML5 Canvas', 'Indie Browser Game'],
     visualDirection:
-      'Crisp retro-modern arcade studio with high-contrast 60fps HTML5 Canvas stage, responsive HUD, and tactile on-screen mobile D-pad & action controls.',
+      'Polished indie mobile/browser game aesthetic with multi-layer parallax skies, ambient lighting, articulated squash-and-stretch sprites, particle bursts, floating score popups, and frosted glass HUD.',
     colorSystem:
-      'Arcade Midnight (#090D16) stage, Elevated Console (#121826) bezel, Crisp White (#F8FAFC) HUD, Electric Cyan (#06B6D4) & Coral (#FF5E5B) sprites, Emerald (#10B981) collectibles.',
+      'Cohesive themed palettes (Celestial Dusk, Cyber Horizon, Emerald Ruins) syncing canvas atmosphere, beveled platforms, glowing collectibles, and glassmorphic HUD accents.',
     typographyPairing:
-      'Bold geometric display headings paired with crisp tabular monospace score/timer readouts.',
+      'Bold geometric display titles paired with crisp tracked micro-labels and tabular monospace score/combo readouts.',
     layoutBlueprint:
-      'Compact studio header with mode & difficulty switchers -> Live HUD (Score, Best, Lives/Status) -> Responsive 16:10 HTML5 Canvas stage with Start/Pause/Game Over overlays -> Ergonomic keyboard hints & mobile touch D-pad + Action controls.',
+      'Sleek studio header (difficulty, palette theme, Web Audio SFX toggle) -> Glassmorphic HUD (Score, Best Trophy, Hearts/Moves, Level) -> Responsive 16:10 parallax Canvas stage with frosted Title/Pause/Game Over cards -> Ergonomic tactile D-pad & glowing Action deck.',
     interactivePatterns:
-      'Playable 2D Platformer, Endless Runner, 4x4 Puzzle, and Arcade modes; keyboard arrows/WASD/Space + pointer/touch controls; live scoring, difficulty scaling, and instant restart.',
+      'Playable 2D Platformer, Endless Runner, 4x4 Jewel Merge Puzzle, and Star Defender Arcade; keyboard + multi-pointer mobile touch controls; particles, screen shake, floating popups, procedural SFX, and instant restart.',
     starterPrompt:
-      'Create a playable 2D browser game in Craftable with keyboard and mobile touch controls, live score tracking, difficulty levels, game-over screen, and instant restart. Support customizing the genre (platformer, endless runner, puzzle, or arcade), color palette, hero character, and speed.',
+      'Create a visually polished indie 2D browser game with rich parallax backgrounds, atmospheric lighting, expressive animated hero and enemy sprites, particle effects, floating score popups, styled Start and Game Over screens, keyboard and mobile touch controls, score tracking, difficulty levels, and instant restart.',
     defaultTemplateType: 'web_app',
-    canvasHex: '#090D16',
-    surfaceHex: '#121826',
-    accentHex: '#06B6D4',
+    canvasHex: '#0A0E1A',
+    surfaceHex: '#131A2D',
+    accentHex: '#38BDF8',
   },
 ];
 
