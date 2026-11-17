@@ -128,6 +128,29 @@ export const DESIGN_TEMPLATES: DesignTemplate[] = [
     surfaceHex: '#FFFFFF',
     accentHex: '#2563EB',
   },
+  {
+    id: '2d_game_studio',
+    name: '2D Game Studio',
+    badgeLabel: 'Playable 2D Games',
+    shortSummary: 'Build playable 2D platformers, endless runners, puzzle & arcade games with keyboard & touch controls',
+    industries: ['2D Platformer', 'Endless Runner', 'Puzzle Game', 'Arcade Game', 'HTML5 Canvas', 'Browser Game'],
+    visualDirection:
+      'Crisp retro-modern arcade studio with high-contrast 60fps HTML5 Canvas stage, responsive HUD, and tactile on-screen mobile D-pad & action controls.',
+    colorSystem:
+      'Arcade Midnight (#090D16) stage, Elevated Console (#121826) bezel, Crisp White (#F8FAFC) HUD, Electric Cyan (#06B6D4) & Coral (#FF5E5B) sprites, Emerald (#10B981) collectibles.',
+    typographyPairing:
+      'Bold geometric display headings paired with crisp tabular monospace score/timer readouts.',
+    layoutBlueprint:
+      'Compact studio header with mode & difficulty switchers -> Live HUD (Score, Best, Lives/Status) -> Responsive 16:10 HTML5 Canvas stage with Start/Pause/Game Over overlays -> Ergonomic keyboard hints & mobile touch D-pad + Action controls.',
+    interactivePatterns:
+      'Playable 2D Platformer, Endless Runner, 4x4 Puzzle, and Arcade modes; keyboard arrows/WASD/Space + pointer/touch controls; live scoring, difficulty scaling, and instant restart.',
+    starterPrompt:
+      'Create a playable 2D browser game in Craftable with keyboard and mobile touch controls, live score tracking, difficulty levels, game-over screen, and instant restart. Support customizing the genre (platformer, endless runner, puzzle, or arcade), color palette, hero character, and speed.',
+    defaultTemplateType: 'web_app',
+    canvasHex: '#090D16',
+    surfaceHex: '#121826',
+    accentHex: '#06B6D4',
+  },
 ];
 
 export function findTemplateById(id: string): DesignTemplate | undefined {

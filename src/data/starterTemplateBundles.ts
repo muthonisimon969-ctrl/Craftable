@@ -12,6 +12,8 @@ export function buildStarterTemplateBundle(templateId: string): GeneratedAppBund
       return culinaryBistroBundle();
     case 'corporate_advisory':
       return corporateAdvisoryBundle();
+    case '2d_game_studio':
+      return gameStudio2DBundle();
     default:
       return tactileUtilityBundle();
   }
@@ -991,5 +993,891 @@ document.getElementById('entryForm').addEventListener('submit', (e) => {
 });
 document.getElementById('clearAllBtn').addEventListener('click', () => { items = []; save(); render(); });
 render();`,
+  };
+}
+
+function gameStudio2DBundle(): GeneratedAppBundle {
+  return {
+    projectTitle: '2D Game Studio',
+    description:
+      'Playable 2D browser game studio with Platformer, Endless Runner, Puzzle, and Arcade modes plus keyboard & mobile touch controls.',
+    summary:
+      'Loaded 2D Game Studio — switch between 4 playable games (Platformer, Endless Runner, 4x4 Puzzle, and Arcade Blaster) with keyboard & mobile touch controls, live scoring, difficulty levels, color themes, and instant restart. Ask Craft AI in chat to customize characters, levels, physics, or rules.',
+    designStrategy: 'template_foundation',
+    templateId: '2d_game_studio',
+    designDirection:
+      'Arcade Midnight (#090D16) canvas stage with crisp HUD badges, selectable color palettes, responsive 16:10 canvas, and tactile touch D-pad + action deck.',
+    qaSummary:
+      'QA Audit (6/6 checks passed): structure, tokens, responsive canvas, zero external assets, balanced 60fps JS game loop, and genre customization ready.',
+    changedFiles: ['index.html', 'styles.css', 'app.js'],
+    followUpSuggestions: [
+      'Make a Mario-style 2D platformer with coins & enemies',
+      'Turn this into a cyber neon endless runner',
+      'Create a harder 2D arcade boss shooter',
+    ],
+    htmlCode: `<header class="studio-bar">
+  <div class="container bar-inner">
+    <div class="brand-wrap">
+      <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+        <rect width="26" height="26" rx="7" fill="#06B6D4"/>
+        <rect x="6" y="11" width="14" height="4" rx="2" fill="#090D16"/>
+        <rect x="11" y="6" width="4" height="14" rx="2" fill="#090D16"/>
+      </svg>
+      <div>
+        <h1>2D Game Studio</h1>
+        <span class="sub">Playable Engine &bull; Keyboard + Touch</span>
+      </div>
+    </div>
+    <div class="controls-inline">
+      <select id="difficultySelect" aria-label="Difficulty">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
+      <select id="paletteSelect" aria-label="Color theme">
+        <option value="midnight" selected>Cyan Midnight</option>
+        <option value="sunset">Sunset Retro</option>
+        <option value="forest">Emerald Quest</option>
+      </select>
+    </div>
+  </div>
+</header>
+
+<main class="container game-shell">
+  <section class="mode-strip" aria-label="Game genre selector">
+    <div id="modeTabs" class="mode-tabs" role="tablist">
+      <button type="button" class="mode-btn active" data-mode="platformer">Platformer</button>
+      <button type="button" class="mode-btn" data-mode="runner">Endless Runner</button>
+      <button type="button" class="mode-btn" data-mode="puzzle">4x4 Puzzle</button>
+      <button type="button" class="mode-btn" data-mode="arcade">Arcade Blaster</button>
+    </div>
+    <div class="hud-pills">
+      <div class="hud-pill"><span>Score</span><strong id="scoreVal">0</strong></div>
+      <div class="hud-pill"><span>Best</span><strong id="bestVal">0</strong></div>
+      <div class="hud-pill"><span>Lives</span><strong id="livesVal">3</strong></div>
+    </div>
+  </section>
+
+  <section class="stage-card">
+    <div class="canvas-frame" id="canvasFrame" tabindex="0">
+      <canvas id="gameCanvas" width="640" height="380" aria-label="2D Game Canvas"></canvas>
+      <div id="stageOverlay" class="stage-overlay">
+        <span id="overlayTag" class="overlay-tag">READY TO PLAY</span>
+        <h2 id="overlayTitle">Sky Hopper 2D</h2>
+        <p id="overlayDesc">Move with Arrow Keys / WASD or the on-screen D-Pad. Collect coins, dodge patrol drones, and reach the emerald portal!</p>
+        <div class="overlay-actions">
+          <button id="primaryPlayBtn" type="button" class="btn-play">Start Game</button>
+          <button id="restartBtn" type="button" class="btn-ghost">Restart</button>
+        </div>
+      </div>
+    </div>
+    <div class="stage-footer">
+      <span id="hintText" class="hint-text">Keys: Arrows / WASD to move &bull; Space to Jump/Action &bull; Tap canvas to focus</span>
+      <button id="pauseBtn" type="button" class="btn-small">Pause</button>
+    </div>
+  </section>
+
+  <section class="touch-deck" aria-label="Mobile touch controls">
+    <div class="dpad" aria-label="Directional pad">
+      <span class="dpad-spacer"></span>
+      <button type="button" class="pad-btn" data-key="up" aria-label="Up">&#9650;</button>
+      <span class="dpad-spacer"></span>
+      <button type="button" class="pad-btn" data-key="left" aria-label="Left">&#9664;</button>
+      <button type="button" class="pad-btn" data-key="down" aria-label="Down">&#9660;</button>
+      <button type="button" class="pad-btn" data-key="right" aria-label="Right">&#9654;</button>
+    </div>
+    <div class="action-cluster">
+      <button id="actionBtn" type="button" class="action-btn">JUMP / FIRE</button>
+      <button id="quickResetBtn" type="button" class="btn-ghost">Reset</button>
+    </div>
+  </section>
+</main>`,
+    cssCode: `:root {
+  --bg: #090D16;
+  --surface: #121826;
+  --surface-2: #1B2438;
+  --ink: #F8FAFC;
+  --muted: #94A3B8;
+  --accent: #06B6D4;
+  --coral: #FF5E5B;
+  --emerald: #10B981;
+  --border: #26324A;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.45;
+  user-select: none;
+}
+.hidden { display: none !important; }
+.container { max-width: 820px; margin: 0 auto; padding: 12px 14px; }
+.studio-bar {
+  background: rgba(18, 24, 38, 0.95);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.brand-wrap { display: flex; align-items: center; gap: 10px; }
+h1 { margin: 0; font-size: clamp(1rem, 2.4vw, 1.2rem); font-weight: 700; }
+.sub { display: block; font-size: 0.74rem; color: var(--muted); }
+.controls-inline { display: flex; gap: 8px; }
+select {
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.game-shell { display: flex; flex-direction: column; gap: 12px; }
+.mode-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mode-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.mode-btn, .btn-small, .btn-ghost {
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mode-btn.active {
+  background: var(--accent);
+  color: #06121A;
+  border-color: var(--accent);
+}
+.hud-pills { display: flex; gap: 8px; }
+.hud-pill {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 5px 11px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.hud-pill span { font-size: 0.72rem; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.hud-pill strong { font-family: ui-monospace, monospace; font-size: 1rem; color: var(--ink); }
+.stage-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 10px;
+}
+.canvas-frame {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #060911;
+  outline: none;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 640 / 380;
+  touch-action: none;
+}
+.stage-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 13, 22, 0.84);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 18px;
+  gap: 8px;
+}
+.overlay-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.stage-overlay h2 { margin: 0; font-size: clamp(1.2rem, 3vw, 1.65rem); }
+.stage-overlay p { margin: 0; max-width: 44ch; font-size: 0.88rem; color: var(--muted); }
+.overlay-actions { display: flex; gap: 10px; margin-top: 6px; flex-wrap: wrap; justify-content: center; }
+.btn-play {
+  min-height: 44px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  border: none;
+  background: var(--coral);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.stage-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.hint-text { font-size: 0.76rem; color: var(--muted); }
+.touch-deck {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 48px);
+  grid-template-rows: repeat(2, 46px);
+  gap: 6px;
+}
+.dpad-spacer { pointer-events: none; }
+.pad-btn {
+  min-height: 46px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.pad-btn:active, .pad-btn.pressed { background: var(--accent); color: #06121A; }
+.action-cluster { display: flex; align-items: center; gap: 8px; }
+.action-btn {
+  min-width: 122px;
+  min-height: 60px;
+  padding: 10px 16px;
+  border-radius: 16px;
+  border: none;
+  background: var(--coral);
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.action-btn:active { transform: scale(0.97); }
+@media (max-width: 600px) {
+  .container { padding: 10px; }
+  .dpad { grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(2, 44px); }
+  .action-btn { min-width: 104px; min-height: 54px; font-size: 0.85rem; }
+  .hint-text { display: none; }
+}`,
+    jsCode: `const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = 640, H = 380;
+
+const PALETTES = {
+  midnight: { bgTop: '#0B1224', bgBot: '#060911', ground: '#1E293B', plat: '#334155', hero: '#06B6D4', enemy: '#FF5E5B', coin: '#FBBF24', portal: '#10B981' },
+  sunset: { bgTop: '#24112E', bgBot: '#120819', ground: '#3B1D4A', plat: '#5B2A6E', hero: '#FF9F43', enemy: '#F43F5E', coin: '#FDE047', portal: '#34D399' },
+  forest: { bgTop: '#0B1F1A', bgBot: '#06120F', ground: '#163B30', plat: '#1E5242', hero: '#34D399', enemy: '#FB7185', coin: '#FBBF24', portal: '#38BDF8' }
+};
+
+const DIFFICULTY = {
+  easy: { speed: 0.78, enemySpeed: 0.75, label: 'Easy' },
+  normal: { speed: 1.0, enemySpeed: 1.0, label: 'Normal' },
+  hard: { speed: 1.28, enemySpeed: 1.32, label: 'Hard' }
+};
+
+const MODE_INFO = {
+  platformer: { title: 'Sky Hopper 2D', desc: 'Run and jump across floating platforms, collect gold coins, dodge patrol drones, and reach the emerald portal.', action: 'JUMP' },
+  runner: { title: 'Neon Endless Dash', desc: 'Auto-running challenge! Tap JUMP (Space/Up) to clear ground crates and DOWN to drop quickly past drones.', action: 'JUMP' },
+  puzzle: { title: 'Grid Merge 4x4', desc: 'Slide numbered tiles with Arrow Keys, WASD, or the D-Pad. Merge matching numbers to reach higher scores!', action: 'NEW TILE' },
+  arcade: { title: 'Star Defender 2D', desc: 'Pilot left/right and press FIRE (Space) to blast falling meteors while catching bonus gold stars.', action: 'FIRE' }
+};
+
+const keys = { left: false, right: false, up: false, down: false, action: false };
+let mode = 'platformer';
+let difficulty = 'normal';
+let paletteKey = 'midnight';
+let status = 'ready';
+let score = 0;
+let lives = 3;
+let level = 1;
+let bestScores = {};
+try { bestScores = JSON.parse(localStorage.getItem('craftable_2d_best') || '{}'); } catch (e) { bestScores = {}; }
+
+let platState = null;
+let runnerState = null;
+let puzzleState = null;
+let arcadeState = null;
+let lastTime = 0;
+
+const scoreEl = document.getElementById('scoreVal');
+const bestEl = document.getElementById('bestVal');
+const livesEl = document.getElementById('livesVal');
+const overlayEl = document.getElementById('stageOverlay');
+const overlayTagEl = document.getElementById('overlayTag');
+const overlayTitleEl = document.getElementById('overlayTitle');
+const overlayDescEl = document.getElementById('overlayDesc');
+const playBtn = document.getElementById('primaryPlayBtn');
+const actionBtn = document.getElementById('actionBtn');
+
+function saveBest() {
+  const prev = bestScores[mode] || 0;
+  if (score > prev) {
+    bestScores[mode] = score;
+    try { localStorage.setItem('craftable_2d_best', JSON.stringify(bestScores)); } catch (e) {}
+  }
+}
+
+function updateHud() {
+  scoreEl.textContent = score;
+  bestEl.textContent = Math.max(score, bestScores[mode] || 0);
+  livesEl.textContent = mode === 'puzzle' ? (puzzleState ? puzzleState.moves + 'm' : '0m') : lives;
+  actionBtn.textContent = MODE_INFO[mode].action;
+}
+
+function showOverlay(tag, title, desc, btnLabel) {
+  overlayTagEl.textContent = tag;
+  overlayTitleEl.textContent = title;
+  overlayDescEl.textContent = desc;
+  playBtn.textContent = btnLabel;
+  overlayEl.classList.remove('hidden');
+}
+
+function hideOverlay() {
+  overlayEl.classList.add('hidden');
+}
+
+function initPlatformer(keepScore) {
+  if (!keepScore) { score = 0; lives = 3; level = 1; }
+  const shift = ((level - 1) % 3) * 18;
+  platState = {
+    px: 44, py: 280, vx: 0, vy: 0, w: 28, h: 32, onGround: false, invuln: 0,
+    platforms: [
+      { x: 0, y: 340, w: 640, h: 40 },
+      { x: 110, y: 274 - shift * 0.4, w: 120, h: 14 },
+      { x: 275, y: 222 + shift * 0.3, w: 125, h: 14 },
+      { x: 445, y: 170 - shift * 0.3, w: 135, h: 14 },
+      { x: 170, y: 136, w: 110, h: 14 }
+    ],
+    coins: [
+      { x: 165, y: 242, got: false },
+      { x: 335, y: 190, got: false },
+      { x: 220, y: 102, got: false },
+      { x: 500, y: 136, got: false }
+    ],
+    enemies: [
+      { x: 260, y: 316, min: 190, max: 430, dir: 1, speed: 105 },
+      { x: 455, y: 146 - shift * 0.3, min: 450, max: 556, dir: 1, speed: 80 }
+    ],
+    portal: { x: 556, y: 122 - shift * 0.3, w: 22, h: 46 }
+  };
+}
+
+function initRunner() {
+  score = 0; lives = 3; level = 1;
+  runnerState = {
+    py: 288, vy: 0, w: 30, h: 36, ducking: false, onGround: true, invuln: 0,
+    speed: 250, spawnTimer: 0.7, dist: 0, obstacles: [], orbs: []
+  };
+}
+
+function addPuzzleTile(grid) {
+  const empty = [];
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if (grid[r][c] === 0) empty.push([r, c]);
+    }
+  }
+  if (!empty.length) return false;
+  const pick = empty[Math.floor(Math.random() * empty.length)];
+  grid[pick[0]][pick[1]] = Math.random() < 0.85 ? 2 : 4;
+  return true;
+}
+
+function canMovePuzzle(grid) {
+  for (let r = 0; r < 4; r++) {
+    for (let c = 0; c < 4; c++) {
+      if (grid[r][c] === 0) return true;
+      if (r < 3 && grid[r][c] === grid[r + 1][c]) return true;
+      if (c < 3 && grid[r][c] === grid[r][c + 1]) return true;
+    }
+  }
+  return false;
+}
+
+function initPuzzle() {
+  score = 0; lives = 1; level = 1;
+  const grid = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+  addPuzzleTile(grid);
+  addPuzzleTile(grid);
+  puzzleState = { grid, moves: 0 };
+}
+
+function initArcade() {
+  score = 0; lives = 3; level = 1;
+  arcadeState = {
+    px: W / 2 - 20, w: 40, h: 18, fireCooldown: 0, spawnTimer: 0.5,
+    bullets: [], enemies: [], stars: []
+  };
+}
+
+function resetGame(autoPlay) {
+  if (mode === 'platformer') initPlatformer(false);
+  else if (mode === 'runner') initRunner();
+  else if (mode === 'puzzle') initPuzzle();
+  else initArcade();
+  saveBest();
+  updateHud();
+  if (autoPlay) {
+    status = 'playing';
+    hideOverlay();
+    document.getElementById('canvasFrame').focus();
+  } else {
+    status = 'ready';
+    const info = MODE_INFO[mode];
+    showOverlay('READY TO PLAY', info.title, info.desc, 'Start Game');
+  }
+}
+
+function triggerGameOver(reason) {
+  status = 'gameover';
+  saveBest();
+  updateHud();
+  showOverlay('GAME OVER', 'Final Score: ' + score, reason + ' Best score: ' + Math.max(score, bestScores[mode] || 0) + '.', 'Play Again');
+}
+
+function slidePuzzle(dir) {
+  if (status !== 'playing' || mode !== 'puzzle' || !puzzleState) return;
+  const g = puzzleState.grid;
+  let moved = false;
+
+  function slideLine(arr) {
+    const nonZero = arr.filter(x => x !== 0);
+    const out = [];
+    for (let i = 0; i < nonZero.length; i++) {
+      if (i + 1 < nonZero.length && nonZero[i] === nonZero[i + 1]) {
+        const merged = nonZero[i] * 2;
+        out.push(merged);
+        score += merged;
+        i++;
+      } else {
+        out.push(nonZero[i]);
+      }
+    }
+    while (out.length < 4) out.push(0);
+    return out;
+  }
+
+  for (let i = 0; i < 4; i++) {
+    let line = [];
+    for (let j = 0; j < 4; j++) {
+      if (dir === 'left') line.push(g[i][j]);
+      else if (dir === 'right') line.push(g[i][3 - j]);
+      else if (dir === 'up') line.push(g[j][i]);
+      else line.push(g[3 - j][i]);
+    }
+    const next = slideLine(line);
+    for (let j = 0; j < 4; j++) {
+      const val = next[j];
+      if (dir === 'left') { if (g[i][j] !== val) moved = true; g[i][j] = val; }
+      else if (dir === 'right') { if (g[i][3 - j] !== val) moved = true; g[i][3 - j] = val; }
+      else if (dir === 'up') { if (g[j][i] !== val) moved = true; g[j][i] = val; }
+      else { if (g[3 - j][i] !== val) moved = true; g[3 - j][i] = val; }
+    }
+  }
+
+  if (moved) {
+    puzzleState.moves++;
+    addPuzzleTile(g);
+    saveBest();
+    updateHud();
+    if (!canMovePuzzle(g)) {
+      triggerGameOver('No legal merges left on the 4x4 board.');
+    }
+  }
+}
+
+function stepPlatformer(dt) {
+  const s = platState;
+  const mult = DIFFICULTY[difficulty].speed;
+  const emult = DIFFICULTY[difficulty].enemySpeed;
+  if (s.invuln > 0) s.invuln -= dt;
+
+  if (keys.left) s.vx = -220 * mult;
+  else if (keys.right) s.vx = 220 * mult;
+  else s.vx *= 0.78;
+
+  if ((keys.up || keys.action) && s.onGround) {
+    s.vy = -490;
+    s.onGround = false;
+  }
+
+  s.vy += 1200 * dt;
+  s.px = Math.max(0, Math.min(W - s.w, s.px + s.vx * dt));
+  s.py += s.vy * dt;
+  s.onGround = false;
+
+  for (const p of s.platforms) {
+    if (s.px + s.w > p.x && s.px < p.x + p.w && s.vy >= 0 && s.py + s.h >= p.y && s.py + s.h <= p.y + p.h + 18) {
+      s.py = p.y - s.h;
+      s.vy = 0;
+      s.onGround = true;
+    }
+  }
+
+  for (const c of s.coins) {
+    if (!c.got && Math.hypot((s.px + s.w / 2) - c.x, (s.py + s.h / 2) - c.y) < 24) {
+      c.got = true;
+      score += 25;
+      saveBest();
+      updateHud();
+    }
+  }
+
+  for (const e of s.enemies) {
+    e.x += e.dir * e.speed * emult * dt;
+    if (e.x < e.min) { e.x = e.min; e.dir = 1; }
+    if (e.x > e.max) { e.x = e.max; e.dir = -1; }
+    if (s.invuln <= 0 && s.px + s.w > e.x && s.px < e.x + 24 && s.py + s.h > e.y && s.py < e.y + 24) {
+      lives--;
+      s.invuln = 1.2;
+      s.vx = -s.vx;
+      s.vy = -280;
+      updateHud();
+      if (lives <= 0) { triggerGameOver('Hit by a patrol drone.'); return; }
+    }
+  }
+
+  const portal = s.portal;
+  if (s.px + s.w > portal.x && s.px < portal.x + portal.w && s.py + s.h > portal.y && s.py < portal.y + portal.h) {
+    score += 100;
+    level++;
+    saveBest();
+    updateHud();
+    initPlatformer(true);
+  }
+}
+
+function stepRunner(dt) {
+  const s = runnerState;
+  const mult = DIFFICULTY[difficulty].speed;
+  const groundY = 324;
+  if (s.invuln > 0) s.invuln -= dt;
+
+  s.ducking = keys.down && s.onGround;
+  const curH = s.ducking ? 20 : 36;
+  if ((keys.up || keys.action) && s.onGround) {
+    s.vy = -510;
+    s.onGround = false;
+  }
+  if (keys.down && !s.onGround) s.vy += 1800 * dt;
+
+  s.vy += 1320 * dt;
+  s.py += s.vy * dt;
+  if (s.py + curH >= groundY) {
+    s.py = groundY - curH;
+    s.vy = 0;
+    s.onGround = true;
+  }
+
+  const runSpeed = (s.speed + score * 0.4) * mult;
+  s.dist += dt * 10;
+  if (s.dist >= 1) {
+    score += Math.floor(s.dist);
+    s.dist -= Math.floor(s.dist);
+    saveBest();
+    updateHud();
+  }
+
+  s.spawnTimer -= dt;
+  if (s.spawnTimer <= 0) {
+    s.spawnTimer = (0.95 + Math.random() * 0.75) / mult;
+    const isHigh = Math.random() < 0.35;
+    s.obstacles.push({ x: W + 20, y: isHigh ? groundY - 62 : groundY - 30, w: 24, h: 30 });
+    if (Math.random() < 0.55) {
+      s.orbs.push({ x: W + 110, y: groundY - (48 + Math.random() * 65), got: false });
+    }
+  }
+
+  for (const o of s.obstacles) {
+    o.x -= runSpeed * dt;
+    if (s.invuln <= 0 && 94 + s.w > o.x && 94 < o.x + o.w && s.py + curH > o.y && s.py < o.y + o.h) {
+      lives--;
+      s.invuln = 1.0;
+      updateHud();
+      if (lives <= 0) { triggerGameOver('Crashed into an obstacle.'); return; }
+    }
+  }
+  for (const orb of s.orbs) {
+    orb.x -= runSpeed * dt;
+    if (!orb.got && Math.hypot(109 - orb.x, (s.py + curH / 2) - orb.y) < 22) {
+      orb.got = true;
+      score += 20;
+      saveBest();
+      updateHud();
+    }
+  }
+  s.obstacles = s.obstacles.filter(o => o.x > -40);
+  s.orbs = s.orbs.filter(o => o.x > -20 && !o.got);
+}
+
+function stepArcade(dt) {
+  const s = arcadeState;
+  const mult = DIFFICULTY[difficulty].speed;
+  const emult = DIFFICULTY[difficulty].enemySpeed;
+  if (s.fireCooldown > 0) s.fireCooldown -= dt;
+
+  if (keys.left) s.px -= 290 * mult * dt;
+  if (keys.right) s.px += 290 * mult * dt;
+  s.px = Math.max(12, Math.min(W - s.w - 12, s.px));
+
+  if ((keys.action || keys.up) && s.fireCooldown <= 0) {
+    s.bullets.push({ x: s.px + s.w / 2 - 2, y: H - 46 });
+    s.fireCooldown = 0.22;
+  }
+
+  s.spawnTimer -= dt;
+  if (s.spawnTimer <= 0) {
+    s.spawnTimer = Math.max(0.42, (1.15 - level * 0.04) / emult);
+    s.enemies.push({ x: 24 + Math.random() * (W - 68), y: -24, w: 26, h: 24, vy: (85 + Math.random() * 55) * emult });
+    if (Math.random() < 0.35) {
+      s.stars.push({ x: 24 + Math.random() * (W - 48), y: -16, vy: 95 * emult, got: false });
+    }
+  }
+
+  for (const b of s.bullets) b.y -= 440 * dt;
+  for (const e of s.enemies) {
+    e.y += e.vy * dt;
+    if (e.y + e.h >= H - 14) {
+      e.hit = true;
+      lives--;
+      updateHud();
+      if (lives <= 0) { triggerGameOver('Too many meteors broke through.'); return; }
+    }
+  }
+
+  for (const b of s.bullets) {
+    for (const e of s.enemies) {
+      if (!e.hit && b.x + 4 > e.x && b.x < e.x + e.w && b.y < e.y + e.h && b.y + 10 > e.y) {
+        e.hit = true;
+        b.hit = true;
+        score += 15;
+        if (score % 150 === 0) level++;
+        saveBest();
+        updateHud();
+      }
+    }
+  }
+
+  for (const st of s.stars) {
+    st.y += st.vy * dt;
+    if (!st.got && st.x > s.px - 10 && st.x < s.px + s.w + 10 && st.y > H - 44 && st.y < H - 12) {
+      st.got = true;
+      score += 30;
+      saveBest();
+      updateHud();
+    }
+  }
+
+  s.bullets = s.bullets.filter(b => !b.hit && b.y > -20);
+  s.enemies = s.enemies.filter(e => !e.hit);
+  s.stars = s.stars.filter(st => !st.got && st.y < H + 20);
+}
+
+function drawScene() {
+  const pal = PALETTES[paletteKey];
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, pal.bgTop);
+  grad.addColorStop(1, pal.bgBot);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  if (mode === 'platformer' && platState) {
+    const s = platState;
+    for (const p of s.platforms) {
+      ctx.fillStyle = p.y >= 340 ? pal.ground : pal.plat;
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+    }
+    ctx.fillStyle = pal.portal;
+    ctx.fillRect(s.portal.x, s.portal.y, s.portal.w, s.portal.h);
+    for (const c of s.coins) {
+      if (c.got) continue;
+      ctx.fillStyle = pal.coin;
+      ctx.beginPath(); ctx.arc(c.x, c.y, 9, 0, Math.PI * 2); ctx.fill();
+    }
+    for (const e of s.enemies) {
+      ctx.fillStyle = pal.enemy;
+      ctx.fillRect(e.x, e.y, 24, 24);
+    }
+    if (s.invuln <= 0 || Math.floor(s.invuln * 12) % 2 === 0) {
+      ctx.fillStyle = pal.hero;
+      ctx.fillRect(s.px, s.py, s.w, s.h);
+      ctx.fillStyle = '#090D16';
+      ctx.fillRect(s.px + 6, s.py + 8, 5, 5);
+      ctx.fillRect(s.px + 17, s.py + 8, 5, 5);
+    }
+  } else if (mode === 'runner' && runnerState) {
+    const s = runnerState;
+    ctx.fillStyle = pal.ground;
+    ctx.fillRect(0, 324, W, 56);
+    for (const o of s.obstacles) {
+      ctx.fillStyle = pal.enemy;
+      ctx.fillRect(o.x, o.y, o.w, o.h);
+    }
+    for (const orb of s.orbs) {
+      ctx.fillStyle = pal.coin;
+      ctx.beginPath(); ctx.arc(orb.x, orb.y, 8, 0, Math.PI * 2); ctx.fill();
+    }
+    const curH = s.ducking ? 20 : 36;
+    if (s.invuln <= 0 || Math.floor(s.invuln * 12) % 2 === 0) {
+      ctx.fillStyle = pal.hero;
+      ctx.fillRect(94, s.py, s.w, curH);
+      ctx.fillStyle = '#090D16';
+      ctx.fillRect(112, s.py + 6, 6, 5);
+    }
+  } else if (mode === 'puzzle' && puzzleState) {
+    const cellSize = 72, gap = 10;
+    const startX = (W - (cellSize * 4 + gap * 3)) / 2;
+    const startY = (H - (cellSize * 4 + gap * 3)) / 2;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const val = puzzleState.grid[r][c];
+        const x = startX + c * (cellSize + gap);
+        const y = startY + r * (cellSize + gap);
+        ctx.fillStyle = val === 0 ? pal.ground : val <= 4 ? pal.plat : val <= 16 ? pal.hero : pal.coin;
+        ctx.fillRect(x, y, cellSize, cellSize);
+        if (val > 0) {
+          ctx.fillStyle = val >= 8 ? '#090D16' : '#F8FAFC';
+          ctx.font = 'bold 24px ui-monospace, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(val), x + cellSize / 2, y + cellSize / 2);
+        }
+      }
+    }
+  } else if (mode === 'arcade' && arcadeState) {
+    const s = arcadeState;
+    ctx.fillStyle = pal.hero;
+    ctx.fillRect(s.px, H - 32, s.w, s.h);
+    ctx.fillRect(s.px + s.w / 2 - 4, H - 40, 8, 8);
+    ctx.fillStyle = '#FFFFFF';
+    for (const b of s.bullets) ctx.fillRect(b.x, b.y, 4, 12);
+    ctx.fillStyle = pal.enemy;
+    for (const e of s.enemies) ctx.fillRect(e.x, e.y, e.w, e.h);
+    ctx.fillStyle = pal.coin;
+    for (const st of s.stars) { ctx.beginPath(); ctx.arc(st.x, st.y, 8, 0, Math.PI * 2); ctx.fill(); }
+  }
+}
+
+function loop(ts) {
+  const dt = Math.min(0.05, (ts - lastTime) / 1000 || 0.016);
+  lastTime = ts;
+  if (status === 'playing') {
+    if (mode === 'platformer') stepPlatformer(dt);
+    else if (mode === 'runner') stepRunner(dt);
+    else if (mode === 'arcade') stepArcade(dt);
+  }
+  drawScene();
+  requestAnimationFrame(loop);
+}
+
+function handleKeyMap(code, isDown) {
+  if (code === 'ArrowLeft' || code === 'KeyA') keys.left = isDown;
+  if (code === 'ArrowRight' || code === 'KeyD') keys.right = isDown;
+  if (code === 'ArrowUp' || code === 'KeyW') keys.up = isDown;
+  if (code === 'ArrowDown' || code === 'KeyS') keys.down = isDown;
+  if (code === 'Space') keys.action = isDown;
+}
+
+window.addEventListener('keydown', (e) => {
+  if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
+  if (e.code === 'KeyP' && status !== 'ready') togglePause();
+  if (e.code === 'Space' && status !== 'playing') { resetGame(true); return; }
+  if (mode === 'puzzle' && status === 'playing') {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') slidePuzzle('left');
+    else if (e.code === 'ArrowRight' || e.code === 'KeyD') slidePuzzle('right');
+    else if (e.code === 'ArrowUp' || e.code === 'KeyW') slidePuzzle('up');
+    else if (e.code === 'ArrowDown' || e.code === 'KeyS') slidePuzzle('down');
+  }
+  handleKeyMap(e.code, true);
+});
+window.addEventListener('keyup', (e) => handleKeyMap(e.code, false));
+
+document.querySelectorAll('.pad-btn').forEach((btn) => {
+  const k = btn.dataset.key;
+  const press = (e) => {
+    e.preventDefault();
+    btn.classList.add('pressed');
+    keys[k] = true;
+    if (mode === 'puzzle' && status === 'playing') slidePuzzle(k);
+  };
+  const release = () => { btn.classList.remove('pressed'); keys[k] = false; };
+  btn.addEventListener('pointerdown', press);
+  btn.addEventListener('pointerup', release);
+  btn.addEventListener('pointerleave', release);
+  btn.addEventListener('pointercancel', release);
+});
+
+actionBtn.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (status !== 'playing') { resetGame(true); return; }
+  if (mode === 'puzzle' && puzzleState) {
+    addPuzzleTile(puzzleState.grid);
+    updateHud();
+    return;
+  }
+  keys.action = true;
+});
+['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => {
+  actionBtn.addEventListener(ev, () => { keys.action = false; });
+});
+
+function togglePause() {
+  if (status === 'playing') {
+    status = 'paused';
+    showOverlay('PAUSED', MODE_INFO[mode].title, 'Game paused. Tap Resume or press P to continue.', 'Resume');
+  } else if (status === 'paused') {
+    status = 'playing';
+    hideOverlay();
+  }
+}
+
+document.getElementById('modeTabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-mode]');
+  if (!btn) return;
+  mode = btn.dataset.mode;
+  document.querySelectorAll('.mode-btn').forEach((b) => b.classList.toggle('active', b === btn));
+  resetGame(false);
+});
+document.getElementById('difficultySelect').addEventListener('change', (e) => { difficulty = e.target.value; });
+document.getElementById('paletteSelect').addEventListener('change', (e) => { paletteKey = e.target.value; });
+playBtn.addEventListener('click', () => { if (status === 'paused') togglePause(); else resetGame(true); });
+document.getElementById('restartBtn').addEventListener('click', () => resetGame(true));
+document.getElementById('quickResetBtn').addEventListener('click', () => resetGame(true));
+document.getElementById('pauseBtn').addEventListener('click', togglePause);
+document.getElementById('canvasFrame').addEventListener('click', () => document.getElementById('canvasFrame').focus());
+
+resetGame(false);
+requestAnimationFrame(loop);`,
   };
 }
