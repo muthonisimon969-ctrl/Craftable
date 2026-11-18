@@ -1,14 +1,18 @@
-import type { AppProject, GeneratedAppBundle, ProjectMessage, TemplateType } from '../types/project';
+import type {
+  AppProject,
+  DesignTemplate,
+  GeneratedAppBundle,
+  ProjectMessage,
+  TemplateType,
+} from '../types/project';
 import { getTemplateDisplayName } from '../types/project';
 import { extractBodyIfFullDocument } from '../utils/webBundleAssembler';
 import { auditGeneratedBundle } from './webQualityValidator';
 
-const USER_GEMINI_KEY_STORAGE = 'craftable_user_gemini_key';
-
-const SYSTEM_PROMPT = `You are Craft AI, a principal product designer and senior front-end engineer inside Craftable.
+const SYSTEM_PROMPT = `You are Zuno AI, a principal product designer and senior front-end engineer inside Zuno AI (an AI platform where users create custom websites, web apps, and 3D games).
 
 RULE #0 — STRICTLY OBEY THE USER'S PROMPT:
-- Build or edit EXACTLY what the user asks for: their exact app concept, business name, pages, sections, controls, colors, and workflows.
+- Build or edit EXACTLY what the user asks for: their exact website, business name, pages, sections, controls, colors, game mechanics, and workflows.
 - NEVER ignore the user's request or substitute a generic or unrelated app.
 
 1. MANUAL PAYMENTS & KENYAN CONTEXT:
@@ -17,9 +21,9 @@ RULE #0 — STRICTLY OBEY THE USER'S PROMPT:
 
 2. DESIGN & ENGINEERING QUALITY:
 - Crisp, spacious mobile-first UI: :root CSS custom properties (--bg, --surface, --ink, --muted, --accent, --border), intentional typography pairing, 16px+ readable body text, large clickable buttons (min-height: 44px), and fluid widths (max-width, never fixed widths > 900px).
-- Self-contained: NO external http(s) <img> URLs or CDN scripts; use crisp inline SVGs. Wire all buttons, forms, tabs, modals, and localStorage state with real vanilla JS event listeners. Never use alert(), confirm(), or prompt().
+- Self-contained: NO external http(s) <img> URLs or external CDN scripts; use crisp inline SVGs or HTML5 Canvas/WebGL. Wire all buttons, forms, tabs, modals, and localStorage state with real vanilla JS event listeners. Never use alert(), confirm(), or prompt().
 - HTML section must contain ONLY inner <body> markup (no <!DOCTYPE>, <html>, <head>, <body>, <style>, or <script> tags).
-- When building or editing a 2D game (platformer, runner, puzzle, or arcade): make it look like a finished indie mobile/browser game, NEVER flat plain boxes. Include multi-layer parallax backgrounds (sky gradients, stars/glow, distant silhouettes, foreground trim), expressive detailed vector sprites with squash-and-stretch/bobbing animations, beveled platforms/tiles, particle bursts, floating score popups, subtle screen shake, cohesive palette, styled glassmorphic HUD (Score, Best, Lives/Level), polished Start & Game Over summary overlays, responsive 16:10 canvas, and both keyboard + on-screen mobile touch controls.
+- When building or editing a 3D game (platformer/obby, endless runner, space shooter, or block/puzzle game): render true perspective 3D projection or WebGL with depth-sorted shaded 3D faces, directional lighting & horizon fog, animated 3D characters/meshes, 3D particle bursts, floating score popups, camera shake, frosted glassmorphic HUD (Score, Best, Lives/Level), polished Start/Pause/Game Over cards, responsive 16:10 canvas, and both keyboard (WASD/Arrows/Space/P) + mobile touch controls.
 
 3. REQUIRED OUTPUT FORMAT (use these exact section markers):
 <<<TITLE>>>
@@ -37,20 +41,22 @@ Complete vanilla JavaScript
 <<<SUGGESTIONS>>>
 Suggestion 1 | Suggestion 2 | Suggestion 3`;
 
-export function getSavedUserApiKey(): string {
-  try {
-    return localStorage.getItem(USER_GEMINI_KEY_STORAGE)?.trim() ?? '';
-  } catch {
-    return '';
-  }
+export interface ServerAiStatus {
+  ready: boolean;
+  aiName: string;
 }
 
-export function saveUserApiKey(key: string): void {
-  const cleaned = key.trim();
-  if (!cleaned) {
-    localStorage.removeItem(USER_GEMINI_KEY_STORAGE);
-  } else {
-    localStorage.setItem(USER_GEMINI_KEY_STORAGE, cleaned);
+export async function checkServerAiStatus(): Promise<ServerAiStatus> {
+  try {
+    const res = await fetch('/api/craft', { method: 'GET', cache: 'no-store' });
+    if (!res.ok) return { ready: false, aiName: 'Zuno AI' };
+    const data = (await res.json()) as { ready?: boolean; aiName?: string };
+    return {
+      ready: Boolean(data.ready),
+      aiName: data.aiName || 'Zuno AI',
+    };
+  } catch {
+    return { ready: false, aiName: 'Zuno AI' };
   }
 }
 
@@ -95,12 +101,12 @@ function parseBundleJson(
       ? parsed.followUpSuggestions
           .filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
           .slice(0, 3)
-      : ['Add manual M-Pesa Till payment', 'Make buttons & text larger', 'Refine layout & polish'];
+      : ['Refine visual polish', 'Make buttons & text larger', 'Add interactive sections'];
 
     return {
-      projectTitle: str('projectTitle', existingFallback?.projectTitle ?? 'Crafted App') || 'Crafted App',
-      description: str('description', existingFallback?.description ?? 'Interactive web app crafted by Craft AI'),
-      summary: str('summary', 'Crafted your interactive web application.'),
+      projectTitle: str('projectTitle', existingFallback?.projectTitle ?? 'Zuno App') || 'Zuno App',
+      description: str('description', existingFallback?.description ?? 'Interactive web app built by Zuno AI'),
+      summary: str('summary', 'Built your interactive web application with Zuno AI.'),
       htmlCode,
       cssCode: str('cssCode') || existingFallback?.cssCode || '',
       jsCode: str('jsCode') || existingFallback?.jsCode || '',
@@ -123,11 +129,11 @@ export function parseCraftAiResponse(
     /<<<HTML>>>/i.test(cleaned) ||
     /<<<TITLE>>>/i.test(cleaned)
   ) {
-    const title = extractTag(cleaned, 'TITLE') || existingFallback?.projectTitle || 'Crafted App';
+    const title = extractTag(cleaned, 'TITLE') || existingFallback?.projectTitle || 'Zuno App';
     const description =
       extractTag(cleaned, 'DESCRIPTION') ||
       existingFallback?.description ||
-      'Interactive web app crafted by Craft AI';
+      'Interactive web app built by Zuno AI';
     const summary = extractTag(cleaned, 'SUMMARY') || 'Updated your application as requested.';
     const parsedHtml = stripCodeFence(extractTag(cleaned, 'HTML'));
     const parsedCss = stripCodeFence(extractTag(cleaned, 'CSS'));
@@ -161,7 +167,7 @@ export function parseCraftAiResponse(
         followUpSuggestions:
           suggestions.length > 0
             ? suggestions
-            : ['Add manual M-Pesa Till payment', 'Make buttons & text larger', 'Refine layout & polish'],
+            : ['Add more interactive features', 'Make buttons & text larger', 'Refine layout & polish'],
       };
     }
   }
@@ -184,14 +190,14 @@ export function parseCraftAiResponse(
 
     if (bodyOnly) {
       return {
-        projectTitle: existingFallback?.projectTitle ?? 'Crafted App',
+        projectTitle: existingFallback?.projectTitle ?? 'Zuno App',
         description: existingFallback?.description ?? 'Interactive web application',
         summary: 'Built your application from your prompt.',
         htmlCode: bodyOnly,
         cssCode: extractedStyle || existingFallback?.cssCode || '',
         jsCode: extractedScript || existingFallback?.jsCode || '',
         changedFiles: ['index.html', 'styles.css', 'app.js'],
-        followUpSuggestions: ['Add manual M-Pesa Till payment', 'Make buttons & text larger', 'Refine layout & polish'],
+        followUpSuggestions: ['Add more interactive features', 'Make buttons & text larger', 'Refine layout & polish'],
       };
     }
   }
@@ -199,93 +205,24 @@ export function parseCraftAiResponse(
   if (existingFallback && cleaned) {
     return {
       ...existingFallback,
-      summary: cleaned.slice(0, 1500),
+      summary: cleaned.slice(0, 1800),
       changedFiles: [],
     };
   }
 
-  throw new Error('Craft AI response was incomplete. Please tap Retry.');
+  throw new Error('Zuno AI response was incomplete. Please tap Retry.');
 }
 
-async function callBrowserGeminiDirect(
-  apiKey: string,
+async function executeZunoServerRequest(
   promptText: string,
   onStageUpdate: (stage: string) => void
 ): Promise<string> {
-  const models = ['gemini-2.5-flash', 'gemini-2.5-flash-lite'] as const;
-  let lastError = 'Craft AI failed to respond.';
+  onStageUpdate('Connecting to Zuno AI...');
 
-  for (let i = 0; i < models.length; i++) {
-    const model = models[i];
-    if (i > 0) {
-      onStageUpdate('Switching to fast Craft AI engine...');
-    }
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 45_000);
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            contents: [{ role: 'user', parts: [{ text: promptText }] }],
-            generationConfig: { temperature: 0.45 },
-          }),
-        }
-      );
-
-      clearTimeout(timer);
-
-      const payload = (await response.json().catch(() => null)) as {
-        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-        error?: { message?: string };
-      } | null;
-
-      if (!response.ok) {
-        lastError = payload?.error?.message || `Craft AI returned HTTP ${response.status}`;
-        if (response.status === 401 || response.status === 403 || response.status === 400) {
-          throw new Error(lastError);
-        }
-        continue;
-      }
-
-      const text =
-        payload?.candidates?.[0]?.content?.parts
-          ?.map((p) => p.text ?? '')
-          .join('')
-          .trim() ?? '';
-      if (text) return text;
-    } catch (err) {
-      clearTimeout(timer);
-      if (err instanceof Error && err.name === 'AbortError') {
-        lastError = 'Craft AI took longer than 45s to respond. Please tap Retry.';
-      } else {
-        lastError = err instanceof Error ? err.message : 'Network error calling Craft AI.';
-      }
-      if (lastError.includes('API key') || lastError.includes('HTTP 403') || lastError.includes('HTTP 401')) {
-        throw new Error(lastError);
-      }
-    }
-  }
-
-  throw new Error(lastError);
-}
-
-async function executeCraftRequest(
-  promptText: string,
-  onStageUpdate: (stage: string) => void
-): Promise<string> {
-  onStageUpdate('Connecting to Craft AI...');
-  const userKey = getSavedUserApiKey();
-
-  // 1. Prefer Vercel serverless /api/craft when deployed
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 54_000);
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 48_000);
-    onStageUpdate('Craft AI is writing code...');
+    onStageUpdate('Zuno AI is building...');
     const res = await fetch('/api/craft', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -297,37 +234,24 @@ async function executeCraftRequest(
     if (res.ok) {
       const data = (await res.json()) as { text?: string };
       if (data.text) return data.text;
-    } else {
-      const errBody = (await res.json().catch(() => null)) as { code?: string; error?: string } | null;
-      const missingServerRouteOrKey =
-        res.status === 404 || res.status === 405 || errBody?.code === 'MISSING_SERVER_KEY';
-
-      if (missingServerRouteOrKey && userKey) {
-        return await callBrowserGeminiDirect(userKey, promptText, onStageUpdate);
-      }
-
-      if (missingServerRouteOrKey && !userKey) {
-        throw new Error(
-          'Craft AI key is not connected yet. Click the Craft AI pill in the top bar to paste your Gemini API key, or set GEMINI_API_KEY in Vercel Environment Variables.'
-        );
-      }
-
-      throw new Error(errBody?.error || `Craft AI error (HTTP ${res.status}).`);
+      throw new Error('Zuno AI returned an empty response. Please tap Retry.');
     }
+
+    const errBody = (await res.json().catch(() => null)) as { code?: string; error?: string } | null;
+    if (res.status === 503 || errBody?.code === 'MISSING_SERVER_KEY') {
+      throw new Error(
+        errBody?.error ||
+          'Zuno AI server keys are not configured yet. Site owners can add Gemini keys in Admin Control (/admin).'
+      );
+    }
+    throw new Error(errBody?.error || `Zuno AI server error (HTTP ${res.status}).`);
   } catch (err) {
-    if (userKey && err instanceof TypeError) {
-      return await callBrowserGeminiDirect(userKey, promptText, onStageUpdate);
-    }
+    clearTimeout(timer);
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error('Craft AI took too long to respond. Please tap Retry.');
+      throw new Error('Zuno AI took too long to respond. Please tap Retry.');
     }
-    throw err instanceof Error ? err : new Error('Failed to reach Craft AI.');
+    throw err instanceof Error ? err : new Error('Failed to reach Zuno AI server.');
   }
-
-  if (userKey) {
-    return await callBrowserGeminiDirect(userKey, promptText, onStageUpdate);
-  }
-  throw new Error('Craft AI did not return a response.');
 }
 
 function finalizeBundle(
@@ -346,7 +270,7 @@ function finalizeBundle(
     return { ...bundle, changedFiles: [] };
   }
 
-  onStageUpdate('Checking code quality...');
+  onStageUpdate('Running quality checks...');
   const audit = auditGeneratedBundle(userRequest, bundle.htmlCode, bundle.cssCode, bundle.jsCode);
   const fullSummary = bundle.summary.trim()
     ? `${bundle.summary.trim()}\n\n${audit.conciseSummary}`
@@ -362,17 +286,35 @@ function finalizeBundle(
 export async function generateNewApp(
   prompt: string,
   templateType: TemplateType,
+  blueprintTemplate: DesignTemplate | null = null,
   onStageUpdate: (stage: string) => void = () => {}
 ): Promise<GeneratedAppBundle> {
-  const fullPrompt = [
-    'BUILD EXACTLY THIS APP:',
+  const lines: string[] = [
+    'BUILD EXACTLY THIS WEBSITE / APP / GAME:',
     `"${prompt}"`,
     '',
     `Category hint: ${getTemplateDisplayName(templateType)} (follow the user's prompt 100%).`,
-    'Output all sections using <<<TITLE>>>, <<<DESCRIPTION>>>, <<<SUMMARY>>>, <<<HTML>>>, <<<CSS>>>, <<<JS>>>, and <<<SUGGESTIONS>>>.',
-  ].join('\n');
+  ];
 
-  const rawText = await executeCraftRequest(fullPrompt, onStageUpdate);
+  if (blueprintTemplate) {
+    lines.push(
+      '',
+      `SELECTED AI LIBRARY BLUEPRINT (${blueprintTemplate.name} — ${blueprintTemplate.badgeLabel}):`,
+      `- Visual Direction: ${blueprintTemplate.visualDirection}`,
+      `- Color System: ${blueprintTemplate.colorSystem}`,
+      `- Typography Pairing: ${blueprintTemplate.typographyPairing}`,
+      `- Layout Blueprint: ${blueprintTemplate.layoutBlueprint}`,
+      `- Interactive Patterns: ${blueprintTemplate.interactivePatterns}`,
+      'Use this template foundation to design and code the user request above with tailored copy, colors, and interactive features.'
+    );
+  }
+
+  lines.push(
+    '',
+    'Output all sections using <<<TITLE>>>, <<<DESCRIPTION>>>, <<<SUMMARY>>>, <<<HTML>>>, <<<CSS>>>, <<<JS>>>, and <<<SUGGESTIONS>>>.'
+  );
+
+  const rawText = await executeZunoServerRequest(lines.join('\n'), onStageUpdate);
   const bundle = parseCraftAiResponse(rawText, null);
   return finalizeBundle(prompt, bundle, null, onStageUpdate);
 }
@@ -405,8 +347,8 @@ export async function iterateExistingApp(
     'USER REQUEST NOW:',
     `"${userPrompt}"`,
     '',
-    'If the user is asking for edits or new features, apply them faithfully and output updated <<<TITLE>>>, <<<DESCRIPTION>>>, <<<SUMMARY>>>, <<<HTML>>>, <<<CSS>>>, <<<JS>>>, <<<SUGGESTIONS>>>.',
-    'If the user is only asking a question or greeting without requesting code changes, answer clearly in <<<SUMMARY>>>.',
+    'If the user is asking for edits, redesigns, or new features, apply them faithfully and output updated <<<TITLE>>>, <<<DESCRIPTION>>>, <<<SUMMARY>>>, <<<HTML>>>, <<<CSS>>>, <<<JS>>>, <<<SUGGESTIONS>>>.',
+    'If the user is chatting or asking a question without requesting code changes, reply helpfully inside <<<SUMMARY>>>.',
     '',
     'Current HTML:',
     activeHtml.slice(0, 12_000),
@@ -427,13 +369,13 @@ export async function iterateExistingApp(
     jsCode: activeJs,
     changedFiles: [],
     followUpSuggestions: [
-      'Add manual M-Pesa Till checkout',
+      'Make the layout cleaner',
       'Make buttons & text larger',
-      'Refine layout & visual polish',
+      'Add another interactive section',
     ],
   };
 
-  const rawText = await executeCraftRequest(lines.join('\n'), onStageUpdate);
+  const rawText = await executeZunoServerRequest(lines.join('\n'), onStageUpdate);
   const bundle = parseCraftAiResponse(rawText, existingFallback);
   return finalizeBundle(`${project.initialPrompt}\n${userPrompt}`, bundle, existingFallback, onStageUpdate);
 }

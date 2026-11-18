@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyRound, Trash2, X } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 
 interface RenameModalProps {
   initialTitle: string;
@@ -104,87 +104,6 @@ export function DeleteProjectModal({ projectTitle, onDismiss, onConfirm }: Delet
             <Trash2 size={16} />
             <span>Delete</span>
           </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface CraftAiKeyModalProps {
-  currentKey: string;
-  onDismiss: () => void;
-  onSaveKey: (key: string) => void;
-}
-
-export function CraftAiKeyModal({ currentKey, onDismiss, onSaveKey }: CraftAiKeyModalProps) {
-  const [keyInput, setKeyInput] = useState(currentKey);
-
-  return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" onClick={onDismiss}>
-      <div className="modal-panel" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <KeyRound size={20} style={{ color: 'var(--coral)' }} />
-            <h2 style={{ margin: 0, fontSize: '1.15rem' }}>Craft AI Connection</h2>
-          </div>
-          <button type="button" className="icon-btn" onClick={onDismiss} aria-label="Close">
-            <X size={20} />
-          </button>
-        </div>
-
-        <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-muted)' }}>
-          On Vercel, Craft AI uses your server <code className="font-mono">GEMINI_API_KEY</code>{' '}
-          environment variable automatically. For local browser use or personal testing, you can
-          save a Gemini API key in your browser below.
-        </p>
-
-        <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.85rem' }}>
-          <span>Personal Gemini API Key (optional)</span>
-          <input
-            type="password"
-            value={keyInput}
-            placeholder="AIza..."
-            onChange={(e) => setKeyInput(e.target.value)}
-            style={{
-              minHeight: 46,
-              padding: '10px 12px',
-              borderRadius: 12,
-              border: '1px solid var(--border)',
-              background: 'var(--bg)',
-            }}
-          />
-        </label>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-          {currentKey ? (
-            <button
-              type="button"
-              className="btn-outline"
-              onClick={() => {
-                onSaveKey('');
-                onDismiss();
-              }}
-            >
-              Clear Key
-            </button>
-          ) : (
-            <span />
-          )}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" className="btn-outline" onClick={onDismiss}>
-              Close
-            </button>
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => {
-                onSaveKey(keyInput);
-                onDismiss();
-              }}
-            >
-              Save Connection
-            </button>
-          </div>
         </div>
       </div>
     </div>

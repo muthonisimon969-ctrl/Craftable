@@ -129,26 +129,26 @@ export const DESIGN_TEMPLATES: DesignTemplate[] = [
     accentHex: '#2563EB',
   },
   {
-    id: '2d_game_studio',
-    name: '2D Game Studio',
-    badgeLabel: 'Indie 2D Games',
-    shortSummary: 'Finished-feel 2D platformers, endless runners, puzzle & arcade games with parallax worlds, particles & touch controls',
-    industries: ['2D Platformer', 'Endless Runner', 'Puzzle Game', 'Arcade Game', 'HTML5 Canvas', 'Indie Browser Game'],
+    id: '3d_game_studio',
+    name: '3D Game Studio',
+    badgeLabel: 'Indie 3D Games',
+    shortSummary: 'Zuno AI blueprint for playable 3D platformers, endless runners, space shooters & 3D stackers with perspective lighting & touch controls',
+    industries: ['3D Platformer', '3D Endless Runner', '3D Space Shooter', '3D Arcade & Stacker', 'HTML5 3D Engine', 'Indie Browser Game'],
     visualDirection:
-      'Polished indie mobile/browser game aesthetic with multi-layer parallax skies, ambient lighting, articulated squash-and-stretch sprites, particle bursts, floating score popups, and frosted glass HUD.',
+      'Finished indie 3D browser/mobile game aesthetic with real perspective Z-depth projection, directional shaded 3D faces, atmospheric distance fog, 3D particle bursts, camera shake, and frosted glass HUD.',
     colorSystem:
-      'Cohesive themed palettes (Celestial Dusk, Cyber Horizon, Emerald Ruins) syncing canvas atmosphere, beveled platforms, glowing collectibles, and glassmorphic HUD accents.',
+      'Cohesive 3D worlds (Cyber Grid 3D, Solar Canyon 3D, Void Nebula 3D) synchronizing 3D sky fog, neon horizon grids, shaded block geometry, and HUD accents.',
     typographyPairing:
       'Bold geometric display titles paired with crisp tracked micro-labels and tabular monospace score/combo readouts.',
     layoutBlueprint:
-      'Sleek studio header (difficulty, palette theme, Web Audio SFX toggle) -> Glassmorphic HUD (Score, Best Trophy, Hearts/Moves, Level) -> Responsive 16:10 parallax Canvas stage with frosted Title/Pause/Game Over cards -> Ergonomic tactile D-pad & glowing Action deck.',
+      'Studio header (difficulty, 3D world palette, Web Audio SFX toggle) -> Frosted HUD (Score, Best Trophy, Hearts/Streak, Level) -> Responsive 16:10 3D perspective Canvas stage with Title/Pause/Game Over summary cards -> Mobile D-Pad + glowing 3D Action deck.',
     interactivePatterns:
-      'Playable 2D Platformer, Endless Runner, 4x4 Jewel Merge Puzzle, and Star Defender Arcade; keyboard + multi-pointer mobile touch controls; particles, screen shake, floating popups, procedural SFX, and instant restart.',
+      'Playable 3D Sky Obby Platformer, 3D Neon Trench Runner, 3D Starfighter Trench Shooter, and 3D Tower Stacker; full keyboard + mobile touch controls; 3D projection, particles, SFX, and instant restart.',
     starterPrompt:
-      'Create a visually polished indie 2D browser game with rich parallax backgrounds, atmospheric lighting, expressive animated hero and enemy sprites, particle effects, floating score popups, styled Start and Game Over screens, keyboard and mobile touch controls, score tracking, difficulty levels, and instant restart.',
+      'Use the 3D Game Studio blueprint to build a polished indie 3D browser game with perspective 3D environments, directional lighting and fog, animated 3D hero and enemy meshes, particle bursts, floating score popups, Start and Game Over screens, difficulty modes, and keyboard plus mobile touch controls.',
     defaultTemplateType: 'web_app',
-    canvasHex: '#0A0E1A',
-    surfaceHex: '#131A2D',
+    canvasHex: '#070B18',
+    surfaceHex: '#121A33',
     accentHex: '#38BDF8',
   },
 ];

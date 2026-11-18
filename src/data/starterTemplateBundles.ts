@@ -12,8 +12,9 @@ export function buildStarterTemplateBundle(templateId: string): GeneratedAppBund
       return culinaryBistroBundle();
     case 'corporate_advisory':
       return corporateAdvisoryBundle();
+    case '3d_game_studio':
     case '2d_game_studio':
-      return gameStudio2DBundle();
+      return gameStudio3DBundle();
     default:
       return tactileUtilityBundle();
   }
@@ -996,62 +997,62 @@ render();`,
   };
 }
 
-function gameStudio2DBundle(): GeneratedAppBundle {
+function gameStudio3DBundle(): GeneratedAppBundle {
   return {
-    projectTitle: '2D Game Studio',
+    projectTitle: '3D Game Studio',
     description:
-      'Indie-grade 2D game studio with parallax worlds, animated sprites, particles, procedural SFX, polished HUD/menus, and mobile touch + keyboard controls.',
+      'Indie 3D game engine with real Z-depth perspective projection, directional lighting, distance fog, 3D particles, procedural SFX, and 4 playable 3D modes.',
     summary:
-      'Upgraded 2D Game Studio — now featuring multi-layer parallax skies, glowing celestial lighting, animated squash-and-stretch hero sprites with trailing scarves, rotating collectibles & portals, particle bursts, floating score popups, camera shake, Web Audio synth SFX, jewel-beveled 4x4 puzzle tiles, and frosted Title / Game Over cards across all 4 playable modes.',
+      'Loaded 3D Game Studio — featuring a real perspective 3D projection engine with shaded 3D geometry, atmospheric fog, depth sorting, 3D particle bursts, Web Audio SFX, and 4 playable 3D modes (Sky Obby, Neon Trench Run, Starfighter Trench, and 3D Tower Stack).',
     designStrategy: 'template_foundation',
-    templateId: '2d_game_studio',
+    templateId: '3d_game_studio',
     designDirection:
-      'Cohesive Celestial Dusk / Cyber Horizon / Emerald Ruins themes syncing UI glassmorphism with rich HTML5 Canvas parallax atmosphere and expressive vector sprites.',
+      'Synchronized Cyber Grid 3D / Solar Canyon 3D / Void Nebula 3D themes pairing glassmorphic HUD controls with true 3D Z-depth perspective rendering.',
     qaSummary:
-      'QA Audit (6/6 checks passed): semantic structure, theme tokens, responsive 16:10 canvas, zero external assets, balanced 60fps loop + Web Audio guard, and polished indie UX.',
+      'QA Audit (6/6 checks passed): semantic structure, theme tokens, responsive 16:10 3D canvas, zero external CDNs, balanced JS + Web Audio SFX, and polished Title/Game Over cards.',
     changedFiles: ['index.html', 'styles.css', 'app.js'],
     followUpSuggestions: [
-      'Add double-jump and floating boss enemy to Platformer',
-      'Add power-up shields and rapid-fire laser to Arcade Blaster',
-      'Customize hero character to a neon ninja with katana dash',
+      'Add a 3D boss ship with shield rings to Starfighter Trench',
+      'Add moving 3D bounce pads to 3D Sky Obby',
+      'Customize the 3D world theme and hero vehicle colors',
     ],
     htmlCode: `<header class="studio-bar">
   <div class="container bar-inner">
     <div class="brand-wrap">
       <div class="brand-badge" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <path d="M6 12h12M12 6v12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="17.5" cy="8.5" r="1.5" fill="#FF5E5B"/>
+          <path d="M12 2.5L20 7v10l-8 4.5L4 17V7l8-4.5z" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"/>
+          <path d="M12 11.5L20 7M12 11.5V21.5M12 11.5L4 7" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
         </svg>
       </div>
       <div>
-        <h1>2D Game Studio</h1>
-        <span class="sub">Indie Canvas Engine &bull; Keyboard + Touch</span>
+        <h1>3D Game Studio</h1>
+        <span class="sub">Zuno AI 3D Engine &bull; Keyboard + Touch</span>
       </div>
     </div>
     <div class="controls-inline">
-      <button id="soundToggleBtn" type="button" class="icon-pill" aria-label="Toggle sound effects" title="Toggle SFX">SFX: ON</button>
+      <button id="soundToggleBtn" type="button" class="icon-pill" aria-label="Toggle sound effects">SFX: ON</button>
       <select id="difficultySelect" aria-label="Difficulty">
         <option value="easy">Easy</option>
         <option value="normal" selected>Normal</option>
         <option value="hard">Hard</option>
       </select>
-      <select id="paletteSelect" aria-label="Color theme">
-        <option value="dusk" selected>Celestial Dusk</option>
-        <option value="cyber">Cyber Horizon</option>
-        <option value="ruins">Emerald Ruins</option>
+      <select id="paletteSelect" aria-label="3D World Theme">
+        <option value="cyber" selected>Cyber Grid 3D</option>
+        <option value="solar">Solar Canyon 3D</option>
+        <option value="nebula">Void Nebula 3D</option>
       </select>
     </div>
   </div>
 </header>
 
 <main class="container game-shell">
-  <section class="mode-strip" aria-label="Game genre selector">
+  <section class="mode-strip" aria-label="3D Game mode selector">
     <div id="modeTabs" class="mode-tabs" role="tablist">
-      <button type="button" class="mode-btn active" data-mode="platformer">Platformer</button>
-      <button type="button" class="mode-btn" data-mode="runner">Endless Dash</button>
-      <button type="button" class="mode-btn" data-mode="puzzle">4x4 Jewel</button>
-      <button type="button" class="mode-btn" data-mode="arcade">Star Blaster</button>
+      <button type="button" class="mode-btn active" data-mode="obby">3D Sky Obby</button>
+      <button type="button" class="mode-btn" data-mode="runner">3D Neon Run</button>
+      <button type="button" class="mode-btn" data-mode="arcade">3D Star Trench</button>
+      <button type="button" class="mode-btn" data-mode="stack">3D Tower Stack</button>
     </div>
     <div class="hud-pills">
       <div class="hud-pill">
@@ -1075,15 +1076,15 @@ function gameStudio2DBundle(): GeneratedAppBundle {
 
   <section class="stage-card">
     <div class="canvas-frame" id="canvasFrame" tabindex="0">
-      <canvas id="gameCanvas" width="640" height="380" aria-label="2D Game Canvas"></canvas>
+      <canvas id="gameCanvas" width="640" height="380" aria-label="3D Perspective Game Canvas"></canvas>
       <div id="stageOverlay" class="stage-overlay">
         <div class="overlay-card">
           <div class="overlay-badges">
-            <span id="overlayTag" class="overlay-tag">SKY HOPPER 2D</span>
+            <span id="overlayTag" class="overlay-tag">3D SKY OBBY</span>
             <span id="recordBadge" class="record-badge hidden">NEW RECORD!</span>
           </div>
-          <h2 id="overlayTitle">Sky Hopper: Celestial Quest</h2>
-          <p id="overlayDesc">Leap across floating islands, gather spinning gold coins, outmaneuver patrol drones, and enter the emerald portal.</p>
+          <h2 id="overlayTitle">Apex Sky Obby 3D</h2>
+          <p id="overlayDesc">Pilot your 3D hover-runner down floating sky islands, gather spinning 3D crystals, dodge sentinel drones, and enter the warp gate.</p>
           <div id="summaryStats" class="summary-stats hidden">
             <div class="stat-box"><span>Score</span><strong id="sumScore">0</strong></div>
             <div class="stat-box"><span>Best</span><strong id="sumBest">0</strong></div>
@@ -1091,18 +1092,18 @@ function gameStudio2DBundle(): GeneratedAppBundle {
           </div>
           <div class="key-hints">
             <span class="key-chip">Arrows / WASD</span>
-            <span class="key-chip">Space: Action</span>
+            <span class="key-chip">Space: 3D Action</span>
             <span class="key-chip">Touch D-Pad</span>
           </div>
           <div class="overlay-actions">
-            <button id="primaryPlayBtn" type="button" class="btn-play">Play Now</button>
+            <button id="primaryPlayBtn" type="button" class="btn-play">Launch 3D Game</button>
             <button id="restartBtn" type="button" class="btn-ghost">Restart</button>
           </div>
         </div>
       </div>
     </div>
     <div class="stage-footer">
-      <span id="hintText" class="hint-text">Desktop: Arrows / WASD + Space &bull; Press P to Pause &bull; Tap stage to focus</span>
+      <span id="hintText" class="hint-text">Desktop: Arrows / WASD + Space &bull; P to Pause &bull; Tap stage to focus</span>
       <div class="footer-btns">
         <button id="pauseBtn" type="button" class="btn-small">Pause</button>
         <button id="quickResetBtn" type="button" class="btn-small">Reset</button>
@@ -1111,56 +1112,55 @@ function gameStudio2DBundle(): GeneratedAppBundle {
   </section>
 
   <section class="touch-deck" aria-label="Mobile touch controls">
-    <div class="dpad" aria-label="Directional pad">
+    <div class="dpad" aria-label="3D directional pad">
       <span class="dpad-spacer"></span>
-      <button type="button" class="pad-btn" data-key="up" aria-label="Up">&#9650;</button>
+      <button type="button" class="pad-btn" data-key="up" aria-label="Forward or Up">&#9650;</button>
       <span class="dpad-spacer"></span>
-      <button type="button" class="pad-btn" data-key="left" aria-label="Left">&#9664;</button>
-      <button type="button" class="pad-btn" data-key="down" aria-label="Down">&#9660;</button>
-      <button type="button" class="pad-btn" data-key="right" aria-label="Right">&#9654;</button>
+      <button type="button" class="pad-btn" data-key="left" aria-label="Strafe Left">&#9664;</button>
+      <button type="button" class="pad-btn" data-key="down" aria-label="Back or Down">&#9660;</button>
+      <button type="button" class="pad-btn" data-key="right" aria-label="Strafe Right">&#9654;</button>
     </div>
     <div class="action-cluster">
       <button id="actionBtn" type="button" class="action-btn">
-        <span id="actionLabel">JUMP</span>
+        <span id="actionLabel">JUMP 3D</span>
         <small>TAP / HOLD</small>
       </button>
     </div>
   </section>
 </main>`,
     cssCode: `:root {
-  --bg: #080B14;
-  --surface: #111627;
-  --surface-2: #1A2238;
+  --bg: #070B18;
+  --surface: #11182D;
+  --surface-2: #1B2544;
   --ink: #F8FAFC;
   --muted: #94A3B8;
   --accent: #38BDF8;
-  --accent-glow: rgba(56, 189, 248, 0.35);
+  --accent-glow: rgba(56, 189, 248, 0.38);
   --cta: #FF5E5B;
   --cta-glow: rgba(255, 94, 91, 0.38);
   --gold: #FBBF24;
-  --emerald: #10B981;
-  --border: rgba(148, 163, 184, 0.18);
+  --border: rgba(148, 163, 184, 0.2);
 }
-body[data-theme="cyber"] {
-  --bg: #090614;
-  --surface: #140F26;
-  --surface-2: #21193D;
-  --accent: #22D3EE;
-  --accent-glow: rgba(34, 211, 238, 0.38);
-  --cta: #F43F5E;
-  --cta-glow: rgba(244, 63, 94, 0.4);
-}
-body[data-theme="ruins"] {
-  --bg: #06120E;
-  --surface: #0D201A;
-  --surface-2: #163329;
-  --accent: #34D399;
-  --accent-glow: rgba(52, 211, 153, 0.35);
+body[data-theme="solar"] {
+  --bg: #140B0A;
+  --surface: #231412;
+  --surface-2: #361F1B;
+  --accent: #FB923C;
+  --accent-glow: rgba(251, 146, 60, 0.38);
   --cta: #F59E0B;
   --cta-glow: rgba(245, 158, 11, 0.38);
 }
+body[data-theme="nebula"] {
+  --bg: #090616;
+  --surface: #140F2B;
+  --surface-2: #221A46;
+  --accent: #A78BFA;
+  --accent-glow: rgba(167, 139, 250, 0.38);
+  --cta: #EC4899;
+  --cta-glow: rgba(236, 72, 153, 0.4);
+}
 body {
-  background: radial-gradient(circle at 50% -10%, var(--surface-2) 0%, var(--bg) 62%);
+  background: radial-gradient(circle at 50% -10%, var(--surface-2) 0%, var(--bg) 64%);
   color: var(--ink);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.45;
@@ -1168,9 +1168,9 @@ body {
   user-select: none;
 }
 .hidden { display: none !important; }
-.container { max-width: 840px; margin: 0 auto; padding: 12px 14px; }
+.container { max-width: 860px; margin: 0 auto; padding: 12px 14px; }
 .studio-bar {
-  background: rgba(10, 14, 26, 0.82);
+  background: rgba(7, 11, 24, 0.84);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -1182,19 +1182,19 @@ body {
 .brand-badge {
   width: 38px; height: 38px; border-radius: 11px;
   background: linear-gradient(135deg, var(--accent), #6366F1);
-  color: #07101C;
+  color: #06101D;
   display: inline-flex; align-items: center; justify-content: center;
   box-shadow: 0 4px 16px var(--accent-glow);
 }
 h1 { margin: 0; font-size: clamp(1rem, 2.3vw, 1.18rem); font-weight: 800; letter-spacing: -0.02em; }
-.sub { display: block; font-size: 0.72rem; color: var(--muted); letter-spacing: 0.02em; }
+.sub { display: block; font-size: 0.72rem; color: var(--muted); }
 .controls-inline { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 select, .icon-pill {
   min-height: 38px; padding: 6px 10px; border-radius: 10px;
   border: 1px solid var(--border); background: var(--surface-2); color: var(--ink);
   font-size: 0.82rem; font-weight: 700; cursor: pointer;
 }
-.icon-pill.muted { color: var(--muted); opacity: 0.8; }
+.icon-pill.muted { color: var(--muted); opacity: 0.78; }
 .game-shell { display: flex; flex-direction: column; gap: 12px; }
 .mode-strip { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .mode-tabs {
@@ -1202,12 +1202,12 @@ select, .icon-pill {
   background: var(--surface); border: 1px solid var(--border); padding: 4px; border-radius: 13px;
 }
 .mode-btn {
-  min-height: 38px; padding: 7px 12px; border-radius: 9px; border: none;
-  background: transparent; color: var(--muted); font-size: 0.82rem; font-weight: 700;
+  min-height: 38px; padding: 7px 11px; border-radius: 9px; border: none;
+  background: transparent; color: var(--muted); font-size: 0.8rem; font-weight: 700;
   cursor: pointer; transition: all 140ms ease;
 }
 .mode-btn.active {
-  background: var(--accent); color: #06131E;
+  background: var(--accent); color: #05131E;
   box-shadow: 0 3px 12px var(--accent-glow);
 }
 .hud-pills { display: flex; gap: 7px; flex-wrap: wrap; }
@@ -1216,32 +1216,32 @@ select, .icon-pill {
   padding: 5px 11px; display: flex; align-items: baseline; gap: 6px;
 }
 .hud-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 700; }
-.hud-num { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.98rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.hud-num { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 0.98rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .hud-num.gold { color: var(--gold); }
 .stage-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
-  padding: 10px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+  padding: 10px; box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
 }
 .canvas-frame {
   position: relative; width: 100%; border-radius: 14px; overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1); background: #050811; outline: none;
+  border: 1px solid rgba(255, 255, 255, 0.12); background: #040712; outline: none;
 }
 canvas { display: block; width: 100%; height: auto; aspect-ratio: 640 / 380; touch-action: none; }
 .stage-overlay {
-  position: absolute; inset: 0; background: rgba(6, 9, 18, 0.68); backdrop-filter: blur(6px);
+  position: absolute; inset: 0; background: rgba(5, 8, 18, 0.7); backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center; padding: 14px;
 }
 .overlay-card {
   width: 100%; max-width: 440px;
-  background: rgba(17, 22, 39, 0.9); border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(15, 22, 42, 0.92); border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 20px; padding: 18px 20px; text-align: center;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.58);
   display: flex; flex-direction: column; align-items: center; gap: 9px;
 }
 .overlay-badges { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; }
 .overlay-tag {
   font-size: 0.7rem; font-weight: 800; letter-spacing: 0.1em; color: var(--accent);
-  background: rgba(56, 189, 248, 0.12); border: 1px solid var(--accent-glow);
+  background: rgba(56, 189, 248, 0.14); border: 1px solid var(--accent-glow);
   padding: 3px 10px; border-radius: 999px;
 }
 .record-badge {
@@ -1250,26 +1250,18 @@ canvas { display: block; width: 100%; height: auto; aspect-ratio: 640 / 380; tou
 }
 .overlay-card h2 { margin: 0; font-size: clamp(1.15rem, 3vw, 1.55rem); font-weight: 800; letter-spacing: -0.02em; }
 .overlay-card p { margin: 0; font-size: 0.86rem; color: var(--muted); max-width: 40ch; }
-.summary-stats {
-  width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 2px 0;
-}
-.stat-box {
-  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 12px; padding: 8px 6px;
-}
+.summary-stats { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 2px 0; }
+.stat-box { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-radius: 12px; padding: 8px 6px; }
 .stat-box span { display: block; font-size: 0.68rem; text-transform: uppercase; color: var(--muted); font-weight: 700; }
-.stat-box strong { font-family: ui-monospace, monospace; font-size: 1.05rem; color: var(--ink); }
+.stat-box strong { font-family: ui-monospace, monospace; font-size: 1.05rem; }
 .key-hints { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
-.key-chip {
-  font-size: 0.7rem; font-weight: 600; color: var(--muted);
-  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); padding: 3px 8px; border-radius: 7px;
-}
+.key-chip { font-size: 0.7rem; font-weight: 600; color: var(--muted); background: rgba(255,255,255,0.05); border: 1px solid var(--border); padding: 3px 8px; border-radius: 7px; }
 .overlay-actions { display: flex; gap: 10px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
 .btn-play {
   min-height: 44px; padding: 10px 24px; border-radius: 12px; border: none;
   background: var(--cta); color: #FFFFFF; font-weight: 800; font-size: 0.94rem;
-  cursor: pointer; box-shadow: 0 8px 22px var(--cta-glow); transition: transform 120ms ease;
+  cursor: pointer; box-shadow: 0 8px 22px var(--cta-glow);
 }
-.btn-play:active { transform: scale(0.97); }
 .btn-ghost, .btn-small {
   min-height: 40px; padding: 8px 14px; border-radius: 11px;
   border: 1px solid var(--border); background: var(--surface-2); color: var(--ink);
@@ -1292,7 +1284,7 @@ canvas { display: block; width: 100%; height: auto; aspect-ratio: 640 / 380; tou
 }
 .pad-btn:active, .pad-btn.pressed { background: var(--accent); color: #05131C; transform: translateY(2px); box-shadow: none; }
 .action-btn {
-  min-width: 134px; min-height: 64px; padding: 10px 18px; border-radius: 18px; border: none;
+  min-width: 136px; min-height: 64px; padding: 10px 18px; border-radius: 18px; border: none;
   background: linear-gradient(135deg, var(--cta), #FF7A59); color: #FFFFFF;
   font-weight: 800; font-size: 0.96rem; cursor: pointer; touch-action: manipulation;
   box-shadow: 0 8px 24px var(--cta-glow); display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -1310,74 +1302,55 @@ canvas { display: block; width: 100%; height: auto; aspect-ratio: 640 / 380; tou
     jsCode: `const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = 640, H = 380;
+const FOV = 370;
 
 const PALETTES = {
-  dusk: {
-    skyTop: '#0B1026', skyMid: '#1C1B3D', skyBot: '#2E1F47', sun: '#FDBA74',
-    farHill: '#171836', nearHill: '#12132B', ground: '#1E243B', groundTop: '#38BDF8',
-    plat: '#2B3654', platTop: '#38BDF8', hero: '#38BDF8', heroDark: '#0369A1',
-    scarf: '#FF5E5B', enemy: '#FB7185', coin: '#FBBF24', portal: '#10B981'
-  },
   cyber: {
-    skyTop: '#090418', skyMid: '#1C0D38', skyBot: '#31104C', sun: '#F472B6',
-    farHill: '#160B30', nearHill: '#100724', ground: '#1E1538', groundTop: '#22D3EE',
-    plat: '#2D1E52', platTop: '#F43F5E', hero: '#22D3EE', heroDark: '#0E7490',
-    scarf: '#F43F5E', enemy: '#FB923C', coin: '#FDE047', portal: '#34D399'
+    skyTop: '#050816', skyBot: '#141B3A', sun: '#38BDF8', grid: 'rgba(56, 189, 248, 0.22)',
+    platTop: '#38BDF8', platFront: '#1E3A5F', platSide: '#0F233D',
+    heroTop: '#7DD3FC', heroFront: '#0284C7', heroSide: '#0369A1',
+    enemyTop: '#FB7185', enemyFront: '#E11D48', enemySide: '#9F1239',
+    crystal: '#FBBF24', portal: '#10B981', stackColors: ['#38BDF8','#818CF8','#C084FC','#F472B6','#FB7185','#FBBF24','#34D399']
   },
-  ruins: {
-    skyTop: '#051513', skyMid: '#0D2923', skyBot: '#183C32', sun: '#A7F3D0',
-    farHill: '#0A221D', nearHill: '#071915', ground: '#143127', groundTop: '#34D399',
-    plat: '#1E4638', platTop: '#6EE7B7', hero: '#FBBF24', heroDark: '#B45309',
-    scarf: '#34D399', enemy: '#F43F5E', coin: '#38BDF8', portal: '#A78BFA'
+  solar: {
+    skyTop: '#160908', skyBot: '#3A1B14', sun: '#FDBA74', grid: 'rgba(251, 146, 60, 0.22)',
+    platTop: '#F59E0B', platFront: '#7C2D12', platSide: '#431407',
+    heroTop: '#FEF08A', heroFront: '#EA580C', heroSide: '#9A3412',
+    enemyTop: '#F43F5E', enemyFront: '#BE123C', enemySide: '#881337',
+    crystal: '#38BDF8', portal: '#34D399', stackColors: ['#F59E0B','#FB923C','#F43F5E','#EC4899','#A855F7','#38BDF8','#22C55E']
+  },
+  nebula: {
+    skyTop: '#070415', skyBot: '#1E113E', sun: '#C084FC', grid: 'rgba(167, 139, 250, 0.24)',
+    platTop: '#A78BFA', platFront: '#3B236E', platSide: '#231347',
+    heroTop: '#F9A8D4', heroFront: '#DB2777', heroSide: '#9D174D',
+    enemyTop: '#FB923C', enemyFront: '#EA580C', enemySide: '#9A3412',
+    crystal: '#FDE047', portal: '#2DD4BF', stackColors: ['#A78BFA','#EC4899','#38BDF8','#34D399','#FBBF24','#F87171','#818CF8']
   }
 };
 
 const DIFFICULTY = {
-  easy: { speed: 0.82, enemySpeed: 0.76 },
+  easy: { speed: 0.82, enemySpeed: 0.78 },
   normal: { speed: 1.0, enemySpeed: 1.0 },
-  hard: { speed: 1.25, enemySpeed: 1.32 }
+  hard: { speed: 1.24, enemySpeed: 1.3 }
 };
 
 const MODE_INFO = {
-  platformer: { tag: 'SKY HOPPER 2D', title: 'Sky Hopper: Celestial Quest', desc: 'Leap across floating islands, collect spinning coins, dodge patrol drones, and reach the glowing portal.', action: 'JUMP' },
-  runner: { tag: 'ENDLESS DASH', title: 'Neon Skyline Dash', desc: 'High-speed auto-runner! Jump over energy barriers and drop swiftly to weave past hovering drones.', action: 'JUMP' },
-  puzzle: { tag: '4x4 JEWEL MERGE', title: 'Crown Tile Merge 4x4', desc: 'Slide jewel tiles with Arrow Keys, WASD, or D-Pad to combine matching numbers and chase 2048!', action: 'SPAWN TILE' },
-  arcade: { tag: 'STAR BLASTER 2D', title: 'Nebula Star Defender', desc: 'Pilot left and right to blast descending meteors with plasma bolts while catching falling gold stars.', action: 'FIRE' }
+  obby: { tag: '3D SKY OBBY', title: 'Apex Sky Obby 3D', desc: 'Move forward & sideways across 3D floating sky islands, jump gaps, grab 3D crystals, and reach the emerald warp gate!', action: 'JUMP 3D' },
+  runner: { tag: '3D NEON RUN', title: 'Hyper Trench Runner 3D', desc: 'Dash down the 3D neon track! Weave across 3 lanes, leap barriers, and collect spinning 3D gems.', action: 'JUMP 3D' },
+  arcade: { tag: '3D STAR TRENCH', title: 'Nebula Starfighter 3D', desc: 'Fly your 3D starfighter in X/Y space and fire twin 3D plasma bolts down the Z-trench at incoming meteors!', action: 'FIRE 3D' },
+  stack: { tag: '3D TOWER STACK', title: 'Skyline 3D Stacker', desc: 'Time each drop with Space or the Action button to stack shaded 3D slabs sky-high and build your tower!', action: 'DROP 3D' }
 };
 
-const TILE_STYLES = {
-  0: ['#161E33', '#0F1526', '#94A3B8'],
-  2: ['#253252', '#1B253E', '#E2E8F0'],
-  4: ['#0E7490', '#155E75', '#ECFEFF'],
-  8: ['#2563EB', '#1D4ED8', '#EFF6FF'],
-  16: ['#7C3AED', '#6D28D9', '#F5F3FF'],
-  32: ['#DB2777', '#BE185D', '#FDF2F8'],
-  64: ['#EA580C', '#C2410C', '#FFF7ED'],
-  128: ['#CA8A04', '#A16207', '#FEFCE8'],
-  256: ['#059669', '#047857', '#ECFDF5'],
-  512: ['#0D9488', '#0F766E', '#F0FDFA'],
-  1024: ['#E11D48', '#BE123C', '#FFF1F2'],
-  2048: ['#F59E0B', '#B45309', '#FFFBEB']
-};
-
-const STARS = Array.from({ length: 34 }, (_, i) => ({
-  x: ((i * 97) % 620) + 10,
-  y: ((i * 53) % 210) + 12,
-  r: (i % 3 === 0 ? 1.8 : 1.1),
-  phase: i * 0.7
-}));
-
-const MOTES = Array.from({ length: 14 }, (_, i) => ({
-  x: (i * 49) % W,
-  y: 80 + ((i * 37) % 240),
-  vx: 8 + (i % 4) * 4,
-  phase: i * 1.1
+const STARS_3D = Array.from({ length: 42 }, (_, i) => ({
+  x: ((i * 73) % 440) - 220,
+  y: ((i * 41) % 220) - 110,
+  z: 8 + ((i * 19) % 120)
 }));
 
 const keys = { left: false, right: false, up: false, down: false, action: false };
-let mode = 'platformer';
+let mode = 'obby';
 let difficulty = 'normal';
-let paletteKey = 'dusk';
+let paletteKey = 'cyber';
 let status = 'ready';
 let soundEnabled = true;
 let score = 0;
@@ -1386,18 +1359,17 @@ let level = 1;
 let elapsed = 0;
 let shakeTime = 0;
 let shakeMag = 0;
-let runnerBgScroll = 0;
-let bestScores = {};
-try { bestScores = JSON.parse(localStorage.getItem('craftable_2d_best') || '{}'); } catch (e) { bestScores = {}; }
-
-let particles = [];
-let popups = [];
-let platState = null;
-let runnerState = null;
-let puzzleState = null;
-let arcadeState = null;
 let lastTime = 0;
 let audioCtx = null;
+let bestScores = {};
+try { bestScores = JSON.parse(localStorage.getItem('zuno_3d_best') || '{}'); } catch (e) { bestScores = {}; }
+
+let particles3D = [];
+let popups3D = [];
+let obbyState = null;
+let runnerState = null;
+let arcadeState = null;
+let stackState = null;
 
 const scoreEl = document.getElementById('scoreVal');
 const bestEl = document.getElementById('bestVal');
@@ -1432,54 +1404,60 @@ function playSfx(type) {
     gain.connect(audioCtx.destination);
     if (type === 'jump') {
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(240, now);
-      osc.frequency.exponentialRampToValueAtTime(520, now + 0.11);
+      osc.frequency.setValueAtTime(250, now);
+      osc.frequency.exponentialRampToValueAtTime(540, now + 0.11);
       gain.gain.setValueAtTime(0.08, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
       osc.start(now); osc.stop(now + 0.12);
     } else if (type === 'coin') {
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(660, now);
-      osc.frequency.setValueAtTime(920, now + 0.05);
+      osc.frequency.setValueAtTime(700, now);
+      osc.frequency.setValueAtTime(980, now + 0.05);
       gain.gain.setValueAtTime(0.08, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
       osc.start(now); osc.stop(now + 0.16);
     } else if (type === 'laser') {
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(680, now);
-      osc.frequency.exponentialRampToValueAtTime(220, now + 0.09);
+      osc.frequency.setValueAtTime(720, now);
+      osc.frequency.exponentialRampToValueAtTime(210, now + 0.09);
       gain.gain.setValueAtTime(0.05, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
       osc.start(now); osc.stop(now + 0.09);
     } else if (type === 'hit') {
       osc.type = 'square';
-      osc.frequency.setValueAtTime(170, now);
-      osc.frequency.exponentialRampToValueAtTime(60, now + 0.18);
+      osc.frequency.setValueAtTime(160, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.2);
       gain.gain.setValueAtTime(0.09, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-      osc.start(now); osc.stop(now + 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.start(now); osc.stop(now + 0.2);
     } else if (type === 'portal') {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(440, now);
-      osc.frequency.setValueAtTime(554, now + 0.06);
-      osc.frequency.setValueAtTime(659, now + 0.12);
+      osc.frequency.setValueAtTime(587, now + 0.06);
+      osc.frequency.setValueAtTime(784, now + 0.12);
       gain.gain.setValueAtTime(0.09, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-      osc.start(now); osc.stop(now + 0.25);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+      osc.start(now); osc.stop(now + 0.24);
     }
   } catch (e) {}
 }
 
-function addBurst(x, y, color, count) {
+function addBurst3D(x, y, z, color, count) {
   for (let i = 0; i < count; i++) {
-    const ang = (Math.PI * 2 * i) / count + Math.random() * 0.5;
-    const spd = 45 + Math.random() * 140;
-    particles.push({ x, y, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - 30, life: 0.45 + Math.random() * 0.25, maxLife: 0.7, r: 2 + Math.random() * 2.5, color });
+    particles3D.push({
+      x, y, z,
+      vx: (Math.random() - 0.5) * 8,
+      vy: 1.5 + Math.random() * 5,
+      vz: (Math.random() - 0.5) * 8,
+      life: 0.5 + Math.random() * 0.25,
+      maxLife: 0.75,
+      color
+    });
   }
 }
 
-function addPopup(x, y, text, color) {
-  popups.push({ x, y, text, color, life: 0.9, maxLife: 0.9 });
+function addPopup3D(x, y, z, text, color) {
+  popups3D.push({ x, y, z, text, color, life: 0.9, maxLife: 0.9 });
 }
 
 function triggerShake(mag, dur) {
@@ -1491,7 +1469,7 @@ function saveBest() {
   const prev = bestScores[mode] || 0;
   if (score > prev) {
     bestScores[mode] = score;
-    try { localStorage.setItem('craftable_2d_best', JSON.stringify(bestScores)); } catch (e) {}
+    try { localStorage.setItem('zuno_3d_best', JSON.stringify(bestScores)); } catch (e) {}
     return true;
   }
   return false;
@@ -1501,9 +1479,9 @@ function updateHud() {
   scoreEl.textContent = score;
   bestEl.textContent = Math.max(score, bestScores[mode] || 0);
   levelEl.textContent = level;
-  if (mode === 'puzzle') {
-    statusLabelEl.textContent = 'Moves';
-    livesEl.textContent = puzzleState ? String(puzzleState.moves) : '0';
+  if (mode === 'stack') {
+    statusLabelEl.textContent = 'Streak';
+    livesEl.textContent = stackState ? stackState.streak + 'x' : '0x';
   } else {
     statusLabelEl.textContent = 'Lives';
     livesEl.textContent = lives > 0 ? Array.from({ length: lives }, () => '\u2665').join(' ') : '0';
@@ -1521,8 +1499,8 @@ function showOverlay(tag, title, desc, btnLabel, showStats, isNewRecord) {
   if (showStats) {
     sumScoreEl.textContent = score;
     sumBestEl.textContent = Math.max(score, bestScores[mode] || 0);
-    sumMetaLabelEl.textContent = mode === 'puzzle' ? 'Moves' : 'Level';
-    sumMetaValEl.textContent = mode === 'puzzle' && puzzleState ? puzzleState.moves : level;
+    sumMetaLabelEl.textContent = mode === 'stack' ? 'Height' : 'Level';
+    sumMetaValEl.textContent = mode === 'stack' && stackState ? stackState.blocks.length : level;
   }
   overlayEl.classList.remove('hidden');
 }
@@ -1531,91 +1509,140 @@ function hideOverlay() {
   overlayEl.classList.add('hidden');
 }
 
-function initPlatformer(keepScore) {
+function project(wx, wy, wz, cam) {
+  const dz = wz - cam.z;
+  if (dz <= 0.35) return null;
+  const dx = wx - cam.x;
+  const dy = wy - cam.y;
+  const pitchOffset = (cam.pitch || 0) * dz;
+  const scale = FOV / dz;
+  return {
+    sx: W / 2 + dx * scale,
+    sy: H * 0.56 - (dy - pitchOffset) * scale,
+    scale,
+    dz
+  };
+}
+
+function fillPoly(pts, color, strokeColor) {
+  ctx.beginPath();
+  ctx.moveTo(pts[0].sx, pts[0].sy);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].sx, pts[i].sy);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  if (strokeColor) {
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function drawBox3D(x, y, z, w, h, d, cam, topCol, frontCol, sideCol, edgeCol) {
+  const hw = w / 2, hd = d / 2;
+  const corners = [
+    project(x - hw, y + h, z - hd, cam),
+    project(x + hw, y + h, z - hd, cam),
+    project(x + hw, y + h, z + hd, cam),
+    project(x - hw, y + h, z + hd, cam),
+    project(x - hw, y, z - hd, cam),
+    project(x + hw, y, z - hd, cam),
+    project(x + hw, y, z + hd, cam),
+    project(x - hw, y, z + hd, cam)
+  ];
+  if (corners.some((c) => !c)) return;
+  const distAlpha = Math.max(0.18, Math.min(1, 1 - (z - cam.z) / 95));
+  ctx.save();
+  ctx.globalAlpha *= distAlpha;
+  if (x > cam.x + hw * 0.4) {
+    fillPoly([corners[0], corners[3], corners[7], corners[4]], sideCol, edgeCol);
+  } else if (x < cam.x - hw * 0.4) {
+    fillPoly([corners[1], corners[2], corners[6], corners[5]], sideCol, edgeCol);
+  }
+  if (cam.y > y + h * 0.5) {
+    fillPoly([corners[0], corners[1], corners[2], corners[3]], topCol, edgeCol);
+  }
+  fillPoly([corners[0], corners[1], corners[5], corners[4]], frontCol, edgeCol);
+  ctx.restore();
+}
+
+function drawCrystal3D(x, y, z, cam, col) {
+  const bob = Math.sin(elapsed * 4.5 + z) * 0.25;
+  const spin = elapsed * 2.8 + x;
+  const r = 0.55;
+  const top = project(x, y + 0.9 + bob, z, cam);
+  const bot = project(x, y - 0.7 + bob, z, cam);
+  const left = project(x + Math.cos(spin) * r, y + 0.1 + bob, z + Math.sin(spin) * r, cam);
+  const right = project(x - Math.cos(spin) * r, y + 0.1 + bob, z - Math.sin(spin) * r, cam);
+  const front = project(x - Math.sin(spin) * r, y + 0.1 + bob, z + Math.cos(spin) * r, cam);
+  if (!top || !bot || !left || !right || !front) return;
+  fillPoly([top, left, front], col, '#FEF9C3');
+  fillPoly([top, front, right], '#FDE047', '#FEF9C3');
+  fillPoly([bot, left, front], '#D97706', null);
+  fillPoly([bot, front, right], '#B45309', null);
+}
+
+function initObby(keepScore) {
   if (!keepScore) { score = 0; lives = 3; level = 1; }
-  const shift = ((level - 1) % 3) * 16;
-  platState = {
-    px: 44, py: 280, vx: 0, vy: 0, w: 28, h: 32, onGround: false, wasGround: false, invuln: 0,
-    facing: 1, sx: 1, sy: 1,
+  const zigzag = (level % 2 === 0 ? -1 : 1);
+  obbyState = {
+    x: 0, y: 0.4, z: 4, vx: 0, vy: 0, vz: 0, onGround: true, invuln: 0,
     platforms: [
-      { x: 0, y: 338, w: 640, h: 42, isFloor: true },
-      { x: 102, y: 274 - shift * 0.4, w: 126, h: 16 },
-      { x: 268, y: 222 + shift * 0.3, w: 132, h: 16 },
-      { x: 438, y: 170 - shift * 0.3, w: 146, h: 16 },
-      { x: 162, y: 136, w: 118, h: 16 }
+      { x: 0, y: -0.6, z: 7, w: 6.5, h: 0.9, d: 11 },
+      { x: 1.8 * zigzag, y: 0.4, z: 18, w: 4.8, h: 0.9, d: 8 },
+      { x: -1.6 * zigzag, y: 1.4, z: 28, w: 4.8, h: 0.9, d: 8 },
+      { x: 1.4 * zigzag, y: 2.3, z: 38, w: 5.2, h: 0.9, d: 9 },
+      { x: 0, y: 3.1, z: 50, w: 6.5, h: 1.0, d: 10 }
     ],
-    coins: [
-      { x: 165, y: 240, got: false },
-      { x: 335, y: 188, got: false },
-      { x: 220, y: 102, got: false },
-      { x: 500, y: 134, got: false }
+    crystals: [
+      { x: 0, y: 1.2, z: 10, got: false },
+      { x: 1.8 * zigzag, y: 2.2, z: 18, got: false },
+      { x: -1.6 * zigzag, y: 3.1, z: 28, got: false },
+      { x: 1.4 * zigzag, y: 4.0, z: 38, got: false }
     ],
-    enemies: [
-      { x: 260, y: 310, min: 185, max: 435, dir: 1, speed: 105 },
-      { x: 452, y: 142 - shift * 0.3, min: 445, max: 556, dir: 1, speed: 84 }
+    drones: [
+      { x: 1.8 * zigzag, y: 1.7, z: 19, minX: 1.8 * zigzag - 2.1, maxX: 1.8 * zigzag + 2.1, dir: 1 },
+      { x: 1.4 * zigzag, y: 3.6, z: 39, minX: 1.4 * zigzag - 2.2, maxX: 1.4 * zigzag + 2.2, dir: -1 }
     ],
-    portal: { x: 556, y: 118 - shift * 0.3, w: 24, h: 48 }
+    portal: { x: 0, y: 4.2, z: 53 }
   };
 }
 
 function initRunner() {
   score = 0; lives = 3; level = 1;
   runnerState = {
-    py: 286, vy: 0, w: 30, h: 36, ducking: false, onGround: true, invuln: 0,
-    sx: 1, sy: 1, speed: 255, spawnTimer: 0.65, dist: 0, obstacles: [], orbs: []
+    laneX: 0, x: 0, y: 0, vy: 0, onGround: true, duckTimer: 0, invuln: 0,
+    speed: 22, scrollZ: 0, spawnZ: 34, obstacles: [], crystals: []
   };
-}
-
-function addPuzzleTile(grid, popGrid) {
-  const empty = [];
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
-      if (grid[r][c] === 0) empty.push([r, c]);
-    }
-  }
-  if (!empty.length) return false;
-  const pick = empty[Math.floor(Math.random() * empty.length)];
-  grid[pick[0]][pick[1]] = Math.random() < 0.85 ? 2 : 4;
-  if (popGrid) popGrid[pick[0]][pick[1]] = 0.2;
-  return true;
-}
-
-function canMovePuzzle(grid) {
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
-      if (grid[r][c] === 0) return true;
-      if (r < 3 && grid[r][c] === grid[r + 1][c]) return true;
-      if (c < 3 && grid[r][c] === grid[r][c + 1]) return true;
-    }
-  }
-  return false;
-}
-
-function initPuzzle() {
-  score = 0; lives = 1; level = 1;
-  const grid = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
-  const pop = [[1,1,1,1],[1,1,1,1],[1,1,1,1],[1,1,1,1]];
-  addPuzzleTile(grid, pop);
-  addPuzzleTile(grid, pop);
-  puzzleState = { grid, pop, moves: 0 };
 }
 
 function initArcade() {
   score = 0; lives = 3; level = 1;
   arcadeState = {
-    px: W / 2 - 22, w: 44, h: 20, vx: 0, fireCooldown: 0, spawnTimer: 0.45,
-    bullets: [], enemies: [], stars: []
+    x: 0, y: 0, vx: 0, vy: 0, fireCooldown: 0, spawnTimer: 0.4,
+    bullets: [], meteors: [], stars: []
+  };
+}
+
+function initStack() {
+  score = 0; lives = 1; level = 1;
+  stackState = {
+    blocks: [{ x: 0, z: 0, w: 4.4, d: 4.4, colorIdx: 0 }],
+    active: { x: -4.2, z: 0, w: 4.4, d: 4.4, dir: 1, axis: 'x', speed: 4.8 },
+    camY: 2.8,
+    streak: 0,
+    dropLock: false
   };
 }
 
 function resetGame(autoPlay) {
-  particles = [];
-  popups = [];
+  particles3D = [];
+  popups3D = [];
   shakeTime = 0;
-  if (mode === 'platformer') initPlatformer(false);
+  if (mode === 'obby') initObby(false);
   else if (mode === 'runner') initRunner();
-  else if (mode === 'puzzle') initPuzzle();
-  else initArcade();
+  else if (mode === 'arcade') initArcade();
+  else initStack();
   updateHud();
   if (autoPlay) {
     status = 'playing';
@@ -1624,7 +1651,7 @@ function resetGame(autoPlay) {
   } else {
     status = 'ready';
     const info = MODE_INFO[mode];
-    showOverlay(info.tag, info.title, info.desc, 'Play Now', false, false);
+    showOverlay(info.tag, info.title, info.desc, 'Launch 3D Game', false, false);
   }
 }
 
@@ -1634,287 +1661,282 @@ function triggerGameOver(reason) {
   const isNew = score > 0 && score > prevBest;
   saveBest();
   updateHud();
-  showOverlay('GAME OVER', 'Run Complete', reason, 'Play Again', true, isNew);
+  showOverlay('GAME OVER', '3D Run Complete', reason, 'Play Again', true, isNew);
 }
 
-function slidePuzzle(dir) {
-  if (status !== 'playing' || mode !== 'puzzle' || !puzzleState) return;
-  const g = puzzleState.grid;
-  const p = puzzleState.pop;
-  let moved = false;
-  let mergedCount = 0;
+function dropStackBlock() {
+  if (status !== 'playing' || mode !== 'stack' || !stackState) return;
+  const s = stackState;
+  const top = s.blocks[s.blocks.length - 1];
+  const cur = s.active;
+  const diffX = cur.x - top.x;
+  const diffZ = cur.z - top.z;
+  const overlapW = Math.min(cur.x + cur.w / 2, top.x + top.w / 2) - Math.max(cur.x - cur.w / 2, top.x - top.w / 2);
+  const overlapD = Math.min(cur.z + cur.d / 2, top.z + top.d / 2) - Math.max(cur.z - cur.d / 2, top.z - top.d / 2);
 
-  function slideLine(arr) {
-    const nonZero = arr.filter(x => x !== 0);
-    const out = [];
-    for (let i = 0; i < nonZero.length; i++) {
-      if (i + 1 < nonZero.length && nonZero[i] === nonZero[i + 1]) {
-        const merged = nonZero[i] * 2;
-        out.push(merged);
-        score += merged;
-        mergedCount++;
-        i++;
-      } else {
-        out.push(nonZero[i]);
-      }
-    }
-    while (out.length < 4) out.push(0);
-    return out;
+  if (overlapW <= 0.18 || overlapD <= 0.18) {
+    playSfx('hit');
+    triggerShake(8, 0.28);
+    addBurst3D(cur.x, s.blocks.length * 0.75, cur.z + 12, '#FB7185', 14);
+    triggerGameOver('Your 3D slab missed the tower ledge!');
+    return;
   }
 
-  for (let i = 0; i < 4; i++) {
-    let line = [];
-    for (let j = 0; j < 4; j++) {
-      if (dir === 'left') line.push(g[i][j]);
-      else if (dir === 'right') line.push(g[i][3 - j]);
-      else if (dir === 'up') line.push(g[j][i]);
-      else line.push(g[3 - j][i]);
-    }
-    const next = slideLine(line);
-    for (let j = 0; j < 4; j++) {
-      const val = next[j];
-      const rr = dir === 'left' || dir === 'right' ? i : dir === 'up' ? j : 3 - j;
-      const cc = dir === 'left' ? j : dir === 'right' ? 3 - j : i;
-      if (g[rr][cc] !== val) {
-        moved = true;
-        g[rr][cc] = val;
-        if (val > 0) p[rr][cc] = 1.22;
-      }
-    }
+  let newW = overlapW, newD = overlapD;
+  let newX = Math.max(cur.x - cur.w / 2, top.x - top.w / 2) + newW / 2;
+  let newZ = Math.max(cur.z - cur.d / 2, top.z - top.d / 2) + newD / 2;
+  const isPerfect = Math.abs(diffX) < 0.24 && Math.abs(diffZ) < 0.24;
+
+  if (isPerfect) {
+    newX = top.x; newZ = top.z; newW = top.w; newD = top.d;
+    s.streak++;
+    score += 20 + s.streak * 5;
+    playSfx('portal');
+    addBurst3D(newX, s.blocks.length * 0.75, newZ + 12, '#FBBF24', 12);
+    addPopup3D(newX, s.blocks.length * 0.75 + 1.2, newZ + 12, 'PERFECT +' + (20 + s.streak * 5), '#FBBF24');
+  } else {
+    s.streak = 0;
+    score += 10;
+    playSfx('coin');
+    addBurst3D(newX, s.blocks.length * 0.75, newZ + 12, '#38BDF8', 8);
+    addPopup3D(newX, s.blocks.length * 0.75 + 1.2, newZ + 12, '+10', '#FFFFFF');
   }
 
-  if (moved) {
-    puzzleState.moves++;
-    addPuzzleTile(g, p);
-    if (mergedCount > 0) playSfx('coin'); else playSfx('jump');
-    saveBest();
-    updateHud();
-    if (!canMovePuzzle(g)) {
-      playSfx('hit');
-      triggerGameOver('No legal merges remain on the 4x4 jewel board.');
-    }
-  }
+  s.blocks.push({ x: newX, z: newZ, w: newW, d: newD, colorIdx: s.blocks.length });
+  level = 1 + Math.floor(s.blocks.length / 5);
+  const nextAxis = s.blocks.length % 2 === 1 ? 'z' : 'x';
+  const spd = (4.8 + Math.min(4.2, s.blocks.length * 0.2)) * DIFFICULTY[difficulty].speed;
+  s.active = {
+    x: nextAxis === 'x' ? -4.5 : newX,
+    z: nextAxis === 'z' ? -4.5 : newZ,
+    w: newW, d: newD, dir: 1, axis: nextAxis, speed: spd
+  };
+  saveBest();
+  updateHud();
 }
 
-function stepPlatformer(dt) {
-  const s = platState;
-  const pal = PALETTES[paletteKey];
+function stepObby(dt) {
+  const s = obbyState;
   const mult = DIFFICULTY[difficulty].speed;
   const emult = DIFFICULTY[difficulty].enemySpeed;
   if (s.invuln > 0) s.invuln -= dt;
 
-  s.sx += (1 - s.sx) * Math.min(1, dt * 14);
-  s.sy += (1 - s.sy) * Math.min(1, dt * 14);
+  const moveX = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  const moveZ = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
+  s.vx = moveX * 6.8 * mult;
+  s.vz = moveZ * 9.5 * mult;
 
-  if (keys.left) { s.vx = -225 * mult; s.facing = -1; }
-  else if (keys.right) { s.vx = 225 * mult; s.facing = 1; }
-  else s.vx *= 0.78;
-
-  if ((keys.up || keys.action) && s.onGround) {
-    s.vy = -495;
+  if (keys.action && s.onGround) {
+    s.vy = 9.4;
     s.onGround = false;
-    s.sx = 0.78; s.sy = 1.25;
     playSfx('jump');
-    addBurst(s.px + s.w / 2, s.py + s.h, pal.groundTop, 5);
+    addBurst3D(s.x, s.y, s.z, '#38BDF8', 6);
   }
 
-  s.vy += 1220 * dt;
-  s.px = Math.max(0, Math.min(W - s.w, s.px + s.vx * dt));
-  s.py += s.vy * dt;
-  s.wasGround = s.onGround;
+  s.vy -= 21 * dt;
+  s.x = Math.max(-7, Math.min(7, s.x + s.vx * dt));
+  s.z = Math.max(2, Math.min(58, s.z + s.vz * dt));
+  const prevY = s.y;
+  s.y += s.vy * dt;
   s.onGround = false;
 
   for (const p of s.platforms) {
-    if (s.px + s.w > p.x && s.px < p.x + p.w && s.vy >= 0 && s.py + s.h >= p.y && s.py + s.h <= p.y + p.h + 18) {
-      s.py = p.y - s.h;
-      if (!s.wasGround && s.vy > 180) {
-        s.sx = 1.24; s.sy = 0.78;
-        addBurst(s.px + s.w / 2, p.y, pal.platTop, 4);
-      }
+    const topY = p.y + p.h;
+    const withinXZ = Math.abs(s.x - p.x) <= p.w / 2 + 0.45 && Math.abs(s.z - p.z) <= p.d / 2 + 0.45;
+    if (withinXZ && s.vy <= 0 && prevY >= topY - 0.4 && s.y <= topY) {
+      s.y = topY;
       s.vy = 0;
       s.onGround = true;
     }
   }
 
-  for (const c of s.coins) {
-    if (!c.got && Math.hypot((s.px + s.w / 2) - c.x, (s.py + s.h / 2) - c.y) < 25) {
+  if (s.y < -5.5) {
+    lives--;
+    playSfx('hit');
+    triggerShake(7, 0.25);
+    updateHud();
+    if (lives <= 0) { triggerGameOver('Fell into the 3D sky abyss.'); return; }
+    s.x = 0; s.y = 1.6; s.z = 5; s.vy = 0; s.invuln = 1.1;
+  }
+
+  for (const c of s.crystals) {
+    if (!c.got && Math.hypot(s.x - c.x, s.y + 0.6 - c.y, s.z - c.z) < 1.8) {
       c.got = true;
       score += 25;
       playSfx('coin');
-      addBurst(c.x, c.y, pal.coin, 10);
-      addPopup(c.x, c.y - 8, '+25', pal.coin);
+      addBurst3D(c.x, c.y, c.z, '#FBBF24', 10);
+      addPopup3D(c.x, c.y + 1, c.z, '+25', '#FBBF24');
       saveBest();
       updateHud();
     }
   }
 
-  for (const e of s.enemies) {
-    e.x += e.dir * e.speed * emult * dt;
-    if (e.x < e.min) { e.x = e.min; e.dir = 1; }
-    if (e.x > e.max) { e.x = e.max; e.dir = -1; }
-    if (s.invuln <= 0 && s.px + s.w - 3 > e.x && s.px + 3 < e.x + 26 && s.py + s.h - 2 > e.y && s.py + 2 < e.y + 24) {
+  for (const d of s.drones) {
+    d.x += d.dir * 3.4 * emult * dt;
+    if (d.x < d.minX) { d.x = d.minX; d.dir = 1; }
+    if (d.x > d.maxX) { d.x = d.maxX; d.dir = -1; }
+    if (s.invuln <= 0 && Math.hypot(s.x - d.x, s.y + 0.5 - d.y, s.z - d.z) < 1.35) {
       lives--;
-      s.invuln = 1.25;
-      s.vx = -s.facing * 180;
-      s.vy = -290;
+      s.invuln = 1.2;
+      s.vy = 5.5;
       playSfx('hit');
-      triggerShake(6, 0.24);
-      addBurst(s.px + s.w / 2, s.py + s.h / 2, pal.enemy, 12);
+      triggerShake(7, 0.25);
+      addBurst3D(s.x, s.y + 0.5, s.z, '#FB7185', 12);
       updateHud();
-      if (lives <= 0) { triggerGameOver('Intercepted by a patrol drone.'); return; }
+      if (lives <= 0) { triggerGameOver('Hit by a 3D patrol sentinel.'); return; }
     }
   }
 
-  const portal = s.portal;
-  if (s.px + s.w > portal.x && s.px < portal.x + portal.w && s.py + s.h > portal.y && s.py < portal.y + portal.h) {
-    score += 100;
+  if (Math.hypot(s.x - s.portal.x, s.y + 0.6 - s.portal.y, s.z - s.portal.z) < 2.2) {
+    score += 120;
     level++;
     playSfx('portal');
-    addBurst(portal.x + portal.w / 2, portal.y + portal.h / 2, pal.portal, 18);
-    addPopup(portal.x - 18, portal.y - 10, '+100 STAGE CLEAR!', pal.portal);
+    addBurst3D(s.portal.x, s.portal.y, s.portal.z, '#10B981', 18);
+    addPopup3D(s.portal.x, s.portal.y + 1.4, s.portal.z, '+120 SECTOR CLEAR!', '#10B981');
     saveBest();
     updateHud();
-    initPlatformer(true);
+    initObby(true);
   }
 }
 
 function stepRunner(dt) {
   const s = runnerState;
-  const pal = PALETTES[paletteKey];
   const mult = DIFFICULTY[difficulty].speed;
-  const groundY = 324;
   if (s.invuln > 0) s.invuln -= dt;
+  const targetX = s.laneX * 2.8;
+  s.x += (targetX - s.x) * Math.min(1, dt * 16);
 
-  s.sx += (1 - s.sx) * Math.min(1, dt * 14);
-  s.sy += (1 - s.sy) * Math.min(1, dt * 14);
-
-  s.ducking = keys.down && s.onGround;
-  const curH = s.ducking ? 22 : 36;
   if ((keys.up || keys.action) && s.onGround) {
-    s.vy = -515;
+    s.vy = 10.6;
     s.onGround = false;
-    s.sx = 0.78; s.sy = 1.24;
     playSfx('jump');
-    addBurst(108, groundY, pal.groundTop, 5);
+    addBurst3D(s.x, 0.2, 6.5, '#38BDF8', 6);
   }
-  if (keys.down && !s.onGround) s.vy += 1900 * dt;
+  if (keys.down) {
+    s.duckTimer = 0.25;
+    if (!s.onGround) s.vy -= 36 * dt;
+  } else if (s.duckTimer > 0) s.duckTimer -= dt;
 
-  s.vy += 1340 * dt;
-  s.py += s.vy * dt;
-  if (s.py + curH >= groundY) {
-    if (!s.onGround) { s.sx = 1.22; s.sy = 0.8; }
-    s.py = groundY - curH;
-    s.vy = 0;
-    s.onGround = true;
-  }
+  s.vy -= 26 * dt;
+  s.y += s.vy * dt;
+  if (s.y <= 0) { s.y = 0; s.vy = 0; s.onGround = true; }
 
-  const runSpeed = (s.speed + Math.min(220, score * 0.38)) * mult;
-  runnerBgScroll += runSpeed * dt;
-  s.dist += dt * 12;
-  if (s.dist >= 1) {
-    score += Math.floor(s.dist);
-    s.dist -= Math.floor(s.dist);
-    level = 1 + Math.floor(score / 250);
+  const spd = (s.speed + Math.min(16, score * 0.02)) * mult;
+  s.scrollZ += spd * dt;
+  const prevScore = score;
+  score = Math.floor(s.scrollZ * 0.8) + (s.bonus || 0);
+  if (score !== prevScore) {
+    level = 1 + Math.floor(score / 300);
     saveBest();
     updateHud();
   }
 
-  s.spawnTimer -= dt;
-  if (s.spawnTimer <= 0) {
-    s.spawnTimer = (0.9 + Math.random() * 0.72) / mult;
-    const isHigh = Math.random() < 0.36;
-    s.obstacles.push({ x: W + 24, y: isHigh ? groundY - 62 : groundY - 32, w: 26, h: 32, high: isHigh });
-    if (Math.random() < 0.6) {
-      s.orbs.push({ x: W + 115, y: groundY - (50 + Math.random() * 68), got: false });
-    }
+  s.spawnZ -= spd * dt;
+  if (s.spawnZ <= 0) {
+    s.spawnZ = 14 + Math.random() * 10;
+    const lane = Math.floor(Math.random() * 3) - 1;
+    const high = Math.random() < 0.35;
+    s.obstacles.push({ x: lane * 2.8, y: high ? 1.55 : 0, z: 58, high, w: 1.9, h: high ? 1.2 : 1.35, d: 1.2 });
+    const crystalLane = (lane + (Math.random() < 0.5 ? 1 : 2)) % 3 - 1;
+    if (Math.random() < 0.7) s.crystals.push({ x: crystalLane * 2.8, y: 0.9, z: 62, got: false });
   }
 
   for (const o of s.obstacles) {
-    o.x -= runSpeed * dt;
-    if (s.invuln <= 0 && 94 + s.w - 3 > o.x && 97 < o.x + o.w && s.py + curH - 2 > o.y && s.py + 2 < o.y + o.h) {
+    o.z -= spd * dt;
+    const heroTop = s.y + (s.duckTimer > 0 ? 0.65 : 1.45);
+    if (
+      s.invuln <= 0 &&
+      Math.abs(o.z - 6.5) < 0.9 &&
+      Math.abs(o.x - s.x) < 1.15 &&
+      heroTop > o.y &&
+      s.y < o.y + o.h
+    ) {
       lives--;
-      s.invuln = 1.1;
+      s.invuln = 1.05;
       playSfx('hit');
-      triggerShake(6, 0.22);
-      addBurst(109, s.py + curH / 2, pal.enemy, 12);
+      triggerShake(7, 0.24);
+      addBurst3D(s.x, s.y + 0.7, 6.5, '#FB7185', 14);
       updateHud();
-      if (lives <= 0) { triggerGameOver('Collided with an energy barrier.'); return; }
+      if (lives <= 0) { triggerGameOver('Crashed into a 3D trench barrier.'); return; }
     }
   }
-  for (const orb of s.orbs) {
-    orb.x -= runSpeed * dt;
-    if (!orb.got && Math.hypot(109 - orb.x, (s.py + curH / 2) - orb.y) < 24) {
-      orb.got = true;
-      score += 20;
+
+  for (const c of s.crystals) {
+    c.z -= spd * dt;
+    if (!c.got && Math.abs(c.z - 6.5) < 1.1 && Math.abs(c.x - s.x) < 1.3 && Math.abs(c.y - (s.y + 0.7)) < 1.4) {
+      c.got = true;
+      s.bonus = (s.bonus || 0) + 25;
+      score += 25;
       playSfx('coin');
-      addBurst(orb.x, orb.y, pal.coin, 8);
-      addPopup(orb.x, orb.y - 10, '+20', pal.coin);
+      addBurst3D(c.x, c.y, 6.5, '#FBBF24', 10);
+      addPopup3D(c.x, c.y + 1, 6.5, '+25', '#FBBF24');
       saveBest();
       updateHud();
     }
   }
-  s.obstacles = s.obstacles.filter(o => o.x > -40);
-  s.orbs = s.orbs.filter(o => o.x > -20 && !o.got);
+
+  s.obstacles = s.obstacles.filter((o) => o.z > 1.2);
+  s.crystals = s.crystals.filter((c) => !c.got && c.z > 1.2);
 }
 
 function stepArcade(dt) {
   const s = arcadeState;
-  const pal = PALETTES[paletteKey];
   const mult = DIFFICULTY[difficulty].speed;
   const emult = DIFFICULTY[difficulty].enemySpeed;
   if (s.fireCooldown > 0) s.fireCooldown -= dt;
 
-  let targetVx = 0;
-  if (keys.left) targetVx = -310 * mult;
-  if (keys.right) targetVx = 310 * mult;
-  s.vx += (targetVx - s.vx) * Math.min(1, dt * 16);
-  s.px = Math.max(14, Math.min(W - s.w - 14, s.px + s.vx * dt));
+  s.vx = ((keys.right ? 1 : 0) - (keys.left ? 1 : 0)) * 9.5 * mult;
+  s.vy = ((keys.up ? 1 : 0) - (keys.down ? 1 : 0)) * 6.5 * mult;
+  s.x = Math.max(-5.8, Math.min(5.8, s.x + s.vx * dt));
+  s.y = Math.max(-2.6, Math.min(2.8, s.y + s.vy * dt));
 
-  if ((keys.action || keys.up) && s.fireCooldown <= 0) {
-    s.bullets.push({ x: s.px + s.w / 2 - 2, y: H - 48 });
+  if (keys.action && s.fireCooldown <= 0) {
+    s.bullets.push({ x: s.x - 0.55, y: s.y, z: 7 });
+    s.bullets.push({ x: s.x + 0.55, y: s.y, z: 7 });
     s.fireCooldown = 0.2;
     playSfx('laser');
-    addBurst(s.px + s.w / 2, H - 46, pal.hero, 3);
   }
 
   s.spawnTimer -= dt;
   if (s.spawnTimer <= 0) {
-    s.spawnTimer = Math.max(0.4, (1.12 - level * 0.04) / emult);
-    s.enemies.push({
-      x: 28 + Math.random() * (W - 76), y: -26, w: 28, h: 26,
-      vy: (84 + Math.random() * 55) * emult, rot: Math.random() * Math.PI, spin: (Math.random() - 0.5) * 4
+    s.spawnTimer = Math.max(0.38, (1.05 - level * 0.04) / emult);
+    s.meteors.push({
+      x: (Math.random() - 0.5) * 10.5,
+      y: (Math.random() - 0.5) * 4.6,
+      z: 62,
+      vz: (18 + Math.random() * 10) * emult
     });
-    if (Math.random() < 0.36) {
-      s.stars.push({ x: 28 + Math.random() * (W - 56), y: -16, vy: 98 * emult, got: false });
+    if (Math.random() < 0.35) {
+      s.stars.push({ x: (Math.random() - 0.5) * 9.5, y: (Math.random() - 0.5) * 4.2, z: 62, vz: 18 * emult, got: false });
     }
   }
 
-  for (const b of s.bullets) b.y -= 480 * dt;
-  for (const e of s.enemies) {
-    e.y += e.vy * dt;
-    e.rot += e.spin * dt;
-    if (e.y + e.h >= H - 14) {
-      e.hit = true;
+  for (const b of s.bullets) b.z += 56 * dt;
+  for (const m of s.meteors) {
+    m.z -= m.vz * dt;
+    if (m.z <= 7.2 && Math.hypot(m.x - s.x, m.y - s.y) < 1.35) {
+      m.hit = true;
       lives--;
       playSfx('hit');
-      triggerShake(6, 0.22);
-      addBurst(e.x + e.w / 2, H - 18, pal.enemy, 10);
+      triggerShake(7, 0.24);
+      addBurst3D(m.x, m.y, 7.2, '#FB7185', 14);
       updateHud();
-      if (lives <= 0) { triggerGameOver('Meteors breached your sector defenses.'); return; }
+      if (lives <= 0) { triggerGameOver('3D asteroid impact destroyed your hull.'); return; }
+    } else if (m.z <= 2.2) {
+      m.hit = true;
     }
   }
 
   for (const b of s.bullets) {
-    for (const e of s.enemies) {
-      if (!e.hit && b.x + 5 > e.x && b.x < e.x + e.w && b.y < e.y + e.h && b.y + 12 > e.y) {
-        e.hit = true;
-        b.hit = true;
-        score += 15;
+    for (const m of s.meteors) {
+      if (!m.hit && !b.hit && Math.abs(b.z - m.z) < 2.6 && Math.hypot(b.x - m.x, b.y - m.y) < 1.25) {
+        m.hit = true; b.hit = true;
+        score += 20;
+        if (score % 200 === 0) level++;
         playSfx('coin');
         triggerShake(2.5, 0.08);
-        addBurst(e.x + e.w / 2, e.y + e.h / 2, pal.enemy, 11);
-        addPopup(e.x + e.w / 2, e.y, '+15', '#FFFFFF');
-        if (score % 150 === 0) level++;
+        addBurst3D(m.x, m.y, m.z, '#FB7185', 11);
+        addPopup3D(m.x, m.y + 0.8, m.z, '+20', '#FFFFFF');
         saveBest();
         updateHud();
       }
@@ -1922,356 +1944,170 @@ function stepArcade(dt) {
   }
 
   for (const st of s.stars) {
-    st.y += st.vy * dt;
-    if (!st.got && st.x > s.px - 10 && st.x < s.px + s.w + 10 && st.y > H - 48 && st.y < H - 10) {
+    st.z -= st.vz * dt;
+    if (!st.got && Math.abs(st.z - 7) < 1.4 && Math.hypot(st.x - s.x, st.y - s.y) < 1.55) {
       st.got = true;
-      score += 30;
+      score += 35;
       playSfx('portal');
-      addBurst(st.x, st.y, pal.coin, 10);
-      addPopup(st.x, st.y - 12, '+30 STAR', pal.coin);
+      addBurst3D(st.x, st.y, 7, '#FBBF24', 10);
+      addPopup3D(st.x, st.y + 0.8, 7, '+35 STAR', '#FBBF24');
       saveBest();
       updateHud();
     }
   }
 
-  s.bullets = s.bullets.filter(b => !b.hit && b.y > -20);
-  s.enemies = s.enemies.filter(e => !e.hit);
-  s.stars = s.stars.filter(st => !st.got && st.y < H + 20);
+  s.bullets = s.bullets.filter((b) => !b.hit && b.z < 68);
+  s.meteors = s.meteors.filter((m) => !m.hit);
+  s.stars = s.stars.filter((st) => !st.got && st.z > 2);
 }
 
-function drawRoundedRect(x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+function stepStack(dt) {
+  const s = stackState;
+  const targetCamY = 2.8 + Math.max(0, s.blocks.length - 2) * 0.75;
+  s.camY += (targetCamY - s.camY) * Math.min(1, dt * 6);
+  const a = s.active;
+  if (a.axis === 'x') {
+    a.x += a.dir * a.speed * dt;
+    if (a.x > 4.6) { a.x = 4.6; a.dir = -1; }
+    if (a.x < -4.6) { a.x = -4.6; a.dir = 1; }
+  } else {
+    a.z += a.dir * a.speed * dt;
+    if (a.z > 4.6) { a.z = 4.6; a.dir = -1; }
+    if (a.z < -4.6) { a.z = -4.6; a.dir = 1; }
+  }
 }
 
-function drawBackdrop(pal, scrollOffset) {
+function draw3DGrid(pal, cam, scrollZ) {
   const grad = ctx.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, pal.skyTop);
-  grad.addColorStop(0.55, pal.skyMid);
-  grad.addColorStop(1, pal.skyBot);
+  grad.addColorStop(0.58, pal.skyBot);
+  grad.addColorStop(1, pal.skyTop);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Celestial moon/sun halo
-  const halo = ctx.createRadialGradient(500, 92, 8, 500, 92, 92);
+  const halo = ctx.createRadialGradient(W / 2, H * 0.34, 8, W / 2, H * 0.34, 150);
   halo.addColorStop(0, pal.sun);
-  halo.addColorStop(0.32, 'rgba(255,255,255,0.16)');
+  halo.addColorStop(0.28, 'rgba(255,255,255,0.14)');
   halo.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = halo;
-  ctx.beginPath(); ctx.arc(500, 92, 92, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = pal.sun;
-  ctx.beginPath(); ctx.arc(500, 92, 22, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(W / 2, H * 0.34, 150, 0, Math.PI * 2); ctx.fill();
 
-  // Twinkling stars
-  for (const st of STARS) {
-    const sx = ((st.x - scrollOffset * 0.08) % W + W) % W;
-    const alpha = 0.35 + 0.65 * Math.abs(Math.sin(elapsed * 1.7 + st.phase));
-    ctx.fillStyle = 'rgba(248, 250, 252, ' + alpha.toFixed(2) + ')';
-    ctx.beginPath(); ctx.arc(sx, st.y, st.r, 0, Math.PI * 2); ctx.fill();
+  for (const st of STARS_3D) {
+    const zPos = ((st.z - (mode === 'arcade' ? elapsed * 18 : 0)) % 120 + 120) % 120 + 4;
+    const p = project(st.x, st.y + 14, cam.z + zPos, cam);
+    if (p && p.sx >= 0 && p.sx <= W && p.sy >= 0 && p.sy <= H * 0.65) {
+      ctx.fillStyle = 'rgba(248,250,252,' + Math.min(0.95, 18 / zPos).toFixed(2) + ')';
+      ctx.fillRect(p.sx, p.sy, 2, 2);
+    }
   }
 
-  // Far parallax hills
-  ctx.fillStyle = pal.farHill;
-  ctx.beginPath();
-  ctx.moveTo(0, H);
-  for (let x = 0; x <= W + 40; x += 40) {
-    const worldX = x + scrollOffset * 0.22;
-    const y = 250 + Math.sin(worldX * 0.008) * 34 + Math.cos(worldX * 0.017) * 16;
-    ctx.lineTo(x, y);
+  ctx.strokeStyle = pal.grid;
+  ctx.lineWidth = 1;
+  const floorY = mode === 'arcade' ? -4.5 : -0.8;
+  for (let gx = -12; gx <= 12; gx += 3) {
+    const a = project(gx, floorY, cam.z + 2, cam);
+    const b = project(gx, floorY, cam.z + 65, cam);
+    if (a && b) {
+      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+    }
   }
-  ctx.lineTo(W, H);
-  ctx.closePath();
-  ctx.fill();
-
-  // Near parallax ridge
-  ctx.fillStyle = pal.nearHill;
-  ctx.beginPath();
-  ctx.moveTo(0, H);
-  for (let x = 0; x <= W + 32; x += 32) {
-    const worldX = x + scrollOffset * 0.48;
-    const y = 290 + Math.sin(worldX * 0.014 + 1.5) * 22 + Math.cos(worldX * 0.029) * 12;
-    ctx.lineTo(x, y);
+  const offset = scrollZ % 4;
+  for (let gz = 4; gz <= 64; gz += 4) {
+    const zWorld = cam.z + gz - offset;
+    const a = project(-12, floorY, zWorld, cam);
+    const b = project(12, floorY, zWorld, cam);
+    if (a && b) {
+      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+    }
   }
-  ctx.lineTo(W, H);
-  ctx.closePath();
-  ctx.fill();
-
-  // Ambient floating firefly motes
-  for (const m of MOTES) {
-    const mx = ((m.x + elapsed * m.vx) % W + W) % W;
-    const my = m.y + Math.sin(elapsed * 2 + m.phase) * 12;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
-    ctx.beginPath(); ctx.arc(mx, my, 1.6, 0, Math.PI * 2); ctx.fill();
-  }
-}
-
-function drawHeroCharacter(cx, bottomY, w, h, sx, sy, facing, pal, vx) {
-  ctx.save();
-  ctx.translate(cx, bottomY);
-  // Ground shadow
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
-  ctx.beginPath(); ctx.ellipse(0, 1, 14 * sx, 4, 0, 0, Math.PI * 2); ctx.fill();
-
-  ctx.scale(sx, sy);
-  // Flowing scarf ribbon
-  const sway = Math.sin(elapsed * 11) * 4 - (vx * 0.03);
-  ctx.strokeStyle = pal.scarf;
-  ctx.lineWidth = 5;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(-facing * 4, -h * 0.56);
-  ctx.quadraticCurveTo(-facing * 16, -h * 0.5 + sway, -facing * 22, -h * 0.36 + sway);
-  ctx.stroke();
-
-  // Body capsule with gradient
-  const grad = ctx.createLinearGradient(0, -h, 0, 0);
-  grad.addColorStop(0, pal.hero);
-  grad.addColorStop(1, pal.heroDark);
-  ctx.fillStyle = grad;
-  drawRoundedRect(-w / 2, -h, w, h, 9);
-  ctx.fill();
-
-  // Visor & expressive eyes
-  ctx.fillStyle = '#080D1A';
-  drawRoundedRect(-w / 2 + (facing > 0 ? 7 : 3), -h + 7, w - 10, 11, 5);
-  ctx.fill();
-  ctx.fillStyle = '#FFFFFF';
-  const eyeShift = facing > 0 ? 3 : -3;
-  ctx.beginPath(); ctx.arc(-3 + eyeShift, -h + 12.5, 2.2, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(5 + eyeShift, -h + 12.5, 2.2, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-}
-
-function drawDrone(x, y, pal) {
-  const bob = Math.sin(elapsed * 5 + x * 0.05) * 3;
-  ctx.save();
-  ctx.translate(x + 13, y + 12 + bob);
-  // Outer glow
-  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 22);
-  glow.addColorStop(0, 'rgba(251, 113, 133, 0.35)');
-  glow.addColorStop(1, 'rgba(251, 113, 133, 0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(0, 0, 22, 0, Math.PI * 2); ctx.fill();
-
-  // Rotor fins
-  ctx.fillStyle = '#E2E8F0';
-  ctx.fillRect(-16, -3, 6, 6);
-  ctx.fillRect(10, -3, 6, 6);
-
-  // Drone shell
-  ctx.fillStyle = pal.enemy;
-  drawRoundedRect(-12, -11, 24, 22, 8);
-  ctx.fill();
-  ctx.fillStyle = '#0F172A';
-  drawRoundedRect(-8, -5, 16, 10, 4);
-  ctx.fill();
-  // Pulsing eye
-  ctx.fillStyle = Math.sin(elapsed * 8) > 0 ? '#FEF08A' : '#FF5E5B';
-  ctx.beginPath(); ctx.arc(0, 0, 3.2, 0, Math.PI * 2); ctx.fill();
-  ctx.restore();
-}
-
-function drawSpinningCoin(x, y, pal) {
-  const pulse = 0.45 + 0.55 * Math.abs(Math.cos(elapsed * 4.5 + x * 0.03));
-  const glow = ctx.createRadialGradient(x, y, 2, x, y, 16);
-  glow.addColorStop(0, 'rgba(251, 191, 36, 0.45)');
-  glow.addColorStop(1, 'rgba(251, 191, 36, 0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill();
-
-  ctx.save();
-  ctx.translate(x, y + Math.sin(elapsed * 4 + x * 0.05) * 3);
-  ctx.scale(pulse, 1);
-  ctx.fillStyle = pal.coin;
-  ctx.beginPath(); ctx.arc(0, 0, 9.5, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#FEF9C3';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.restore();
 }
 
 function drawScene() {
   const pal = PALETTES[paletteKey];
   ctx.save();
-  if (shakeTime > 0) {
-    ctx.translate((Math.random() - 0.5) * shakeMag, (Math.random() - 0.5) * shakeMag);
+  if (shakeTime > 0) ctx.translate((Math.random() - 0.5) * shakeMag, (Math.random() - 0.5) * shakeMag);
+
+  let cam = { x: 0, y: 3.4, z: 0, pitch: 0.14 };
+  if (mode === 'obby' && obbyState) {
+    cam = { x: obbyState.x * 0.55, y: obbyState.y + 3.6, z: obbyState.z - 6.8, pitch: 0.19 };
+  } else if (mode === 'runner' && runnerState) {
+    cam = { x: runnerState.x * 0.4, y: 3.2, z: 0, pitch: 0.16 };
+  } else if (mode === 'arcade') {
+    cam = { x: arcadeState ? arcadeState.x * 0.35 : 0, y: 1.6, z: 0, pitch: 0.05 };
+  } else if (mode === 'stack' && stackState) {
+    cam = { x: 0, y: stackState.camY + 1.8, z: -12, pitch: 0.22 };
   }
 
-  const scroll = mode === 'runner' ? runnerBgScroll : mode === 'platformer' && platState ? platState.px * 0.6 : elapsed * 14;
-  drawBackdrop(pal, scroll);
+  draw3DGrid(pal, cam, runnerState ? runnerState.scrollZ : elapsed * 6);
 
-  if (mode === 'platformer' && platState) {
-    const s = platState;
-    for (const p of s.platforms) {
-      ctx.fillStyle = p.isFloor ? pal.ground : pal.plat;
-      if (p.isFloor) {
-        ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.fillStyle = pal.groundTop;
-        ctx.fillRect(p.x, p.y, p.w, 4);
-      } else {
-        ctx.fillStyle = 'rgba(0,0,0,0.28)';
-        drawRoundedRect(p.x + 2, p.y + 5, p.w, p.h, 6);
-        ctx.fill();
-        ctx.fillStyle = pal.plat;
-        drawRoundedRect(p.x, p.y, p.w, p.h, 6);
-        ctx.fill();
-        ctx.fillStyle = pal.platTop;
-        drawRoundedRect(p.x, p.y, p.w, 4.5, 3);
-        ctx.fill();
-      }
-    }
-
-    // Glowing Dimensional Portal
-    const px = s.portal.x + s.portal.w / 2;
-    const py = s.portal.y + s.portal.h / 2;
-    const pGlow = ctx.createRadialGradient(px, py, 4, px, py, 34);
-    pGlow.addColorStop(0, pal.portal);
-    pGlow.addColorStop(1, 'rgba(16, 185, 129, 0)');
-    ctx.fillStyle = pGlow;
-    ctx.beginPath(); ctx.arc(px, py, 34, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = pal.portal;
-    ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.ellipse(px, py, 11 + Math.sin(elapsed * 5) * 1.5, 22, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#ECFDF5';
-    ctx.beginPath(); ctx.ellipse(px, py, 5, 13, 0, 0, Math.PI * 2); ctx.fill();
-
-    for (const c of s.coins) if (!c.got) drawSpinningCoin(c.x, c.y, pal);
-    for (const e of s.enemies) drawDrone(e.x, e.y, pal);
+  const items = [];
+  if (mode === 'obby' && obbyState) {
+    const s = obbyState;
+    for (const p of s.platforms) items.push({ z: p.z, fn: () => drawBox3D(p.x, p.y, p.z, p.w, p.h, p.d, cam, pal.platTop, pal.platFront, pal.platSide, 'rgba(255,255,255,0.16)') });
+    for (const c of s.crystals) if (!c.got) items.push({ z: c.z, fn: () => drawCrystal3D(c.x, c.y, c.z, cam, pal.crystal) });
+    for (const d of s.drones) items.push({ z: d.z, fn: () => drawBox3D(d.x, d.y + Math.sin(elapsed * 5) * 0.25, d.z, 1.3, 1.0, 1.1, cam, pal.enemyTop, pal.enemyFront, pal.enemySide, '#FECDD3') });
+    items.push({ z: s.portal.z, fn: () => {
+      const p = project(s.portal.x, s.portal.y, s.portal.z, cam);
+      if (!p) return;
+      ctx.strokeStyle = pal.portal;
+      ctx.lineWidth = Math.max(2, p.scale * 0.12);
+      ctx.beginPath(); ctx.ellipse(p.sx, p.sy, p.scale * 1.1, p.scale * 1.6, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
+      ctx.fill();
+    }});
     if (s.invuln <= 0 || Math.floor(s.invuln * 14) % 2 === 0) {
-      drawHeroCharacter(s.px + s.w / 2, s.py + s.h, s.w, s.h, s.sx, s.sy, s.facing, pal, s.vx);
+      items.push({ z: s.z, fn: () => drawBox3D(s.x, s.y, s.z, 1.0, 1.45, 1.0, cam, pal.heroTop, pal.heroFront, pal.heroSide, '#E0F2FE') });
     }
   } else if (mode === 'runner' && runnerState) {
     const s = runnerState;
-    ctx.fillStyle = pal.ground;
-    ctx.fillRect(0, 324, W, 56);
-    ctx.fillStyle = pal.groundTop;
-    ctx.fillRect(0, 324, W, 4);
-    for (let gx = -((runnerBgScroll * 0.9) % 48); gx < W; gx += 48) {
-      ctx.fillStyle = 'rgba(255,255,255,0.06)';
-      ctx.fillRect(gx, 336, 22, 4);
-    }
-    for (const o of s.obstacles) {
-      if (o.high) drawDrone(o.x, o.y, pal);
-      else {
-        ctx.fillStyle = pal.enemy;
-        drawRoundedRect(o.x, o.y, o.w, o.h, 6);
-        ctx.fill();
-        ctx.fillStyle = 'rgba(255,255,255,0.28)';
-        ctx.fillRect(o.x + 4, o.y + 4, o.w - 8, 4);
-      }
-    }
-    for (const orb of s.orbs) drawSpinningCoin(orb.x, orb.y, pal);
-    const curH = s.ducking ? 22 : 36;
+    for (const o of s.obstacles) items.push({ z: o.z, fn: () => drawBox3D(o.x, o.y, o.z, o.w, o.h, o.d, cam, pal.enemyTop, pal.enemyFront, pal.enemySide, '#FECDD3') });
+    for (const c of s.crystals) items.push({ z: c.z, fn: () => drawCrystal3D(c.x, c.y, c.z, cam, pal.crystal) });
+    const hh = s.duckTimer > 0 ? 0.65 : 1.45;
     if (s.invuln <= 0 || Math.floor(s.invuln * 14) % 2 === 0) {
-      drawHeroCharacter(109, s.py + curH, s.w, curH, s.sx, s.sy, 1, pal, 190);
-    }
-  } else if (mode === 'puzzle' && puzzleState) {
-    const cellSize = 72, gap = 10;
-    const boardW = cellSize * 4 + gap * 3;
-    const startX = (W - boardW) / 2;
-    const startY = (H - boardW) / 2;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.78)';
-    drawRoundedRect(startX - 14, startY - 14, boardW + 28, boardW + 28, 18);
-    ctx.fill();
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        const val = puzzleState.grid[r][c];
-        const sc = puzzleState.pop[r][c] || 1;
-        const x = startX + c * (cellSize + gap);
-        const y = startY + r * (cellSize + gap);
-        const st = TILE_STYLES[val] || ['#F59E0B', '#D97706', '#FFFBEB'];
-        ctx.save();
-        ctx.translate(x + cellSize / 2, y + cellSize / 2);
-        ctx.scale(sc, sc);
-        ctx.fillStyle = st[1];
-        drawRoundedRect(-cellSize / 2, -cellSize / 2 + 4, cellSize, cellSize, 12);
-        ctx.fill();
-        ctx.fillStyle = st[0];
-        drawRoundedRect(-cellSize / 2, -cellSize / 2, cellSize, cellSize - 2, 12);
-        ctx.fill();
-        if (val > 0) {
-          ctx.fillStyle = st[2];
-          const fontPx = val >= 1024 ? 19 : val >= 128 ? 22 : 24;
-          ctx.font = '800 ' + fontPx + 'px ui-monospace, SFMono-Regular, monospace';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(String(val), 0, -1);
-        }
-        ctx.restore();
-      }
+      items.push({ z: 6.5, fn: () => drawBox3D(s.x, s.y, 6.5, 1.15, hh, 1.2, cam, pal.heroTop, pal.heroFront, pal.heroSide, '#E0F2FE') });
     }
   } else if (mode === 'arcade' && arcadeState) {
     const s = arcadeState;
-    // Starfighter ship
-    ctx.save();
-    ctx.translate(s.px + s.w / 2, H - 24);
-    ctx.rotate(s.vx * 0.0005);
-    // Twin thruster flame
-    const flameH = 8 + Math.sin(elapsed * 40) * 3;
-    ctx.fillStyle = '#F59E0B';
-    ctx.beginPath(); ctx.moveTo(-10, 8); ctx.lineTo(-4, 8); ctx.lineTo(-7, 8 + flameH); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(4, 8); ctx.lineTo(10, 8); ctx.lineTo(7, 8 + flameH); ctx.fill();
-    // Wings + Hull
-    ctx.fillStyle = pal.heroDark;
-    ctx.beginPath(); ctx.moveTo(-22, 8); ctx.lineTo(0, -12); ctx.lineTo(22, 8); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = pal.hero;
-    ctx.beginPath(); ctx.moveTo(-12, 6); ctx.lineTo(0, -17); ctx.lineTo(12, 6); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#FFFFFF';
-    ctx.beginPath(); ctx.ellipse(0, -5, 4, 6, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
-
-    // Plasma bolts
-    for (const b of s.bullets) {
-      ctx.fillStyle = pal.hero;
-      drawRoundedRect(b.x - 1, b.y, 6, 14, 3);
-      ctx.fill();
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(b.x + 1, b.y + 2, 2, 10);
+    for (const m of s.meteors) items.push({ z: m.z, fn: () => drawBox3D(m.x, m.y, m.z, 1.5, 1.3, 1.4, cam, pal.enemyTop, pal.enemyFront, pal.enemySide, '#FECDD3') });
+    for (const st of s.stars) items.push({ z: st.z, fn: () => drawCrystal3D(st.x, st.y, st.z, cam, pal.crystal) });
+    for (const b of s.bullets) items.push({ z: b.z, fn: () => drawBox3D(b.x, b.y, b.z, 0.24, 0.24, 1.3, cam, '#FFFFFF', pal.sun, pal.heroFront, null) });
+    items.push({ z: 7, fn: () => {
+      drawBox3D(s.x, s.y, 7, 1.8, 0.42, 1.3, cam, pal.heroTop, pal.heroFront, pal.heroSide, '#E0F2FE');
+      drawBox3D(s.x, s.y + 0.35, 7.1, 0.65, 0.45, 1.0, cam, '#FFFFFF', pal.heroTop, pal.heroFront, null);
+    }});
+  } else if (mode === 'stack' && stackState) {
+    const s = stackState;
+    for (let i = 0; i < s.blocks.length; i++) {
+      const b = s.blocks[i];
+      const topC = pal.stackColors[b.colorIdx % pal.stackColors.length];
+      items.push({ z: b.z + 12 + i * 0.01, fn: () => drawBox3D(b.x, i * 0.75, b.z + 12, b.w, 0.75, b.d, cam, topC, pal.platFront, pal.platSide, 'rgba(255,255,255,0.2)') });
     }
-
-    // Rotating meteors
-    for (const e of s.enemies) {
-      ctx.save();
-      ctx.translate(e.x + e.w / 2, e.y + e.h / 2);
-      ctx.rotate(e.rot);
-      ctx.fillStyle = pal.enemy;
-      ctx.beginPath();
-      ctx.moveTo(-12, -8); ctx.lineTo(2, -13); ctx.lineTo(13, -5);
-      ctx.lineTo(11, 10); ctx.lineTo(-3, 13); ctx.lineTo(-14, 4);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = 'rgba(0,0,0,0.28)';
-      ctx.beginPath(); ctx.arc(-3, -2, 3.5, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(5, 4, 2.5, 0, Math.PI * 2); ctx.fill();
-      ctx.restore();
-    }
-
-    for (const st of s.stars) drawSpinningCoin(st.x, st.y, pal);
+    const a = s.active;
+    const actTop = pal.stackColors[s.blocks.length % pal.stackColors.length];
+    items.push({ z: a.z + 12 + 0.5, fn: () => drawBox3D(a.x, s.blocks.length * 0.75, a.z + 12, a.w, 0.75, a.d, cam, actTop, pal.heroFront, pal.heroSide, '#FFFFFF') });
   }
 
-  // Particles
-  for (const pt of particles) {
+  items.sort((a, b) => b.z - a.z);
+  for (const it of items) it.fn();
+
+  for (const pt of particles3D) {
+    const p = project(pt.x, pt.y, pt.z, cam);
+    if (!p) continue;
     ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
     ctx.fillStyle = pt.color;
-    ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+    const sz = Math.max(2, p.scale * 0.14);
+    ctx.fillRect(p.sx - sz / 2, p.sy - sz / 2, sz, sz);
   }
   ctx.globalAlpha = 1;
 
-  // Floating score popups
-  for (const pop of popups) {
+  for (const pop of popups3D) {
+    const p = project(pop.x, pop.y, pop.z, cam);
+    if (!p) continue;
     ctx.globalAlpha = Math.max(0, pop.life / pop.maxLife);
     ctx.font = '800 13px ui-monospace, monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = pop.color;
-    ctx.fillText(pop.text, pop.x, pop.y);
+    ctx.fillText(pop.text, p.sx, p.sy);
   }
   ctx.globalAlpha = 1;
   ctx.restore();
@@ -2283,32 +2119,19 @@ function loop(ts) {
   elapsed += dt;
   if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
 
-  if (mode === 'puzzle' && puzzleState) {
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        puzzleState.pop[r][c] += (1 - puzzleState.pop[r][c]) * Math.min(1, dt * 16);
-      }
-    }
+  for (const pt of particles3D) {
+    pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.z += pt.vz * dt;
+    pt.vy -= 9 * dt; pt.life -= dt;
   }
-
-  for (const pt of particles) {
-    pt.x += pt.vx * dt;
-    pt.y += pt.vy * dt;
-    pt.vy += 260 * dt;
-    pt.life -= dt;
-  }
-  particles = particles.filter(pt => pt.life > 0);
-
-  for (const pop of popups) {
-    pop.y -= 28 * dt;
-    pop.life -= dt;
-  }
-  popups = popups.filter(pop => pop.life > 0);
+  particles3D = particles3D.filter((pt) => pt.life > 0);
+  for (const pop of popups3D) { pop.y += 1.4 * dt; pop.life -= dt; }
+  popups3D = popups3D.filter((pop) => pop.life > 0);
 
   if (status === 'playing') {
-    if (mode === 'platformer') stepPlatformer(dt);
+    if (mode === 'obby') stepObby(dt);
     else if (mode === 'runner') stepRunner(dt);
     else if (mode === 'arcade') stepArcade(dt);
+    else stepStack(dt);
   }
   drawScene();
   requestAnimationFrame(loop);
@@ -2326,29 +2149,14 @@ window.addEventListener('keydown', (e) => {
   if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
   if (e.code === 'KeyP' && status !== 'ready') togglePause();
   if (e.code === 'Space' && status !== 'playing') { if (status === 'paused') togglePause(); else resetGame(true); return; }
-  if (mode === 'puzzle' && status === 'playing') {
-    if (e.code === 'ArrowLeft' || e.code === 'KeyA') slidePuzzle('left');
-    else if (e.code === 'ArrowRight' || e.code === 'KeyD') slidePuzzle('right');
-    else if (e.code === 'ArrowUp' || e.code === 'KeyW') slidePuzzle('up');
-    else if (e.code === 'ArrowDown' || e.code === 'KeyS') slidePuzzle('down');
+  if (mode === 'runner' && status === 'playing' && runnerState) {
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') runnerState.laneX = Math.max(-1, runnerState.laneX - 1);
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') runnerState.laneX = Math.min(1, runnerState.laneX + 1);
   }
+  if (mode === 'stack' && status === 'playing' && e.code === 'Space' && !e.repeat) dropStackBlock();
   handleKeyMap(e.code, true);
 });
 window.addEventListener('keyup', (e) => handleKeyMap(e.code, false));
-
-let swipeStart = null;
-canvas.addEventListener('pointerdown', (e) => {
-  swipeStart = { x: e.clientX, y: e.clientY };
-});
-canvas.addEventListener('pointerup', (e) => {
-  if (!swipeStart || mode !== 'puzzle' || status !== 'playing') { swipeStart = null; return; }
-  const dx = e.clientX - swipeStart.x;
-  const dy = e.clientY - swipeStart.y;
-  swipeStart = null;
-  if (Math.hypot(dx, dy) < 22) return;
-  if (Math.abs(dx) > Math.abs(dy)) slidePuzzle(dx > 0 ? 'right' : 'left');
-  else slidePuzzle(dy > 0 ? 'down' : 'up');
-});
 
 document.querySelectorAll('.pad-btn').forEach((btn) => {
   const k = btn.dataset.key;
@@ -2356,7 +2164,10 @@ document.querySelectorAll('.pad-btn').forEach((btn) => {
     e.preventDefault();
     btn.classList.add('pressed');
     keys[k] = true;
-    if (mode === 'puzzle' && status === 'playing') slidePuzzle(k);
+    if (mode === 'runner' && status === 'playing' && runnerState) {
+      if (k === 'left') runnerState.laneX = Math.max(-1, runnerState.laneX - 1);
+      if (k === 'right') runnerState.laneX = Math.min(1, runnerState.laneX + 1);
+    }
   };
   const release = () => { btn.classList.remove('pressed'); keys[k] = false; };
   btn.addEventListener('pointerdown', press);
@@ -2369,17 +2180,7 @@ const actionBtn = document.getElementById('actionBtn');
 actionBtn.addEventListener('pointerdown', (e) => {
   e.preventDefault();
   if (status !== 'playing') { if (status === 'paused') togglePause(); else resetGame(true); return; }
-  if (mode === 'puzzle' && puzzleState) {
-    if (addPuzzleTile(puzzleState.grid, puzzleState.pop)) {
-      playSfx('jump');
-      updateHud();
-      if (!canMovePuzzle(puzzleState.grid)) {
-        playSfx('hit');
-        triggerGameOver('No legal merges remain on the 4x4 jewel board.');
-      }
-    }
-    return;
-  }
+  if (mode === 'stack') { dropStackBlock(); return; }
   keys.action = true;
 });
 ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => {
@@ -2389,7 +2190,7 @@ actionBtn.addEventListener('pointerdown', (e) => {
 function togglePause() {
   if (status === 'playing') {
     status = 'paused';
-    showOverlay('PAUSED', MODE_INFO[mode].title, 'Game paused. Tap Resume or press P to jump right back in.', 'Resume', false, false);
+    showOverlay('PAUSED', MODE_INFO[mode].title, 'Game paused. Tap Resume or press P to jump right back in.', 'Resume 3D', false, false);
   } else if (status === 'paused') {
     status = 'playing';
     hideOverlay();

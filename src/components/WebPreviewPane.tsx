@@ -47,7 +47,7 @@ export function WebPreviewPane({
         level?: ConsoleEntry['level'];
         message?: string;
       } | null;
-      if (data?.type === 'craftable-console' && data.channel === channelId && data.message) {
+      if (data?.type === 'zuno-console' && data.channel === channelId && data.message) {
         onConsoleMessage(data.level ?? 'LOG', data.message);
       }
     };

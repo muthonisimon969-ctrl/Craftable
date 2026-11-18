@@ -1,6 +1,6 @@
-// Craftable PWA Service Worker Foundation
+// Zuno AI PWA Service Worker Foundation
 // Safe network-first navigation shell so deployments update immediately while offline shell remains ready.
-const CACHE_NAME = 'craftable-shell-v1';
+const CACHE_NAME = 'zuno-shell-v2';
 const SHELL_ASSETS = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.svg', '/icons/icon-512.svg'];
 
 self.addEventListener('install', (event) => {

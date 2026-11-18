@@ -18,7 +18,7 @@ export function assemblePreviewDocument(
   channelId: string
 ): string {
   const cleanBody = extractBodyIfFullDocument(htmlCode);
-  const escapedTitle = escapeTitle(title || 'Craftable Preview');
+  const escapedTitle = escapeTitle(title || 'Zuno AI Preview');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -59,7 +59,7 @@ export function assemblePreviewDocument(
             }
             return String(a);
           }).join(' ');
-          window.parent.postMessage({ type: 'craftable-console', channel: CHANNEL, level: level, message: msg }, '*');
+          window.parent.postMessage({ type: 'zuno-console', channel: CHANNEL, level: level, message: msg }, '*');
         } catch (e) {}
       }
       var origLog = console.log;
@@ -90,14 +90,14 @@ export function assembleStandaloneExport(
   jsCode: string
 ): string {
   const cleanBody = extractBodyIfFullDocument(htmlCode);
-  const escapedTitle = escapeTitle(title || 'Crafted App');
+  const escapedTitle = escapeTitle(title || 'Zuno AI App');
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${escapedTitle} — Crafted with Craftable</title>
+  <title>${escapedTitle} — Built with Zuno AI</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     html { font-size: 16px; scroll-behavior: smooth; }

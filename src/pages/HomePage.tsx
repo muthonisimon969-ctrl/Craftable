@@ -1,8 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
+  Check,
   Edit3,
-  KeyRound,
+  Layers,
+  Lock,
   Moon,
   MoreVertical,
   RefreshCw,
@@ -21,13 +23,17 @@ interface HomePageProps {
   projects: AppProject[];
   isLoadingProjects: boolean;
   isDarkTheme: boolean;
-  hasPersonalApiKey: boolean;
+  isServerAiReady: boolean;
   isBuilding: boolean;
   buildStatus: string;
   errorMessage: string | null;
   onToggleTheme: () => void;
-  onOpenAiSettings: () => void;
-  onCraftApp: (prompt: string, templateType: TemplateType) => Promise<void>;
+  onOpenAdmin: () => void;
+  onCraftApp: (
+    prompt: string,
+    templateType: TemplateType,
+    blueprintTemplate: DesignTemplate | null
+  ) => Promise<void>;
   onLaunchTemplate: (template: DesignTemplate) => Promise<void>;
   onOpenProject: (projectId: string) => void;
   onToggleStar: (project: AppProject) => Promise<void>;
@@ -40,12 +46,12 @@ export function HomePage({
   projects,
   isLoadingProjects,
   isDarkTheme,
-  hasPersonalApiKey,
+  isServerAiReady,
   isBuilding,
   buildStatus,
   errorMessage,
   onToggleTheme,
-  onOpenAiSettings,
+  onOpenAdmin,
   onCraftApp,
   onLaunchTemplate,
   onOpenProject,
@@ -56,6 +62,7 @@ export function HomePage({
 }: HomePageProps) {
   const [promptText, setPromptText] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('web_app');
+  const [selectedBlueprint, setSelectedBlueprint] = useState<DesignTemplate | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [starredOnly, setStarredOnly] = useState(false);
   const [openMenuProjectId, setOpenMenuProjectId] = useState<string | null>(null);
@@ -74,9 +81,12 @@ export function HomePage({
     });
   }, [projects, starredOnly, searchQuery]);
 
-  const handleApplyTemplatePrompt = (template: DesignTemplate) => {
-    setPromptText(template.starterPrompt);
+  const handleSelectLibraryBlueprint = (template: DesignTemplate) => {
+    setSelectedBlueprint(template);
     setSelectedTemplate(template.defaultTemplateType);
+    if (!promptText.trim() || DESIGN_TEMPLATES.some((t) => t.starterPrompt === promptText.trim())) {
+      setPromptText(template.starterPrompt);
+    }
     onDismissError();
     composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -84,7 +94,7 @@ export function HomePage({
   const handleSubmitCraft = async () => {
     const trimmed = promptText.trim();
     if (!trimmed || isBuilding) return;
-    await onCraftApp(trimmed, selectedTemplate);
+    await onCraftApp(trimmed, selectedTemplate, selectedBlueprint);
   };
 
   return (
@@ -94,28 +104,36 @@ export function HomePage({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <img
               src="/favicon.svg"
-              alt="Craftable logo"
+              alt="Zuno AI logo"
               width={34}
               height={34}
               style={{ borderRadius: 9, flexShrink: 0 }}
             />
-            <span className="brand-title">Craftable</span>
+            <span className="brand-title">Zuno AI</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button
-              type="button"
+            <div
               className="status-pill"
-              onClick={onOpenAiSettings}
+              style={{ cursor: 'default' }}
               title={
-                hasPersonalApiKey
-                  ? 'Personal Gemini key connected in browser'
-                  : 'Configure Craft AI connection'
+                isServerAiReady
+                  ? 'Zuno AI engine is active on the server'
+                  : 'Waiting for owner server key setup'
               }
             >
-              <span className="status-dot" />
-              <span>Studio</span>
-              <KeyRound size={13} style={{ opacity: 0.75 }} />
+              <span className={`status-dot ${isServerAiReady ? '' : 'needs-key'}`} />
+              <span>{isServerAiReady ? 'AI Ready' : 'Offline'}</span>
+            </div>
+
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={onOpenAdmin}
+              aria-label="Owner Admin Control"
+              title="Owner Admin Control"
+            >
+              <Lock size={18} />
             </button>
 
             <button
@@ -133,18 +151,57 @@ export function HomePage({
 
       <main className="home-main">
         {/* Hero Prompt Studio Composer */}
-        <section ref={composerRef} className="hero-card" aria-label="Prompt Composer">
+        <section ref={composerRef} className="hero-card" aria-label="Zuno AI Builder">
           <div className="hero-card-inner">
             <div className="hero-heading">
               <Sparkles size={20} style={{ color: 'var(--coral)', flexShrink: 0 }} />
-              <h1>What do you want to craft?</h1>
+              <h1>What do you want Zuno AI to build?</h1>
             </div>
+
+            {selectedBlueprint && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 8,
+                  padding: '8px 12px',
+                  borderRadius: 12,
+                  background: 'var(--indigo-container)',
+                  color: 'var(--indigo-on-container)',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Layers size={15} />
+                  <span>
+                    Using AI Library Blueprint: <strong>{selectedBlueprint.name}</strong>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedBlueprint(null)}
+                  aria-label="Clear selected template blueprint"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 4,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                  }}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
 
             <textarea
               className="prompt-textarea"
               value={promptText}
               disabled={isBuilding}
-              placeholder="Describe an app, dashboard, or landing page..."
+              placeholder="Describe the website, dashboard, store, or 3D game you want Zuno AI to create..."
               onChange={(e) => {
                 setPromptText(e.target.value);
                 if (errorMessage) onDismissError();
@@ -169,7 +226,7 @@ export function HomePage({
               <div className="error-card">
                 <div className="error-title">
                   <AlertCircle size={18} />
-                  <span>Craft AI did not complete this request</span>
+                  <span>Zuno AI did not complete this request</span>
                 </div>
                 <p className="error-body">{errorMessage}</p>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -181,14 +238,6 @@ export function HomePage({
                   >
                     <RefreshCw size={16} />
                     <span>Retry</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-outline"
-                    onClick={onOpenAiSettings}
-                  >
-                    <KeyRound size={16} />
-                    <span>Craft AI Key</span>
                   </button>
                   <button type="button" className="btn-outline" onClick={onDismissError}>
                     Dismiss
@@ -207,81 +256,98 @@ export function HomePage({
               {isBuilding ? (
                 <>
                   <span className="spinner" />
-                  <span>{buildStatus || 'Crafting your app...'}</span>
+                  <span>{buildStatus || 'Zuno AI is building...'}</span>
                 </>
               ) : (
                 <>
                   <Sparkles size={18} />
-                  <span>Craft App</span>
+                  <span>Create with Zuno AI</span>
                 </>
               )}
             </button>
           </div>
         </section>
 
-        {/* Curated Studio Templates Gallery */}
-        <section aria-label="Curated studio templates">
-          <h2 style={{ margin: 0, fontSize: '1.08rem' }}>Curated studio templates</h2>
+        {/* AI Template Library */}
+        <section aria-label="AI Template Library">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <h2 style={{ margin: 0, fontSize: '1.08rem' }}>AI Template Library</h2>
+            <span className="badge badge-neutral">Blueprints for Zuno AI</span>
+          </div>
           <p className="section-header-sub">
-            Open a ready-to-use app immediately or load its prompt into Craft AI
+            Pick a design blueprint for Zuno AI to build your custom website or 3D game, or launch a starter to edit in AI chat
           </p>
           <div className="templates-rail">
-            {DESIGN_TEMPLATES.map((template) => (
-              <article key={template.id} className="template-card">
-                <div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 8,
-                    }}
-                  >
-                    <span className="badge">{template.badgeLabel}</span>
-                    <div className="swatch-dots" aria-hidden="true">
-                      <span className="swatch-dot" style={{ background: template.canvasHex }} />
-                      <span className="swatch-dot" style={{ background: template.surfaceHex }} />
-                      <span className="swatch-dot" style={{ background: template.accentHex }} />
+            {DESIGN_TEMPLATES.map((template) => {
+              const isSelected = selectedBlueprint?.id === template.id;
+              return (
+                <article
+                  key={template.id}
+                  className="template-card"
+                  style={isSelected ? { borderColor: 'var(--coral)' } : undefined}
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                      }}
+                    >
+                      <span className="badge">{template.badgeLabel}</span>
+                      <div className="swatch-dots" aria-hidden="true">
+                        <span className="swatch-dot" style={{ background: template.canvasHex }} />
+                        <span className="swatch-dot" style={{ background: template.surfaceHex }} />
+                        <span className="swatch-dot" style={{ background: template.accentHex }} />
+                      </div>
                     </div>
+                    <h3 style={{ margin: '10px 0 4px', fontSize: '1.04rem' }}>{template.name}</h3>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: '0.84rem',
+                        color: 'var(--text-muted)',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {template.shortSummary}
+                    </p>
                   </div>
-                  <h3 style={{ margin: '10px 0 4px', fontSize: '1.04rem' }}>{template.name}</h3>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: '0.84rem',
-                      color: 'var(--text-muted)',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {template.shortSummary}
-                  </p>
-                </div>
 
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    disabled={isBuilding}
-                    onClick={() => onLaunchTemplate(template)}
-                    style={{ flex: 1, minHeight: 44 }}
-                  >
-                    Open App
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-outline"
-                    disabled={isBuilding}
-                    onClick={() => handleApplyTemplatePrompt(template)}
-                    style={{ minHeight: 44 }}
-                  >
-                    Prompt
-                  </button>
-                </div>
-              </article>
-            ))}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      disabled={isBuilding}
+                      onClick={() => handleSelectLibraryBlueprint(template)}
+                      style={{ flex: 1, minHeight: 44 }}
+                    >
+                      {isSelected ? (
+                        <>
+                          <Check size={16} />
+                          <span>Selected</span>
+                        </>
+                      ) : (
+                        <span>Use with AI</span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      disabled={isBuilding}
+                      onClick={() => onLaunchTemplate(template)}
+                      style={{ minHeight: 44 }}
+                    >
+                      Starter
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -354,12 +420,12 @@ export function HomePage({
                 <rect x="14" y="40" width="46" height="6" rx="3" fill="var(--border)" />
               </svg>
               <h3 style={{ margin: 0, fontSize: '1.12rem' }}>
-                {projects.length > 0 ? 'No matching projects' : 'Your canvas is ready'}
+                {projects.length > 0 ? 'No matching projects' : 'Your Zuno AI canvas is ready'}
               </h3>
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)', maxWidth: 420 }}>
                 {projects.length > 0
                   ? 'Try clearing your search or star filter.'
-                  : 'Describe an idea above or open a curated studio template to launch your first live interactive app.'}
+                  : 'Describe the website or 3D game you want above, or pick a blueprint from the AI Template Library.'}
               </p>
             </div>
           ) : (

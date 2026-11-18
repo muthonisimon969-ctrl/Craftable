@@ -1,35 +1,46 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  CraftAiKeyModal,
   DeleteProjectModal,
   RenameProjectModal,
 } from './components/Modals';
 import { buildStarterTemplateBundle } from './data/starterTemplateBundles';
+import { AdminPage } from './pages/AdminPage';
 import { HomePage } from './pages/HomePage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import {
+  checkServerAiStatus,
   generateNewApp,
-  getSavedUserApiKey,
-  saveUserApiKey,
 } from './services/craftAiService';
 import * as storage from './services/projectStorage';
 import type { AppProject, DesignTemplate, TemplateType } from './types/project';
 
-const THEME_STORAGE_KEY = 'craftable_dark_theme';
+const THEME_STORAGE_KEY = 'zuno_dark_theme';
+const LEGACY_THEME_STORAGE_KEY = 'craftable_dark_theme';
 
-function getRouteProjectId(): string | null {
+type AppRoute =
+  | { view: 'home' }
+  | { view: 'admin' }
+  | { view: 'workspace'; projectId: string };
+
+function parseRoute(): AppRoute {
   const path = window.location.pathname;
+  if (/^\/admin\/?$/.test(path)) {
+    return { view: 'admin' };
+  }
   const match = /^\/workspace\/([^/]+)\/?$/.exec(path);
-  return match ? decodeURIComponent(match[1]) : null;
+  if (match) {
+    return { view: 'workspace', projectId: decodeURIComponent(match[1]) };
+  }
+  return { view: 'home' };
 }
 
 export default function App() {
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(() =>
-    getRouteProjectId()
-  );
+  const [route, setRoute] = useState<AppRoute>(() => parseRoute());
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     try {
-      const saved = localStorage.getItem(THEME_STORAGE_KEY);
+      const saved =
+        localStorage.getItem(THEME_STORAGE_KEY) ??
+        localStorage.getItem(LEGACY_THEME_STORAGE_KEY);
       return saved === null ? true : saved === 'true';
     } catch {
       return true;
@@ -38,12 +49,11 @@ export default function App() {
 
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  const [isServerAiReady, setIsServerAiReady] = useState(true);
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildStatus, setBuildStatus] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const [personalKey, setPersonalKey] = useState(() => getSavedUserApiKey());
-  const [showAiKeyModal, setShowAiKeyModal] = useState(false);
   const [projectToRename, setProjectToRename] = useState<AppProject | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<AppProject | null>(null);
 
@@ -63,9 +73,14 @@ export default function App() {
   }, [isDarkTheme]);
 
   useEffect(() => {
-    const onPopState = () => setActiveProjectId(getRouteProjectId());
+    const onPopState = () => setRoute(parseRoute());
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
+  }, []);
+
+  const refreshServerStatus = useCallback(async () => {
+    const st = await checkServerAiStatus();
+    setIsServerAiReady(st.ready);
   }, []);
 
   const refreshProjects = useCallback(async () => {
@@ -80,28 +95,42 @@ export default function App() {
 
   useEffect(() => {
     refreshProjects();
-  }, [refreshProjects]);
+    refreshServerStatus();
+  }, [refreshProjects, refreshServerStatus]);
 
   const navigateToProject = (projectId: string) => {
     window.history.pushState({}, '', `/workspace/${encodeURIComponent(projectId)}`);
-    setActiveProjectId(projectId);
+    setRoute({ view: 'workspace', projectId });
   };
 
   const navigateHome = () => {
     window.history.pushState({}, '', '/');
-    setActiveProjectId(null);
+    setRoute({ view: 'home' });
     refreshProjects();
+    refreshServerStatus();
   };
 
-  const handleCraftApp = async (prompt: string, templateType: TemplateType) => {
+  const navigateAdmin = () => {
+    window.history.pushState({}, '', '/admin');
+    setRoute({ view: 'admin' });
+  };
+
+  const handleCraftApp = async (
+    prompt: string,
+    templateType: TemplateType,
+    blueprintTemplate: DesignTemplate | null
+  ) => {
     if (isBuilding) return;
     setIsBuilding(true);
-    setBuildStatus('Connecting to Craft AI...');
+    setBuildStatus('Connecting to Zuno AI...');
     setErrorMessage(null);
 
     try {
-      const bundle = await generateNewApp(prompt, templateType, (stage) =>
-        setBuildStatus(stage)
+      const bundle = await generateNewApp(
+        prompt,
+        templateType,
+        blueprintTemplate,
+        (stage) => setBuildStatus(stage)
       );
       setBuildStatus('Saving project locally...');
       const created = await storage.createProject(prompt, templateType, bundle);
@@ -113,7 +142,7 @@ export default function App() {
       setIsBuilding(false);
       setBuildStatus('');
       setErrorMessage(
-        err instanceof Error ? err.message : 'Craft AI did not complete this request.'
+        err instanceof Error ? err.message : 'Zuno AI did not complete this request.'
       );
     }
   };
@@ -121,7 +150,7 @@ export default function App() {
   const handleLaunchTemplate = async (template: DesignTemplate) => {
     if (isBuilding) return;
     setIsBuilding(true);
-    setBuildStatus(`Opening ${template.name} template...`);
+    setBuildStatus(`Opening ${template.name} starter...`);
     setErrorMessage(null);
 
     try {
@@ -138,7 +167,7 @@ export default function App() {
     } catch (err) {
       setIsBuilding(false);
       setBuildStatus('');
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to open template.');
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to open starter.');
     }
   };
 
@@ -165,10 +194,15 @@ export default function App() {
 
   return (
     <>
-      {activeProjectId ? (
+      {route.view === 'admin' ? (
+        <AdminPage
+          onNavigateHome={navigateHome}
+          onStatusChanged={refreshServerStatus}
+        />
+      ) : route.view === 'workspace' ? (
         <WorkspacePage
-          key={activeProjectId}
-          projectId={activeProjectId}
+          key={route.projectId}
+          projectId={route.projectId}
           onNavigateBack={navigateHome}
           onProjectUpdated={(updated) => {
             setProjects((prev) => {
@@ -185,12 +219,12 @@ export default function App() {
           projects={projects}
           isLoadingProjects={isLoadingProjects}
           isDarkTheme={isDarkTheme}
-          hasPersonalApiKey={Boolean(personalKey)}
+          isServerAiReady={isServerAiReady}
           isBuilding={isBuilding}
           buildStatus={buildStatus}
           errorMessage={errorMessage}
           onToggleTheme={() => setIsDarkTheme((v) => !v)}
-          onOpenAiSettings={() => setShowAiKeyModal(true)}
+          onOpenAdmin={navigateAdmin}
           onCraftApp={handleCraftApp}
           onLaunchTemplate={handleLaunchTemplate}
           onOpenProject={navigateToProject}
@@ -217,17 +251,6 @@ export default function App() {
           projectTitle={projectToDelete.title}
           onDismiss={() => setProjectToDelete(null)}
           onConfirm={() => handleDeleteConfirm(projectToDelete.id)}
-        />
-      )}
-
-      {showAiKeyModal && (
-        <CraftAiKeyModal
-          currentKey={personalKey}
-          onDismiss={() => setShowAiKeyModal(false)}
-          onSaveKey={(key) => {
-            saveUserApiKey(key);
-            setPersonalKey(getSavedUserApiKey());
-          }}
         />
       )}
     </>

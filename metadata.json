@@ -1,6 +1,6 @@
 {
-  "name": "Craftable",
-  "description": "AI-powered prompt-to-app builder with live interactive web preview, multi-file code explorer, and local project workspace.",
+  "name": "Zuno AI",
+  "description": "AI-powered prompt-to-website and 3D game builder with live interactive preview, AI template library, multi-file code explorer, and server-secured owner admin key control.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

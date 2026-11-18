@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">Craftable</string>
+    <string name="app_name">Zuno AI</string>
     <string name="tagline">Idea to interactive app in seconds</string>
-    <string name="prompt_hero_title">What do you want to craft?</string>
-    <string name="prompt_hint">Describe an app, dashboard, or landing page...</string>
-    <string name="build_cta">Craft App</string>
-    <string name="building_label">Crafting your app...</string>
+    <string name="prompt_hero_title">What do you want to build with Zuno AI?</string>
+    <string name="prompt_hint">Describe a website, dashboard, or 3D game...</string>
+    <string name="build_cta">Create with Zuno AI</string>
+    <string name="building_label">Zuno AI is building...</string>
     <string name="recent_projects">Your Projects</string>
     <string name="empty_projects_title">Your canvas is ready</string>
     <string name="empty_projects_subtitle">Describe an idea above or tap a starter prompt to generate your first live interactive app.</string>

@@ -15,6 +15,8 @@
 .cxx
 local.properties
 .env
+.env.local
+.zuno-keys.local.json
 debug.keystore
 *-debug.log
 node_modules/

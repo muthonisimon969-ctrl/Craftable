@@ -79,7 +79,7 @@ export function BuilderChatPane({
                     <CheckCircle2 size={15} />
                   </span>
                   <strong className="font-display" style={{ fontSize: '0.94rem' }}>
-                    Craftable Agent
+                    Zuno AI
                   </strong>
                 </div>
                 <span className="badge font-mono">v{msg.versionTag}</span>
@@ -124,10 +124,10 @@ export function BuilderChatPane({
               <span className="spinner" style={{ color: 'var(--coral)' }} />
               <div>
                 <div className="font-display" style={{ fontWeight: 700, fontSize: '0.95rem' }}>
-                  Craftable AI is working...
+                  Zuno AI is working...
                 </div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  {generationStage || 'Waiting for Craft AI response...'}
+                  {generationStage || 'Waiting for Zuno AI response...'}
                 </div>
               </div>
             </div>
@@ -140,7 +140,7 @@ export function BuilderChatPane({
             <div className="error-card">
               <div className="error-title">
                 <AlertCircle size={18} />
-                <span>Craft AI did not complete this reply</span>
+                <span>Zuno AI did not complete this reply</span>
               </div>
               <p className="error-body">{errorMessage}</p>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -187,7 +187,7 @@ export function BuilderChatPane({
           rows={1}
           value={promptInput}
           disabled={isGenerating}
-          placeholder="Tell Craftable what to build or change..."
+          placeholder="Tell Zuno AI what to build or change..."
           onChange={(e) => onPromptChanged(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {

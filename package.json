@@ -1,8 +1,8 @@
 {
-  "name": "craftable-web",
+  "name": "zuno-ai-web",
   "private": true,
   "version": "1.0.0",
-  "description": "Craftable — AI-powered prompt-to-app web studio with live interactive preview, multi-file code explorer, and curated templates.",
+  "description": "Zuno AI — AI-powered prompt-to-website and 3D game builder with live interactive preview, multi-file code explorer, and AI template library.",
   "type": "module",
   "scripts": {
     "dev": "vite",

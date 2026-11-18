@@ -131,7 +131,7 @@ export function WorkspacePage({
     setPendingUserPrompt(prompt);
     setFailedUserPrompt(null);
     setIsGenerating(true);
-    setGenerationStage('Connecting to Craft AI...');
+    setGenerationStage('Connecting to Zuno AI...');
     setErrorMessage(null);
 
     try {
@@ -172,7 +172,7 @@ export function WorkspacePage({
       setFailedUserPrompt(prompt);
       setGenerationStage('');
       setErrorMessage(
-        err instanceof Error ? err.message : 'Craft AI could not complete this request.'
+        err instanceof Error ? err.message : 'Zuno AI could not complete this request.'
       );
     }
   };
@@ -216,7 +216,7 @@ export function WorkspacePage({
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const safeName = project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'craftable-app';
+    const safeName = project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'zuno-ai-app';
     link.href = url;
     link.download = `${safeName}.html`;
     document.body.appendChild(link);
@@ -231,7 +231,7 @@ export function WorkspacePage({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${project.title} — Craftable App`,
+          title: `${project.title} — Zuno AI App`,
           text: html,
         });
         return;

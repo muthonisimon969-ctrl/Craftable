@@ -1,7 +1,7 @@
 {
-  "name": "Craftable",
-  "short_name": "Craftable",
-  "description": "Idea to interactive app in seconds — Craft AI web studio with live preview and multi-file code explorer.",
+  "name": "Zuno AI",
+  "short_name": "Zuno AI",
+  "description": "Idea to interactive website & 3D game in seconds — Zuno AI studio with live preview and multi-file code explorer.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
