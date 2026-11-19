@@ -1,7 +1,14 @@
 // Zuno AI PWA Service Worker Foundation
 // Safe network-first navigation shell so deployments update immediately while offline shell remains ready.
-const CACHE_NAME = 'zuno-shell-v2';
-const SHELL_ASSETS = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.svg', '/icons/icon-512.svg'];
+const CACHE_NAME = 'zuno-shell-v3';
+const SHELL_ASSETS = [
+  '/',
+  '/manifest.webmanifest',
+  '/favicon.svg',
+  '/icons/icon-192.svg',
+  '/icons/icon-512.svg',
+  '/vendor/three-studio-runtime.js',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(

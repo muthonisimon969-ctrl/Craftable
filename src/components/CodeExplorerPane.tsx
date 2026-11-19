@@ -9,16 +9,11 @@ interface CodeExplorerPaneProps {
   jsCode: string;
   hasUnsavedChanges: boolean;
   isSaving: boolean;
+  jsFileLabel?: string;
   onSelectFile: (tab: CodeFileTab) => void;
   onCodeChanged: (code: string) => void;
   onSaveAndRun: () => void;
 }
-
-const FILE_TABS: Array<{ id: CodeFileTab; dotColor: string }> = [
-  { id: 'index.html', dotColor: 'var(--coral)' },
-  { id: 'styles.css', dotColor: 'var(--indigo)' },
-  { id: 'app.js', dotColor: 'var(--amber)' },
-];
 
 export function CodeExplorerPane({
   selectedFile,
@@ -27,11 +22,20 @@ export function CodeExplorerPane({
   jsCode,
   hasUnsavedChanges,
   isSaving,
+  jsFileLabel = 'app.js',
   onSelectFile,
   onCodeChanged,
   onSaveAndRun,
 }: CodeExplorerPaneProps) {
   const [copied, setCopied] = useState(false);
+
+  const fileTabs: Array<{ id: CodeFileTab; label: string; dotColor: string }> = [
+    { id: 'index.html', label: 'index.html', dotColor: 'var(--coral)' },
+    { id: 'styles.css', label: 'styles.css', dotColor: 'var(--indigo)' },
+    { id: 'app.js', label: jsFileLabel, dotColor: 'var(--amber)' },
+  ];
+
+  const displayName = selectedFile === 'app.js' ? jsFileLabel : selectedFile;
 
   const activeCode =
     selectedFile === 'index.html'
@@ -56,7 +60,7 @@ export function CodeExplorerPane({
   return (
     <div className="code-pane">
       <div className="chip-row">
-        {FILE_TABS.map((tab) => (
+        {fileTabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
@@ -72,7 +76,7 @@ export function CodeExplorerPane({
                 display: 'inline-block',
               }}
             />
-            <span>{tab.id}</span>
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
@@ -80,7 +84,7 @@ export function CodeExplorerPane({
       <div className="code-surface">
         <div className="code-toolbar">
           <span className="font-mono" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            {selectedFile} &bull; {lineCount} lines
+            {displayName} &bull; {lineCount} lines
           </span>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

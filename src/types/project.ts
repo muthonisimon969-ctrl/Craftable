@@ -1,5 +1,24 @@
 export type TemplateType = 'web_app' | 'dashboard' | 'landing_page' | 'utility';
 
+export type ProjectMode = 'standard' | 'creative';
+export type CreativeCategory = '3d_game' | '3d_environment' | 'animation' | 'web_app';
+
+export interface CreativeCategoryMeta {
+  id: CreativeCategory;
+  displayName: string;
+}
+
+export const CREATIVE_CATEGORIES: CreativeCategoryMeta[] = [
+  { id: '3d_game', displayName: '3D Game' },
+  { id: '3d_environment', displayName: '3D Environment' },
+  { id: 'animation', displayName: '2D / 3D Animation' },
+  { id: 'web_app', displayName: 'Interactive 3D App' },
+];
+
+export function getCreativeCategoryDisplayName(cat?: string): string {
+  return CREATIVE_CATEGORIES.find((c) => c.id === cat)?.displayName ?? '3D Studio';
+}
+
 export interface TemplateTypeMeta {
   id: TemplateType;
   displayName: string;
@@ -22,6 +41,8 @@ export interface AppProject {
   description: string;
   initialPrompt: string;
   templateType: TemplateType;
+  mode?: ProjectMode;
+  creativeCategory?: CreativeCategory;
   isStarred: boolean;
   version: number;
   htmlCode: string;

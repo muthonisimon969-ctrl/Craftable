@@ -1,4 +1,11 @@
-import type { AppProject, GeneratedAppBundle, ProjectMessage, TemplateType } from '../types/project';
+import type {
+  AppProject,
+  CreativeCategory,
+  GeneratedAppBundle,
+  ProjectMessage,
+  ProjectMode,
+  TemplateType,
+} from '../types/project';
 
 const DB_NAME = 'craftable_studio_db';
 const DB_VERSION = 1;
@@ -80,6 +87,16 @@ export async function listProjects(): Promise<AppProject[]> {
   }
 }
 
+export async function listStandardProjects(): Promise<AppProject[]> {
+  const all = await listProjects();
+  return all.filter((p) => p.mode !== 'creative');
+}
+
+export async function listCreativeProjects(): Promise<AppProject[]> {
+  const all = await listProjects();
+  return all.filter((p) => p.mode === 'creative');
+}
+
 export async function getProject(projectId: string): Promise<AppProject | null> {
   try {
     const db = await openDatabase();
@@ -138,16 +155,19 @@ async function putProjectAndMessages(project: AppProject, messages: ProjectMessa
 export async function createProject(
   prompt: string,
   templateType: TemplateType,
-  bundle: GeneratedAppBundle
+  bundle: GeneratedAppBundle,
+  options?: { mode?: ProjectMode; creativeCategory?: CreativeCategory }
 ): Promise<AppProject> {
   const projectId = createId();
   const now = Date.now();
   const project: AppProject = {
     id: projectId,
-    title: bundle.projectTitle.trim().slice(0, 120) || 'Untitled Craft',
+    title: bundle.projectTitle.trim().slice(0, 120) || 'Untitled Project',
     description: bundle.description.trim().slice(0, 500),
     initialPrompt: prompt.trim().slice(0, 2000),
     templateType,
+    ...(options?.mode ? { mode: options.mode } : {}),
+    ...(options?.creativeCategory ? { creativeCategory: options.creativeCategory } : {}),
     isStarred: false,
     version: 1,
     htmlCode: bundle.htmlCode,

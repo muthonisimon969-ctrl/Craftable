@@ -3,16 +3,26 @@ import {
   DeleteProjectModal,
   RenameProjectModal,
 } from './components/Modals';
+import type { CreativeBlueprint } from './data/creativeBlueprints';
+import { buildCreativeStarterBundle } from './data/creativeStarters';
 import { buildStarterTemplateBundle } from './data/starterTemplateBundles';
 import { AdminPage } from './pages/AdminPage';
+import { CreativeHubPage } from './pages/CreativeHubPage';
+import { CreativeWorkspacePage } from './pages/CreativeWorkspacePage';
 import { HomePage } from './pages/HomePage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import {
   checkServerAiStatus,
   generateNewApp,
 } from './services/craftAiService';
+import { generateCreativeProject } from './services/creativeAiService';
 import * as storage from './services/projectStorage';
-import type { AppProject, DesignTemplate, TemplateType } from './types/project';
+import type {
+  AppProject,
+  CreativeCategory,
+  DesignTemplate,
+  TemplateType,
+} from './types/project';
 
 const THEME_STORAGE_KEY = 'zuno_dark_theme';
 const LEGACY_THEME_STORAGE_KEY = 'craftable_dark_theme';
@@ -20,12 +30,21 @@ const LEGACY_THEME_STORAGE_KEY = 'craftable_dark_theme';
 type AppRoute =
   | { view: 'home' }
   | { view: 'admin' }
-  | { view: 'workspace'; projectId: string };
+  | { view: 'workspace'; projectId: string }
+  | { view: 'creative' }
+  | { view: 'creative_workspace'; projectId: string };
 
 function parseRoute(): AppRoute {
   const path = window.location.pathname;
   if (/^\/admin\/?$/.test(path)) {
     return { view: 'admin' };
+  }
+  const creativeMatch = /^\/creative\/([^/]+)\/?$/.exec(path);
+  if (creativeMatch) {
+    return { view: 'creative_workspace', projectId: decodeURIComponent(creativeMatch[1]) };
+  }
+  if (/^\/creative\/?$/.test(path)) {
+    return { view: 'creative' };
   }
   const match = /^\/workspace\/([^/]+)\/?$/.exec(path);
   if (match) {
@@ -103,7 +122,21 @@ export default function App() {
     setRoute({ view: 'workspace', projectId });
   };
 
+  const navigateToCreativeWorkspace = (projectId: string) => {
+    window.history.pushState({}, '', `/creative/${encodeURIComponent(projectId)}`);
+    setRoute({ view: 'creative_workspace', projectId });
+  };
+
+  const navigateCreativeHub = () => {
+    setErrorMessage(null);
+    window.history.pushState({}, '', '/creative');
+    setRoute({ view: 'creative' });
+    refreshProjects();
+    refreshServerStatus();
+  };
+
   const navigateHome = () => {
+    setErrorMessage(null);
     window.history.pushState({}, '', '/');
     setRoute({ view: 'home' });
     refreshProjects();
@@ -133,7 +166,9 @@ export default function App() {
         (stage) => setBuildStatus(stage)
       );
       setBuildStatus('Saving project locally...');
-      const created = await storage.createProject(prompt, templateType, bundle);
+      const created = await storage.createProject(prompt, templateType, bundle, {
+        mode: 'standard',
+      });
       setProjects((prev) => [created, ...prev]);
       setIsBuilding(false);
       setBuildStatus('');
@@ -158,7 +193,8 @@ export default function App() {
       const created = await storage.createProject(
         template.starterPrompt,
         template.defaultTemplateType,
-        bundle
+        bundle,
+        { mode: 'standard' }
       );
       setProjects((prev) => [created, ...prev]);
       setIsBuilding(false);
@@ -168,6 +204,69 @@ export default function App() {
       setIsBuilding(false);
       setBuildStatus('');
       setErrorMessage(err instanceof Error ? err.message : 'Failed to open starter.');
+    }
+  };
+
+  const handleCreateCreativeWithAi = async (
+    prompt: string,
+    category: CreativeCategory,
+    blueprint: CreativeBlueprint | null
+  ) => {
+    if (isBuilding) return;
+    setIsBuilding(true);
+    setBuildStatus('Connecting to Zuno Creative Studio...');
+    setErrorMessage(null);
+
+    try {
+      const bundle = await generateCreativeProject(
+        prompt,
+        category,
+        blueprint?.blueprintHint ?? null,
+        (stage) => setBuildStatus(stage)
+      );
+      setBuildStatus('Saving 3D Creative project...');
+      const created = await storage.createProject(prompt, 'web_app', bundle, {
+        mode: 'creative',
+        creativeCategory: category,
+      });
+      setProjects((prev) => [created, ...prev]);
+      setIsBuilding(false);
+      setBuildStatus('');
+      navigateToCreativeWorkspace(created.id);
+    } catch (err) {
+      setIsBuilding(false);
+      setBuildStatus('');
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Creative Studio did not complete this request.'
+      );
+    }
+  };
+
+  const handleLaunchCreativeStarter = async (blueprint: CreativeBlueprint) => {
+    if (isBuilding) return;
+    setIsBuilding(true);
+    setBuildStatus(`Launching ${blueprint.name}...`);
+    setErrorMessage(null);
+
+    try {
+      const bundle = buildCreativeStarterBundle(blueprint.id);
+      const created = await storage.createProject(
+        blueprint.starterPrompt,
+        'web_app',
+        bundle,
+        {
+          mode: 'creative',
+          creativeCategory: blueprint.category,
+        }
+      );
+      setProjects((prev) => [created, ...prev]);
+      setIsBuilding(false);
+      setBuildStatus('');
+      navigateToCreativeWorkspace(created.id);
+    } catch (err) {
+      setIsBuilding(false);
+      setBuildStatus('');
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to launch 3D starter.');
     }
   };
 
@@ -192,6 +291,16 @@ export default function App() {
     setProjectToDelete(null);
   };
 
+  const standardProjects = projects.filter((p) => p.mode !== 'creative');
+  const creativeProjects = projects.filter((p) => p.mode === 'creative');
+
+  const upsertProject = (updated: AppProject) => {
+    setProjects((prev) => {
+      const exists = prev.some((p) => p.id === updated.id);
+      return exists ? prev.map((p) => (p.id === updated.id ? updated : p)) : [updated, ...prev];
+    });
+  };
+
   return (
     <>
       {route.view === 'admin' ? (
@@ -199,24 +308,45 @@ export default function App() {
           onNavigateHome={navigateHome}
           onStatusChanged={refreshServerStatus}
         />
+      ) : route.view === 'creative_workspace' ? (
+        <CreativeWorkspacePage
+          key={route.projectId}
+          projectId={route.projectId}
+          onNavigateBack={navigateCreativeHub}
+          onProjectUpdated={upsertProject}
+          onRequestRename={(proj) => setProjectToRename(proj)}
+        />
+      ) : route.view === 'creative' ? (
+        <CreativeHubPage
+          projects={creativeProjects}
+          isLoadingProjects={isLoadingProjects}
+          isDarkTheme={isDarkTheme}
+          isServerAiReady={isServerAiReady}
+          isBuilding={isBuilding}
+          buildStatus={buildStatus}
+          errorMessage={errorMessage}
+          onNavigateHome={navigateHome}
+          onOpenAdmin={navigateAdmin}
+          onToggleTheme={() => setIsDarkTheme((v) => !v)}
+          onCreateWithAi={handleCreateCreativeWithAi}
+          onLaunchBlueprintStarter={handleLaunchCreativeStarter}
+          onOpenCreativeProject={navigateToCreativeWorkspace}
+          onToggleStar={handleToggleStar}
+          onDismissError={() => setErrorMessage(null)}
+          requestRename={(proj) => setProjectToRename(proj)}
+          requestDelete={(proj) => setProjectToDelete(proj)}
+        />
       ) : route.view === 'workspace' ? (
         <WorkspacePage
           key={route.projectId}
           projectId={route.projectId}
           onNavigateBack={navigateHome}
-          onProjectUpdated={(updated) => {
-            setProjects((prev) => {
-              const exists = prev.some((p) => p.id === updated.id);
-              return exists
-                ? prev.map((p) => (p.id === updated.id ? updated : p))
-                : [updated, ...prev];
-            });
-          }}
+          onProjectUpdated={upsertProject}
           onRequestRename={(proj) => setProjectToRename(proj)}
         />
       ) : (
         <HomePage
-          projects={projects}
+          projects={standardProjects}
           isLoadingProjects={isLoadingProjects}
           isDarkTheme={isDarkTheme}
           isServerAiReady={isServerAiReady}
@@ -225,6 +355,7 @@ export default function App() {
           errorMessage={errorMessage}
           onToggleTheme={() => setIsDarkTheme((v) => !v)}
           onOpenAdmin={navigateAdmin}
+          onOpenCreativeStudio={navigateCreativeHub}
           onCraftApp={handleCraftApp}
           onLaunchTemplate={handleLaunchTemplate}
           onOpenProject={navigateToProject}

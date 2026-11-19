@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
+  Box,
   Check,
   Edit3,
   Layers,
@@ -29,6 +30,7 @@ interface HomePageProps {
   errorMessage: string | null;
   onToggleTheme: () => void;
   onOpenAdmin: () => void;
+  onOpenCreativeStudio: () => void;
   onCraftApp: (
     prompt: string,
     templateType: TemplateType,
@@ -52,6 +54,7 @@ export function HomePage({
   errorMessage,
   onToggleTheme,
   onOpenAdmin,
+  onOpenCreativeStudio,
   onCraftApp,
   onLaunchTemplate,
   onOpenProject,
@@ -113,6 +116,18 @@ export function HomePage({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              type="button"
+              className="status-pill"
+              onClick={onOpenCreativeStudio}
+              aria-label="Open Three.js Creative Studio"
+              title="Open Three.js Creative Studio"
+              style={{ borderColor: 'rgba(255, 94, 91, 0.45)', color: 'var(--text)' }}
+            >
+              <Box size={15} style={{ color: 'var(--coral)' }} />
+              <span>Creative Studio</span>
+            </button>
+
             <div
               className="status-pill"
               style={{ cursor: 'default' }}

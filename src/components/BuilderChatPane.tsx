@@ -11,6 +11,8 @@ interface BuilderChatPaneProps {
   pendingUserPrompt: string | null;
   failedUserPrompt: string | null;
   errorMessage: string | null;
+  assistantLabel?: string;
+  placeholder?: string;
   onPromptChanged: (value: string) => void;
   onSendPrompt: () => void;
   onTapSuggestion: (suggestion: string) => void;
@@ -28,6 +30,8 @@ export function BuilderChatPane({
   pendingUserPrompt,
   failedUserPrompt,
   errorMessage,
+  assistantLabel = 'Zuno AI',
+  placeholder = 'Tell Zuno AI what to build or change...',
   onPromptChanged,
   onSendPrompt,
   onTapSuggestion,
@@ -79,7 +83,7 @@ export function BuilderChatPane({
                     <CheckCircle2 size={15} />
                   </span>
                   <strong className="font-display" style={{ fontSize: '0.94rem' }}>
-                    Zuno AI
+                    {assistantLabel}
                   </strong>
                 </div>
                 <span className="badge font-mono">v{msg.versionTag}</span>
@@ -187,7 +191,7 @@ export function BuilderChatPane({
           rows={1}
           value={promptInput}
           disabled={isGenerating}
-          placeholder="Tell Zuno AI what to build or change..."
+          placeholder={placeholder}
           onChange={(e) => onPromptChanged(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
