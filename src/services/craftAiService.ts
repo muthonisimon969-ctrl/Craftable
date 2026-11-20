@@ -3,9 +3,11 @@ import type {
   DesignTemplate,
   GeneratedAppBundle,
   ProjectMessage,
+  PromptAttachment,
   TemplateType,
 } from '../types/project';
 import { getTemplateDisplayName } from '../types/project';
+import { serializeAttachmentsForApi } from '../utils/attachmentReader';
 import { extractBodyIfFullDocument } from '../utils/webBundleAssembler';
 import { auditGeneratedBundle } from './webQualityValidator';
 
@@ -215,7 +217,8 @@ export function parseCraftAiResponse(
 
 async function executeZunoServerRequest(
   promptText: string,
-  onStageUpdate: (stage: string) => void
+  onStageUpdate: (stage: string) => void,
+  attachments?: PromptAttachment[]
 ): Promise<string> {
   onStageUpdate('Connecting to Zuno AI...');
 
@@ -227,7 +230,12 @@ async function executeZunoServerRequest(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
-      body: JSON.stringify({ promptText, systemPrompt: SYSTEM_PROMPT }),
+      body: JSON.stringify({
+        mode: 'build',
+        promptText,
+        systemPrompt: SYSTEM_PROMPT,
+        attachments: serializeAttachmentsForApi(attachments),
+      }),
     });
     clearTimeout(timer);
 
@@ -287,7 +295,8 @@ export async function generateNewApp(
   prompt: string,
   templateType: TemplateType,
   blueprintTemplate: DesignTemplate | null = null,
-  onStageUpdate: (stage: string) => void = () => {}
+  onStageUpdate: (stage: string) => void = () => {},
+  attachments?: PromptAttachment[]
 ): Promise<GeneratedAppBundle> {
   const lines: string[] = [
     'BUILD EXACTLY THIS WEBSITE / APP / GAME:',
@@ -314,7 +323,7 @@ export async function generateNewApp(
     'Output all sections using <<<TITLE>>>, <<<DESCRIPTION>>>, <<<SUMMARY>>>, <<<HTML>>>, <<<CSS>>>, <<<JS>>>, and <<<SUGGESTIONS>>>.'
   );
 
-  const rawText = await executeZunoServerRequest(lines.join('\n'), onStageUpdate);
+  const rawText = await executeZunoServerRequest(lines.join('\n'), onStageUpdate, attachments);
   const bundle = parseCraftAiResponse(rawText, null);
   return finalizeBundle(prompt, bundle, null, onStageUpdate);
 }

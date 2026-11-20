@@ -1,26 +1,37 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  DeleteProjectModal,
-  RenameProjectModal,
-} from './components/Modals';
-import type { CreativeBlueprint } from './data/creativeBlueprints';
+import { type NavSection } from './components/AppNavigation';
+import { DeleteProjectModal, RenameProjectModal } from './components/Modals';
+import { type CreativeBlueprint } from './data/creativeBlueprints';
 import { buildCreativeStarterBundle } from './data/creativeStarters';
 import { buildStarterTemplateBundle } from './data/starterTemplateBundles';
 import { AdminPage } from './pages/AdminPage';
-import { CreativeHubPage } from './pages/CreativeHubPage';
+import { ChatStudioPage } from './pages/ChatStudioPage';
+import { CreateStudioPage } from './pages/CreateStudioPage';
 import { CreativeWorkspacePage } from './pages/CreativeWorkspacePage';
+import { ExplorePage } from './pages/ExplorePage';
 import { HomePage } from './pages/HomePage';
+import { ProjectsPage } from './pages/ProjectsPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { WorkspacePage } from './pages/WorkspacePage';
-import {
-  checkServerAiStatus,
-  generateNewApp,
-} from './services/craftAiService';
+import { checkServerAiStatus, generateNewApp } from './services/craftAiService';
 import { generateCreativeProject } from './services/creativeAiService';
 import * as storage from './services/projectStorage';
+import {
+  generateAiVisual,
+  loadChatHistory,
+  loadCreatedImages,
+  saveChatHistory,
+  saveCreatedImages,
+  sendUnifiedChatTurn,
+} from './services/unifiedChatService';
 import type {
   AppProject,
+  ChatThreadMessage,
   CreativeCategory,
   DesignTemplate,
+  GeneratedVisualAsset,
+  PromptAttachment,
+  StudioCapability,
   TemplateType,
 } from './types/project';
 
@@ -29,26 +40,31 @@ const LEGACY_THEME_STORAGE_KEY = 'craftable_dark_theme';
 
 type AppRoute =
   | { view: 'home' }
+  | { view: 'chat' }
+  | { view: 'create' }
+  | { view: 'projects' }
+  | { view: 'explore' }
+  | { view: 'settings' }
   | { view: 'admin' }
   | { view: 'workspace'; projectId: string }
-  | { view: 'creative' }
   | { view: 'creative_workspace'; projectId: string };
 
 function parseRoute(): AppRoute {
   const path = window.location.pathname;
-  if (/^\/admin\/?$/.test(path)) {
-    return { view: 'admin' };
-  }
+  if (/^\/admin\/?$/.test(path)) return { view: 'admin' };
+  if (/^\/chat\/?$/.test(path)) return { view: 'chat' };
+  if (/^\/create\/?$/.test(path) || /^\/creative\/?$/.test(path)) return { view: 'create' };
+  if (/^\/projects\/?$/.test(path)) return { view: 'projects' };
+  if (/^\/explore\/?$/.test(path)) return { view: 'explore' };
+  if (/^\/settings\/?$/.test(path)) return { view: 'settings' };
+
   const creativeMatch = /^\/creative\/([^/]+)\/?$/.exec(path);
   if (creativeMatch) {
     return { view: 'creative_workspace', projectId: decodeURIComponent(creativeMatch[1]) };
   }
-  if (/^\/creative\/?$/.test(path)) {
-    return { view: 'creative' };
-  }
-  const match = /^\/workspace\/([^/]+)\/?$/.exec(path);
-  if (match) {
-    return { view: 'workspace', projectId: decodeURIComponent(match[1]) };
+  const wsMatch = /^\/workspace\/([^/]+)\/?$/.exec(path);
+  if (wsMatch) {
+    return { view: 'workspace', projectId: decodeURIComponent(wsMatch[1]) };
   }
   return { view: 'home' };
 }
@@ -69,9 +85,20 @@ export default function App() {
   const [projects, setProjects] = useState<AppProject[]>([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const [isServerAiReady, setIsServerAiReady] = useState(true);
-  const [isBuilding, setIsBuilding] = useState(false);
-  const [buildStatus, setBuildStatus] = useState('');
+
+  const [homePrompt, setHomePrompt] = useState('');
+  const [homeCapability, setHomeCapability] = useState<StudioCapability>('build');
+  const [homeAttachments, setHomeAttachments] = useState<PromptAttachment[]>([]);
+
+  const [isBusy, setIsBusy] = useState(false);
+  const [busyStatus, setBusyStatus] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [chatMessages, setChatMessages] = useState<ChatThreadMessage[]>(() => loadChatHistory());
+  const [isChatReplying, setIsChatReplying] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
+  const [createdImages, setCreatedImages] = useState<GeneratedVisualAsset[]>(() => loadCreatedImages());
 
   const [projectToRename, setProjectToRename] = useState<AppProject | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<AppProject | null>(null);
@@ -117,77 +144,216 @@ export default function App() {
     refreshServerStatus();
   }, [refreshProjects, refreshServerStatus]);
 
-  const navigateToProject = (projectId: string) => {
-    window.history.pushState({}, '', `/workspace/${encodeURIComponent(projectId)}`);
-    setRoute({ view: 'workspace', projectId });
-  };
-
-  const navigateToCreativeWorkspace = (projectId: string) => {
-    window.history.pushState({}, '', `/creative/${encodeURIComponent(projectId)}`);
-    setRoute({ view: 'creative_workspace', projectId });
-  };
-
-  const navigateCreativeHub = () => {
+  const pushRoute = (url: string, next: AppRoute) => {
     setErrorMessage(null);
-    window.history.pushState({}, '', '/creative');
-    setRoute({ view: 'creative' });
-    refreshProjects();
-    refreshServerStatus();
+    window.history.pushState({}, '', url);
+    setRoute(next);
   };
 
-  const navigateHome = () => {
-    setErrorMessage(null);
-    window.history.pushState({}, '', '/');
-    setRoute({ view: 'home' });
-    refreshProjects();
-    refreshServerStatus();
+  const handleNavigateSection = (section: NavSection) => {
+    if (section === 'home') {
+      pushRoute('/', { view: 'home' });
+      refreshProjects();
+      refreshServerStatus();
+    } else if (section === 'chat') {
+      pushRoute('/chat', { view: 'chat' });
+    } else if (section === 'build') {
+      const latestBuild = projects.find((p) => p.mode !== 'creative');
+      if (latestBuild) {
+        pushRoute(`/workspace/${encodeURIComponent(latestBuild.id)}`, {
+          view: 'workspace',
+          projectId: latestBuild.id,
+        });
+      } else {
+        setHomeCapability('build');
+        pushRoute('/', { view: 'home' });
+      }
+    } else if (section === 'create') {
+      pushRoute('/create', { view: 'create' });
+    } else if (section === 'projects') {
+      pushRoute('/projects', { view: 'projects' });
+      refreshProjects();
+    } else if (section === 'explore') {
+      pushRoute('/explore', { view: 'explore' });
+    } else if (section === 'settings') {
+      pushRoute('/settings', { view: 'settings' });
+    }
   };
 
-  const navigateAdmin = () => {
-    window.history.pushState({}, '', '/admin');
-    setRoute({ view: 'admin' });
+  const upsertProject = (updated: AppProject) => {
+    setProjects((prev) => {
+      const exists = prev.some((p) => p.id === updated.id);
+      return exists ? prev.map((p) => (p.id === updated.id ? updated : p)) : [updated, ...prev];
+    });
   };
 
-  const handleCraftApp = async (
+  const handleBuildWebApp = async (
     prompt: string,
-    templateType: TemplateType,
-    blueprintTemplate: DesignTemplate | null
+    templateType: TemplateType = 'web_app',
+    attachments: PromptAttachment[] = []
   ) => {
-    if (isBuilding) return;
-    setIsBuilding(true);
-    setBuildStatus('Connecting to Zuno AI...');
+    if (isBusy) return;
+    setIsBusy(true);
+    setBusyStatus('Connecting to Zuno AI...');
     setErrorMessage(null);
 
     try {
       const bundle = await generateNewApp(
         prompt,
         templateType,
-        blueprintTemplate,
-        (stage) => setBuildStatus(stage)
+        null,
+        (stage) => setBusyStatus(stage),
+        attachments
       );
-      setBuildStatus('Saving project locally...');
+      setBusyStatus('Saving project...');
       const created = await storage.createProject(prompt, templateType, bundle, {
         mode: 'standard',
       });
-      setProjects((prev) => [created, ...prev]);
-      setIsBuilding(false);
-      setBuildStatus('');
-      navigateToProject(created.id);
+      upsertProject(created);
+      setIsBusy(false);
+      setBusyStatus('');
+      setHomePrompt('');
+      setHomeAttachments([]);
+      pushRoute(`/workspace/${encodeURIComponent(created.id)}`, {
+        view: 'workspace',
+        projectId: created.id,
+      });
     } catch (err) {
-      setIsBuilding(false);
-      setBuildStatus('');
+      setIsBusy(false);
+      setBusyStatus('');
       setErrorMessage(
         err instanceof Error ? err.message : 'Zuno AI did not complete this request.'
       );
     }
   };
 
-  const handleLaunchTemplate = async (template: DesignTemplate) => {
-    if (isBuilding) return;
-    setIsBuilding(true);
-    setBuildStatus(`Opening ${template.name} starter...`);
+  const handleCreate3dProject = async (
+    prompt: string,
+    category: CreativeCategory = '3d_game',
+    attachments: PromptAttachment[] = []
+  ) => {
+    if (isBusy) return;
+    setIsBusy(true);
+    setBusyStatus('Connecting to Zuno 3D Studio...');
     setErrorMessage(null);
 
+    try {
+      const bundle = await generateCreativeProject(
+        prompt,
+        category,
+        null,
+        (stage) => setBusyStatus(stage),
+        attachments
+      );
+      setBusyStatus('Saving 3D experience...');
+      const created = await storage.createProject(prompt, 'web_app', bundle, {
+        mode: 'creative',
+        creativeCategory: category,
+      });
+      upsertProject(created);
+      setIsBusy(false);
+      setBusyStatus('');
+      setHomePrompt('');
+      setHomeAttachments([]);
+      pushRoute(`/creative/${encodeURIComponent(created.id)}`, {
+        view: 'creative_workspace',
+        projectId: created.id,
+      });
+    } catch (err) {
+      setIsBusy(false);
+      setBusyStatus('');
+      setErrorMessage(
+        err instanceof Error ? err.message : '3D Studio could not complete this request.'
+      );
+    }
+  };
+
+  const handleGenerateImage = async (prompt: string, attachments: PromptAttachment[] = []) => {
+    if (isBusy) return;
+    setIsBusy(true);
+    setBusyStatus('Generating image with Zuno AI...');
+    setErrorMessage(null);
+
+    try {
+      const asset = await generateAiVisual(prompt, attachments);
+      const next = [asset, ...createdImages].slice(0, 16);
+      setCreatedImages(next);
+      saveCreatedImages(next);
+      setIsBusy(false);
+      setBusyStatus('');
+      setHomePrompt('');
+      setHomeAttachments([]);
+      if (route.view !== 'create') {
+        pushRoute('/create', { view: 'create' });
+      }
+    } catch (err) {
+      setIsBusy(false);
+      setBusyStatus('');
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Image creation did not succeed.'
+      );
+    }
+  };
+
+  const handleSendChatTurn = async (text: string, attachments: PromptAttachment[] = []) => {
+    if (isChatReplying) return;
+    setChatError(null);
+    const userMsg: ChatThreadMessage = {
+      id: `chat-u-${Date.now()}`,
+      role: 'user',
+      content: text,
+      attachmentNames: attachments.map((a) => a.name),
+      createdAtMillis: Date.now(),
+    };
+    const nextHistory = [...chatMessages, userMsg];
+    setChatMessages(nextHistory);
+    saveChatHistory(nextHistory);
+    setIsChatReplying(true);
+
+    try {
+      const { replyText, suggestedBuildPrompt } = await sendUnifiedChatTurn(
+        text,
+        chatMessages,
+        attachments
+      );
+      const aiMsg: ChatThreadMessage = {
+        id: `chat-a-${Date.now()}`,
+        role: 'assistant',
+        content: replyText,
+        suggestedBuildPrompt,
+        createdAtMillis: Date.now(),
+      };
+      const updated = [...nextHistory, aiMsg];
+      setChatMessages(updated);
+      saveChatHistory(updated);
+    } catch (err) {
+      setChatError(err instanceof Error ? err.message : 'Zuno Chat failed to reply.');
+    } finally {
+      setIsChatReplying(false);
+    }
+  };
+
+  const handleHomeSubmit = async () => {
+    const trimmed = homePrompt.trim();
+    if (!trimmed) return;
+    if (homeCapability === 'chat') {
+      const attachments = homeAttachments;
+      setHomePrompt('');
+      setHomeAttachments([]);
+      pushRoute('/chat', { view: 'chat' });
+      await handleSendChatTurn(trimmed, attachments);
+    } else if (homeCapability === 'create_3d') {
+      await handleCreate3dProject(trimmed, '3d_game', homeAttachments);
+    } else if (homeCapability === 'image') {
+      await handleGenerateImage(trimmed, homeAttachments);
+    } else {
+      await handleBuildWebApp(trimmed, 'web_app', homeAttachments);
+    }
+  };
+
+  const handleInspectWebExample = async (template: DesignTemplate) => {
+    if (isBusy) return;
+    setIsBusy(true);
     try {
       const bundle = buildStarterTemplateBundle(template.id);
       const created = await storage.createProject(
@@ -196,92 +362,59 @@ export default function App() {
         bundle,
         { mode: 'standard' }
       );
-      setProjects((prev) => [created, ...prev]);
-      setIsBuilding(false);
-      setBuildStatus('');
-      navigateToProject(created.id);
-    } catch (err) {
-      setIsBuilding(false);
-      setBuildStatus('');
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to open starter.');
-    }
-  };
-
-  const handleCreateCreativeWithAi = async (
-    prompt: string,
-    category: CreativeCategory,
-    blueprint: CreativeBlueprint | null
-  ) => {
-    if (isBuilding) return;
-    setIsBuilding(true);
-    setBuildStatus('Connecting to Zuno Creative Studio...');
-    setErrorMessage(null);
-
-    try {
-      const bundle = await generateCreativeProject(
-        prompt,
-        category,
-        blueprint?.blueprintHint ?? null,
-        (stage) => setBuildStatus(stage)
-      );
-      setBuildStatus('Saving 3D Creative project...');
-      const created = await storage.createProject(prompt, 'web_app', bundle, {
-        mode: 'creative',
-        creativeCategory: category,
+      upsertProject(created);
+      pushRoute(`/workspace/${encodeURIComponent(created.id)}`, {
+        view: 'workspace',
+        projectId: created.id,
       });
-      setProjects((prev) => [created, ...prev]);
-      setIsBuilding(false);
-      setBuildStatus('');
-      navigateToCreativeWorkspace(created.id);
-    } catch (err) {
-      setIsBuilding(false);
-      setBuildStatus('');
-      setErrorMessage(
-        err instanceof Error ? err.message : 'Creative Studio did not complete this request.'
-      );
+    } finally {
+      setIsBusy(false);
     }
   };
 
-  const handleLaunchCreativeStarter = async (blueprint: CreativeBlueprint) => {
-    if (isBuilding) return;
-    setIsBuilding(true);
-    setBuildStatus(`Launching ${blueprint.name}...`);
-    setErrorMessage(null);
-
+  const handleInspect3dExample = async (blueprint: CreativeBlueprint) => {
+    if (isBusy) return;
+    setIsBusy(true);
     try {
       const bundle = buildCreativeStarterBundle(blueprint.id);
       const created = await storage.createProject(
         blueprint.starterPrompt,
         'web_app',
         bundle,
-        {
-          mode: 'creative',
-          creativeCategory: blueprint.category,
-        }
+        { mode: 'creative', creativeCategory: blueprint.category }
       );
-      setProjects((prev) => [created, ...prev]);
-      setIsBuilding(false);
-      setBuildStatus('');
-      navigateToCreativeWorkspace(created.id);
-    } catch (err) {
-      setIsBuilding(false);
-      setBuildStatus('');
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to launch 3D starter.');
+      upsertProject(created);
+      pushRoute(`/creative/${encodeURIComponent(created.id)}`, {
+        view: 'creative_workspace',
+        projectId: created.id,
+      });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleOpenProject = (project: AppProject) => {
+    if (project.mode === 'creative') {
+      pushRoute(`/creative/${encodeURIComponent(project.id)}`, {
+        view: 'creative_workspace',
+        projectId: project.id,
+      });
+    } else {
+      pushRoute(`/workspace/${encodeURIComponent(project.id)}`, {
+        view: 'workspace',
+        projectId: project.id,
+      });
     }
   };
 
   const handleToggleStar = async (project: AppProject) => {
     const updated = await storage.toggleProjectStar(project.id, !project.isStarred);
-    if (updated) {
-      setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-    }
+    if (updated) upsertProject(updated);
   };
 
   const handleRenameConfirm = async (projectId: string, title: string, description: string) => {
     const updated = await storage.renameProject(projectId, title, description);
-    if (updated) {
-      setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-    }
+    if (updated) upsertProject(updated);
     setProjectToRename(null);
   };
 
@@ -291,78 +424,139 @@ export default function App() {
     setProjectToDelete(null);
   };
 
-  const standardProjects = projects.filter((p) => p.mode !== 'creative');
   const creativeProjects = projects.filter((p) => p.mode === 'creative');
-
-  const upsertProject = (updated: AppProject) => {
-    setProjects((prev) => {
-      const exists = prev.some((p) => p.id === updated.id);
-      return exists ? prev.map((p) => (p.id === updated.id ? updated : p)) : [updated, ...prev];
-    });
-  };
 
   return (
     <>
       {route.view === 'admin' ? (
         <AdminPage
-          onNavigateHome={navigateHome}
+          onNavigateHome={() => handleNavigateSection('settings')}
           onStatusChanged={refreshServerStatus}
         />
       ) : route.view === 'creative_workspace' ? (
         <CreativeWorkspacePage
           key={route.projectId}
           projectId={route.projectId}
-          onNavigateBack={navigateCreativeHub}
+          onNavigateBack={() => handleNavigateSection('projects')}
           onProjectUpdated={upsertProject}
           onRequestRename={(proj) => setProjectToRename(proj)}
-        />
-      ) : route.view === 'creative' ? (
-        <CreativeHubPage
-          projects={creativeProjects}
-          isLoadingProjects={isLoadingProjects}
-          isDarkTheme={isDarkTheme}
-          isServerAiReady={isServerAiReady}
-          isBuilding={isBuilding}
-          buildStatus={buildStatus}
-          errorMessage={errorMessage}
-          onNavigateHome={navigateHome}
-          onOpenAdmin={navigateAdmin}
-          onToggleTheme={() => setIsDarkTheme((v) => !v)}
-          onCreateWithAi={handleCreateCreativeWithAi}
-          onLaunchBlueprintStarter={handleLaunchCreativeStarter}
-          onOpenCreativeProject={navigateToCreativeWorkspace}
-          onToggleStar={handleToggleStar}
-          onDismissError={() => setErrorMessage(null)}
-          requestRename={(proj) => setProjectToRename(proj)}
-          requestDelete={(proj) => setProjectToDelete(proj)}
         />
       ) : route.view === 'workspace' ? (
         <WorkspacePage
           key={route.projectId}
           projectId={route.projectId}
-          onNavigateBack={navigateHome}
+          onNavigateBack={() => handleNavigateSection('projects')}
           onProjectUpdated={upsertProject}
           onRequestRename={(proj) => setProjectToRename(proj)}
         />
-      ) : (
-        <HomePage
-          projects={standardProjects}
+      ) : route.view === 'chat' ? (
+        <ChatStudioPage
+          messages={chatMessages}
+          isDarkTheme={isDarkTheme}
+          isServerAiReady={isServerAiReady}
+          isReplying={isChatReplying}
+          isBuilding={isBusy}
+          buildStatus={busyStatus}
+          errorMessage={chatError ?? errorMessage}
+          onNavigate={handleNavigateSection}
+          onToggleTheme={() => setIsDarkTheme((v) => !v)}
+          onSendMessage={handleSendChatTurn}
+          onClearChat={() => {
+            setChatMessages([]);
+            saveChatHistory([]);
+          }}
+          onDismissError={() => {
+            setChatError(null);
+            setErrorMessage(null);
+          }}
+          onHandOffToBuild={(prompt) => {
+            setHomePrompt(prompt);
+            setHomeCapability('build');
+            handleBuildWebApp(prompt);
+          }}
+          onHandOffTo3d={(prompt) => {
+            setHomePrompt(prompt);
+            setHomeCapability('create_3d');
+            handleCreate3dProject(prompt);
+          }}
+        />
+      ) : route.view === 'create' ? (
+        <CreateStudioPage
+          creativeProjects={creativeProjects}
+          createdImages={createdImages}
+          isDarkTheme={isDarkTheme}
+          isServerAiReady={isServerAiReady}
+          isBusy={isBusy}
+          busyStatus={busyStatus}
+          errorMessage={errorMessage}
+          onNavigate={handleNavigateSection}
+          onToggleTheme={() => setIsDarkTheme((v) => !v)}
+          onCreate3dProject={(p, cat, atts) => handleCreate3dProject(p, cat, atts)}
+          onLaunch3dStarter={handleInspect3dExample}
+          onOpenCreativeProject={(id) =>
+            pushRoute(`/creative/${encodeURIComponent(id)}`, {
+              view: 'creative_workspace',
+              projectId: id,
+            })
+          }
+          onGenerateImage={(p, atts) => handleGenerateImage(p, atts)}
+          onDismissError={() => setErrorMessage(null)}
+        />
+      ) : route.view === 'projects' ? (
+        <ProjectsPage
+          projects={projects}
           isLoadingProjects={isLoadingProjects}
           isDarkTheme={isDarkTheme}
           isServerAiReady={isServerAiReady}
-          isBuilding={isBuilding}
-          buildStatus={buildStatus}
-          errorMessage={errorMessage}
+          onNavigate={handleNavigateSection}
           onToggleTheme={() => setIsDarkTheme((v) => !v)}
-          onOpenAdmin={navigateAdmin}
-          onOpenCreativeStudio={navigateCreativeHub}
-          onCraftApp={handleCraftApp}
-          onLaunchTemplate={handleLaunchTemplate}
-          onOpenProject={navigateToProject}
+          onOpenProject={handleOpenProject}
           onToggleStar={handleToggleStar}
-          onDismissError={() => setErrorMessage(null)}
           requestRename={(proj) => setProjectToRename(proj)}
           requestDelete={(proj) => setProjectToDelete(proj)}
+        />
+      ) : route.view === 'explore' ? (
+        <ExplorePage
+          isDarkTheme={isDarkTheme}
+          isServerAiReady={isServerAiReady}
+          isBusy={isBusy}
+          onNavigate={handleNavigateSection}
+          onToggleTheme={() => setIsDarkTheme((v) => !v)}
+          onInspectWebExample={handleInspectWebExample}
+          onInspect3dExample={handleInspect3dExample}
+          onUseAsInspiration={(prompt, cap) => {
+            setHomePrompt(prompt);
+            setHomeCapability(cap);
+            pushRoute('/', { view: 'home' });
+          }}
+        />
+      ) : route.view === 'settings' ? (
+        <SettingsPage
+          isDarkTheme={isDarkTheme}
+          isServerAiReady={isServerAiReady}
+          onNavigate={handleNavigateSection}
+          onToggleTheme={() => setIsDarkTheme((v) => !v)}
+          onRefreshStatus={refreshServerStatus}
+          onOpenAdmin={() => pushRoute('/admin', { view: 'admin' })}
+        />
+      ) : (
+        <HomePage
+          isDarkTheme={isDarkTheme}
+          isServerAiReady={isServerAiReady}
+          isBusy={isBusy}
+          busyStatus={busyStatus}
+          errorMessage={errorMessage}
+          promptText={homePrompt}
+          capability={homeCapability}
+          attachments={homeAttachments}
+          projectCount={projects.length}
+          onNavigate={handleNavigateSection}
+          onToggleTheme={() => setIsDarkTheme((v) => !v)}
+          onPromptChange={setHomePrompt}
+          onCapabilityChange={setHomeCapability}
+          onAttachmentsChange={setHomeAttachments}
+          onSubmitPrompt={handleHomeSubmit}
+          onDismissError={() => setErrorMessage(null)}
         />
       )}
 

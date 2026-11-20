@@ -2,6 +2,7 @@ export type TemplateType = 'web_app' | 'dashboard' | 'landing_page' | 'utility';
 
 export type ProjectMode = 'standard' | 'creative';
 export type CreativeCategory = '3d_game' | '3d_environment' | 'animation' | 'web_app';
+export type StudioCapability = 'chat' | 'build' | 'create_3d' | 'image';
 
 export interface CreativeCategoryMeta {
   id: CreativeCategory;
@@ -12,7 +13,7 @@ export const CREATIVE_CATEGORIES: CreativeCategoryMeta[] = [
   { id: '3d_game', displayName: '3D Game' },
   { id: '3d_environment', displayName: '3D Environment' },
   { id: 'animation', displayName: '2D / 3D Animation' },
-  { id: 'web_app', displayName: 'Interactive 3D App' },
+  { id: 'web_app', displayName: '3D Product / Web' },
 ];
 
 export function getCreativeCategoryDisplayName(cat?: string): string {
@@ -33,6 +34,34 @@ export const TEMPLATE_TYPES: TemplateTypeMeta[] = [
 
 export function getTemplateDisplayName(type: string): string {
   return TEMPLATE_TYPES.find((t) => t.id === type)?.displayName ?? 'Web App';
+}
+
+export interface PromptAttachment {
+  id: string;
+  name: string;
+  mimeType: string;
+  sizeBytes: number;
+  dataBase64?: string;
+  textContent?: string;
+  previewUrl?: string;
+}
+
+export interface ChatThreadMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  attachmentNames?: string[];
+  suggestedBuildPrompt?: string;
+  createdAtMillis: number;
+}
+
+export interface GeneratedVisualAsset {
+  id: string;
+  prompt: string;
+  imageDataUrl: string;
+  caption: string;
+  model: string;
+  createdAtMillis: number;
 }
 
 export interface AppProject {

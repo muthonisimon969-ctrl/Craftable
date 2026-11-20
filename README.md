@@ -1,17 +1,16 @@
-# Zuno AI Studio
+# Zuno AI
 
-**Zuno AI** — *Idea to interactive website, web app, or 3D game in seconds.*
+**Zuno AI** — *Chat. Think. Create. Build. Imagine it. Describe it. Build it with Zuno.*
 
-Zuno AI is a responsive **React + TypeScript + Vite** AI builder deployed to **Vercel** (zero 404 errors via `vercel.json` SPA rewrites) with PWA support (`/public/manifest.webmanifest` and `/public/sw.js`). Your preserved Android reference source (`app/`) remains intact.
+Zuno AI is a responsive **React + TypeScript + Vite** all-in-one AI workspace deployed to **Vercel** (`vercel.json` SPA routing + `/api/*` serverless functions) with PWA support (`/public/manifest.webmanifest` and `/public/sw.js`).
 
-## Key Features
-- **Prompt Studio & Zuno AI (`/api/craft`):** Generates and iterates multi-file HTML, CSS, and JavaScript web apps, dashboards, manual M-Pesa storefronts, and interactive 3D browser games with a 6-check QA audit.
-- **Owner-Only Admin Control (`/admin`):** Server-side password-protected vault (`/api/admin`) where only the owner can paste one or more Gemini API keys (`ZUNO_ADMIN_PASSWORD` + optional `VERCEL_TOKEN`/`VERCEL_PROJECT_ID`, Vercel KV, or `GEMINI_API_KEY`). Keys are write-only and are never exposed to customers or browser storage.
-- **AI Template Library (with 3D Game Studio):** Pick a design blueprint (**Use with AI**) to guide Zuno AI generation or launch a starter (**Starter**) to customize in AI chat—including **3D Game Studio**, **Savanna Manual Pay**, **Maison Atelier**, **PulseMetrics SaaS**, **Osteria Solis**, **Meridian Advisory**, and **FlowLedger Studio**.
-- **Responsive Multi-Mode Workspace:**
-  - **Mobile/Tablet (< 900px):** 3-tab switcher (`Chat`, `Preview`, `Code`).
-  - **Desktop/Wide (>= 900px):** Split-pane `BuilderChatPane` + `Preview / Code` with Fullscreen preview toggle.
-- **Full-Bleed Live Preview & Console:** Sandboxed iframe with live console capture (`zuno-console`) and standalone HTML export.
+## Unified Capabilities
+- **Minimal Home Canvas (`/`):** Centered intelligent prompt composer with multimodal file/image attachments (`Paperclip`), Chat / Build / 3D Scene / Image mode selector, and no cluttered template walls.
+- **Chat & Think (`/chat`):** Natural AI conversations, architecture planning, multimodal image/file understanding, and one-click handoff to Build an App or Create a 3D Experience.
+- **Build Workspace (`/workspace/:id`):** Split-screen AI chat + live preview + multi-file code explorer (`index.html`, `styles.css`, `app.js`), preview console logs, and standalone HTML export.
+- **Create Studio (`/create` & `/creative/:id`):** Interactive **Three.js** 3D games, product showcases, and animated environments plus real Gemini **AI Image Generation** (`gemini-2.5-flash-image`) with PNG download.
+- **Projects & Optional Explore (`/projects`, `/explore`):** Search, star, rename, delete, or inspect example websites and Three.js experiments off the main homepage.
+- **Owner-Only Admin Key Vault (`/admin` & `/settings`):** Server-side password-protected API key control (`/api/admin`). Keys remain write-only on the server and are never exposed to client JS or browser storage.
 
 ## Local Development
 ```bash
@@ -24,4 +23,4 @@ npm run dev
 2. Under **Project Settings → Environment Variables**, configure:
    - `ZUNO_ADMIN_PASSWORD` (required to unlock `/admin`)
    - `GEMINI_API_KEY` or `GEMINI_API_KEYS` (server-side Gemini keys), and optionally `VERCEL_TOKEN` + `VERCEL_PROJECT_ID` (or Vercel KV env vars) for persistent updates from `/admin`.
-3. `vercel.json` excludes `/api/*` from SPA rewrites so `/api/craft` and `/api/admin` always reach your serverless functions while client routes (`/workspace/:id`, `/admin`) serve `/index.html`.
+3. `vercel.json` excludes `/api/*` and `/vendor/*` from SPA rewrites so `/api/craft`, `/api/admin`, and `/vendor/three-studio-runtime.js` are served cleanly while client routes serve `/index.html`.

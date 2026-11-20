@@ -868,3 +868,263 @@ select {
   align-items: center;
   justify-content: center;
 }
+
+/* Unified Zuno Navigation Shell */
+.zuno-nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(18, 21, 32, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border-soft);
+  padding: 10px 16px;
+  padding-top: max(10px, env(safe-area-inset-top));
+}
+
+html.light .zuno-nav-bar {
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.zuno-nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zuno-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface-container);
+  border: 1px solid var(--border-soft);
+}
+
+.zuno-nav-link {
+  min-height: 36px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.zuno-nav-link:hover {
+  color: var(--text);
+}
+
+.zuno-nav-link.active {
+  background: var(--indigo-container);
+  color: var(--indigo-on-container);
+}
+
+.zuno-mobile-dock {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .zuno-nav-links {
+    display: none;
+  }
+  .zuno-mobile-dock {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--surface);
+    border-top: 1px solid var(--border-soft);
+    padding: 4px 4px max(6px, env(safe-area-inset-bottom));
+    backdrop-filter: blur(16px);
+  }
+  .zuno-dock-btn {
+    min-height: 48px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 2px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+  .zuno-dock-btn.active {
+    color: var(--coral);
+    background: rgba(255, 94, 91, 0.1);
+  }
+}
+
+.zuno-chat-body {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 6px;
+}
+
+@media (max-width: 860px) {
+  .zuno-chat-body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Minimal Futuristic Home Canvas */
+.zuno-home-canvas {
+  position: relative;
+  min-height: calc(100dvh - 66px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px 88px;
+  overflow: hidden;
+}
+
+.zuno-ambient-glow {
+  position: absolute;
+  width: min(760px, 92vw);
+  height: 420px;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 94, 91, 0.16) 0%,
+    rgba(99, 102, 241, 0.14) 45%,
+    transparent 74%
+  );
+  filter: blur(36px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.zuno-home-center {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 780px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.zuno-headline {
+  margin: 0;
+  text-align: center;
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  background: linear-gradient(135deg, var(--text) 35%, var(--indigo) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.zuno-philosophy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-container);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* Intelligent Prompt Composer */
+.composer-frame {
+  width: 100%;
+  border-radius: 26px;
+  padding: 1.5px;
+  background: linear-gradient(135deg, rgba(255, 94, 91, 0.58), rgba(129, 140, 248, 0.52), rgba(56, 189, 248, 0.42));
+  box-shadow: var(--shadow-card);
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.composer-frame:focus-within {
+  box-shadow: 0 18px 46px rgba(99, 102, 241, 0.18), 0 8px 24px rgba(255, 94, 91, 0.12);
+}
+
+.composer-surface {
+  background: var(--surface-container);
+  border-radius: 24.5px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.composer-textarea {
+  width: 100%;
+  min-height: 92px;
+  max-height: 220px;
+  border: none;
+  background: transparent;
+  outline: none;
+  resize: none;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.composer-textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.composer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+.attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  background: var(--surface-high);
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  max-width: 220px;
+}
+
+.attachment-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  object-fit: cover;
+}
+

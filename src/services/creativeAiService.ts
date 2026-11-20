@@ -3,8 +3,10 @@ import type {
   CreativeCategory,
   GeneratedAppBundle,
   ProjectMessage,
+  PromptAttachment,
 } from '../types/project';
 import { getCreativeCategoryDisplayName } from '../types/project';
+import { serializeAttachmentsForApi } from '../utils/attachmentReader';
 import { parseCraftAiResponse } from './craftAiService';
 import { hasBalancedDelimiters } from './webQualityValidator';
 
@@ -92,7 +94,8 @@ export function auditCreativeBundle(
 
 async function requestCreativeAi(
   promptText: string,
-  onStageUpdate: (stage: string) => void
+  onStageUpdate: (stage: string) => void,
+  attachments?: PromptAttachment[]
 ): Promise<string> {
   onStageUpdate('Connecting to Zuno Creative Studio...');
   const controller = new AbortController();
@@ -105,8 +108,10 @@ async function requestCreativeAi(
       headers: { 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
+        mode: 'create_3d',
         promptText,
         systemPrompt: CREATIVE_STUDIO_SYSTEM_PROMPT,
+        attachments: serializeAttachmentsForApi(attachments),
       }),
     });
     clearTimeout(timer);
@@ -138,7 +143,8 @@ export async function generateCreativeProject(
   prompt: string,
   category: CreativeCategory,
   blueprintHint: string | null = null,
-  onStageUpdate: (stage: string) => void = () => {}
+  onStageUpdate: (stage: string) => void = () => {},
+  attachments?: PromptAttachment[]
 ): Promise<GeneratedAppBundle> {
   const lines = [
     'BUILD THIS THREE.JS CREATIVE PROJECT:',
@@ -158,7 +164,7 @@ export async function generateCreativeProject(
     'Output all sections using <<<TITLE>>>, <<<DESCRIPTION>>>, <<<SUMMARY>>>, <<<HTML>>>, <<<CSS>>>, <<<JS>>>, and <<<SUGGESTIONS>>>.'
   );
 
-  const rawText = await requestCreativeAi(lines.join('\n'), onStageUpdate);
+  const rawText = await requestCreativeAi(lines.join('\n'), onStageUpdate, attachments);
   const parsed = parseCraftAiResponse(rawText, null);
   onStageUpdate('Auditing Three.js scene...');
   const audit = auditCreativeBundle(parsed.htmlCode, parsed.cssCode, parsed.jsCode);

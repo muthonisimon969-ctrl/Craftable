@@ -1,6 +1,6 @@
 {
   "name": "Zuno AI",
-  "description": "AI-powered prompt-to-website and 3D game builder with live interactive preview, AI template library, multi-file code explorer, and server-secured owner admin key control.",
+  "description": "Zuno AI — Chat. Think. Create. Build. An all-in-one AI workspace for natural reasoning, multimodal analysis, website and app creation, interactive Three.js 3D experiences, and AI image generation.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
