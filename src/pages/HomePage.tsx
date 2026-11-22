@@ -73,13 +73,13 @@ export function HomePage({
         onToggleTheme={onToggleTheme}
       />
 
-      <main className="zuno-home-canvas">
+      <main className="zuno-home-canvas zuno-home-redesign">
         <div className="zuno-ambient-glow" aria-hidden="true" />
 
         <div className="zuno-home-center">
           <div className="zuno-philosophy-pill">
             <Sparkles size={14} style={{ color: 'var(--coral)' }} />
-            <span>Chat &bull; Think &bull; Create &bull; Build</span>
+            <span>Your ideas, brought to life</span>
           </div>
 
           <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -91,7 +91,7 @@ export function HomePage({
                 color: 'var(--text-muted)',
               }}
             >
-              Imagine it. Describe it. Build it with Zuno.
+              From a first thought to a working experience — create it with Zuno AI.
             </p>
           </div>
 
@@ -179,7 +179,7 @@ export function HomePage({
                 onClick={() => onNavigate('projects')}
                 style={{ minHeight: 40, padding: '6px 14px' }}
               >
-                <span>Continue recent projects ({projectCount})</span>
+                <span>Open your projects ({projectCount})</span>
                 <ArrowRight size={15} />
               </button>
             )}
