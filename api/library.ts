@@ -27,13 +27,11 @@ export default async function handler(req: LibraryRequest, res: LibraryResponse)
 
   try {
     if (req.method === 'GET' && action === 'list') {
-      const result = await list({ prefix: PREFIX, limit: 200, access: 'private' });
+      const result = await list({ prefix: PREFIX, limit: 200 });
       res.status(200).json({
         assets: result.blobs.map((blob) => ({
           pathname: blob.pathname,
-          size: blob.size,
           uploadedAt: blob.uploadedAt,
-          contentType: blob.contentType,
         })),
         cursor: result.cursor ?? null,
       });
@@ -72,7 +70,7 @@ export default async function handler(req: LibraryRequest, res: LibraryResponse)
         uploaded: true,
         pathname: blob.pathname,
         contentType: blob.contentType,
-        size: blob.size,
+        size: Number(Array.isArray(req.headers?.['content-length']) ? req.headers?.['content-length'][0] : req.headers?.['content-length']) || 0,
         uploadedAt: new Date().toISOString(),
       });
       return;
@@ -100,7 +98,8 @@ export default async function handler(req: LibraryRequest, res: LibraryResponse)
       res.setHeader('Content-Type', result.blob.contentType ?? 'application/octet-stream');
       res.setHeader('Content-Length', String(image.byteLength));
       res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.status(200).end(image);
+      res.status(200);
+      res.end(image);
       return;
     }
 
