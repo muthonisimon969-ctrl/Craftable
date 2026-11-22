@@ -27,6 +27,21 @@ const KV_STORAGE_KEY = 'zuno_ai:groq_keys_enc_v1';
 const LOCAL_VAULT_FILE = path.resolve(process.cwd(), '.zuno-groq-keys.local.json');
 
 let runtimeKeys: string[] | null = null;
+let legacyGeminiVaultCleanupAttempted = false;
+
+async function clearLegacyGeminiVault(): Promise<void> {
+  if (legacyGeminiVaultCleanupAttempted || !hasKvConfig()) return;
+  legacyGeminiVaultCleanupAttempted = true;
+  try {
+    const base = process.env.KV_REST_API_URL!.replace(/\\/+$/, '');
+    await fetch(`${base}/del/${encodeURIComponent('zuno_ai:gemini_keys_enc_v1')}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN!.trim()}` },
+    });
+  } catch {
+    // The old key is no longer read even if legacy cleanup is unavailable.
+  }
+}
 
 export function parseKeyList(raw: string | undefined): string[] {
   if (!raw) return [];
