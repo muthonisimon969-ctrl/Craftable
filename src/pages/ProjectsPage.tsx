@@ -250,6 +250,15 @@ export function ProjectsPage({
                     </div>
                   </div>
 
+                  <div className={`project-preview-art ${is3d ? 'is-3d' : 'is-web'}`} aria-hidden="true">
+                    <div className="project-preview-browser">
+                      <div className="project-preview-chrome"><i /><i /><i /><span>{project.title}</span></div>
+                      <div className="project-preview-content">
+                        <div className="project-preview-copy"><b>{is3d ? '3D EXPERIENCE' : 'YOUR NEXT BIG IDEA'}</b><span /><span /><em /></div>
+                        <div className="project-preview-visual"><div /><div /><div /></div>
+                      </div>
+                    </div>
+                  </div>
                   <div>
                     <h3 style={{ margin: '0 0 4px', fontSize: '1.08rem' }}>{project.title}</h3>
                     {project.description && (
