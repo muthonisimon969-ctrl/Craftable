@@ -186,10 +186,10 @@ export function HomePage({
             <button
               type="button"
               className="btn-outline"
-              onClick={() => onNavigate('explore')}
+              onClick={() => onNavigate('create')}
               style={{ minHeight: 40, padding: '6px 14px' }}
             >
-              <span>Explore examples</span>
+              <span>Open Create Studio</span>
               <ArrowRight size={15} />
             </button>
           </div>
