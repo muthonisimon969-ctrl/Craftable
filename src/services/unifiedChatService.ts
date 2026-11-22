@@ -143,7 +143,7 @@ export async function generateAiVisual(
       prompt,
       imageDataUrl: data.imageDataUrl,
       caption: data.text || 'Generated with Zuno AI',
-      model: data.model || 'gemini-image',
+      model: data.model || 'groq-image',
       createdAtMillis: Date.now(),
     };
   } catch (err) {
