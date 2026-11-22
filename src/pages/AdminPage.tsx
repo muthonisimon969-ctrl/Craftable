@@ -39,6 +39,52 @@ export function AdminPage({ onNavigateHome, onStatusChanged }: AdminPageProps) {
   const [busyAction, setBusyAction] = useState<'login' | 'save' | 'test' | null>(null);
   const [feedback, setFeedback] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
+  const [legacyPreview, setLegacyPreview] = useState<{ count: number; totalBytes: number; confirmPhrase: string } | null>(null);
+  const [cleanupBusy, setCleanupBusy] = useState(false);
+  const [cleanupConfirm, setCleanupConfirm] = useState(false);
+  const [cleanupPhrase, setCleanupPhrase] = useState('');
+  const [cleanupFeedback, setCleanupFeedback] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  const loadLegacyPreview = async () => {
+    setCleanupBusy(true);
+    setCleanupFeedback(null);
+    try {
+      const res = await fetch('/api/cleanup-design-library', { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not inspect old library.');
+      setLegacyPreview(data);
+      setCleanupConfirm(false);
+      setCleanupPhrase('');
+    } catch (err) {
+      setCleanupFeedback({ kind: 'err', text: err instanceof Error ? err.message : 'Could not inspect old library.' });
+    } finally {
+      setCleanupBusy(false);
+    }
+  };
+
+  const runLegacyCleanup = async () => {
+    if (cleanupBusy || !legacyPreview || cleanupPhrase !== legacyPreview.confirmPhrase) return;
+    setCleanupBusy(true);
+    setCleanupFeedback(null);
+    try {
+      const res = await fetch('/api/cleanup-design-library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmPhrase: cleanupPhrase }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Cleanup failed.');
+      setCleanupFeedback({ kind: 'ok', text: data.message || `Deleted ${data.deleted ?? 0} old image files.` });
+      setLegacyPreview({ count: data.remaining ?? 0, totalBytes: 0, confirmPhrase: 'DELETE OLD DESIGN LIBRARY' });
+      setCleanupConfirm(false);
+      setCleanupPhrase('');
+    } catch (err) {
+      setCleanupFeedback({ kind: 'err', text: err instanceof Error ? err.message : 'Cleanup failed.' });
+    } finally {
+      setCleanupBusy(false);
+    }
+  };
+
   const loadSession = useCallback(async () => {
     setSession((s) => ({ ...s, loading: true }));
     try {
@@ -367,6 +413,65 @@ export function AdminPage({ onNavigateHome, onStatusChanged }: AdminPageProps) {
                   <span>{busyAction === 'save' ? 'Saving Securely...' : 'Save Keys to Server'}</span>
                 </button>
               </form>
+            </section>
+
+            <section className="hero-card">
+              <div className="hero-card-inner">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <ShieldCheck size={20} style={{ color: 'var(--coral)' }} />
+                  <h2 style={{ margin: 0, fontSize: '1.12rem' }}>Old Design Library Cleanup</h2>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-muted)' }}>
+                  Inspect and remove only files under <code className="font-mono">zuno-design-library/</code>
+                  in the connected public Blob store. Other Zuno files and the newer private library are not included.
+                </p>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button type="button" className="btn-outline" onClick={loadLegacyPreview} disabled={cleanupBusy}>
+                    <RefreshCw size={16} />
+                    <span>{cleanupBusy ? 'Checking...' : 'Check old library'}</span>
+                  </button>
+                </div>
+                {legacyPreview && (
+                  <div className="card-assistant" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <strong>{legacyPreview.count.toLocaleString()} old image file(s) found</strong>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.84rem' }}>
+                      {(legacyPreview.totalBytes / (1024 * 1024)).toFixed(1)} MB · exact legacy prefix only
+                    </span>
+                    {legacyPreview.count > 0 && !cleanupConfirm && (
+                      <button type="button" className="btn-primary" onClick={() => setCleanupConfirm(true)} disabled={cleanupBusy}>
+                        Delete old library files
+                      </button>
+                    )}
+                    {cleanupConfirm && (
+                      <>
+                        <p style={{ margin: 0, fontSize: '0.86rem' }}>
+                          This permanently deletes the old image files. Type <code className="font-mono">{legacyPreview.confirmPhrase}</code> to confirm.
+                        </p>
+                        <input
+                          value={cleanupPhrase}
+                          onChange={(e) => setCleanupPhrase(e.target.value)}
+                          placeholder="Type the confirmation phrase"
+                          autoComplete="off"
+                          style={{ minHeight: 44, padding: '10px 12px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)' }}
+                        />
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <button type="button" className="btn-primary" onClick={runLegacyCleanup} disabled={cleanupBusy || cleanupPhrase !== legacyPreview.confirmPhrase}>
+                            {cleanupBusy ? 'Deleting...' : 'Confirm permanent deletion'}
+                          </button>
+                          <button type="button" className="btn-outline" onClick={() => { setCleanupConfirm(false); setCleanupPhrase(''); }} disabled={cleanupBusy}>
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                {cleanupFeedback && (
+                  <div className={cleanupFeedback.kind === 'err' ? 'error-card' : 'card-assistant'}>
+                    <p style={{ margin: 0, fontSize: '0.86rem' }}>{cleanupFeedback.text}</p>
+                  </div>
+                )}
+              </div>
             </section>
 
             <section className="card-assistant">
