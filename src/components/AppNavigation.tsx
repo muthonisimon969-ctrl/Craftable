@@ -1,5 +1,4 @@
 import {
-  Box,
   FolderKanban,
   Home,
   MessageSquare,
@@ -11,8 +10,6 @@ import {
 export type NavSection =
   | 'home'
   | 'chat'
-  | 'build'
-  | 'create'
   | 'projects'
   | 'settings';
 
@@ -27,7 +24,6 @@ interface AppNavigationProps {
 const NAV_ITEMS: Array<{ id: NavSection; label: string; icon: typeof Home }> = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'create', label: 'Create', icon: Box },
   { id: 'projects', label: 'Projects', icon: FolderKanban },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
