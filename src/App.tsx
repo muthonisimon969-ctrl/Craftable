@@ -8,7 +8,6 @@ import { AdminPage } from './pages/AdminPage';
 import { ChatStudioPage } from './pages/ChatStudioPage';
 import { CreateStudioPage } from './pages/CreateStudioPage';
 import { CreativeWorkspacePage } from './pages/CreativeWorkspacePage';
-import { ExplorePage } from './pages/ExplorePage';
 import { HomePage } from './pages/HomePage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -43,7 +42,6 @@ type AppRoute =
   | { view: 'chat' }
   | { view: 'create' }
   | { view: 'projects' }
-  | { view: 'explore' }
   | { view: 'settings' }
   | { view: 'admin' }
   | { view: 'workspace'; projectId: string }
@@ -55,7 +53,7 @@ function parseRoute(): AppRoute {
   if (/^\/chat\/?$/.test(path)) return { view: 'chat' };
   if (/^\/create\/?$/.test(path) || /^\/creative\/?$/.test(path)) return { view: 'create' };
   if (/^\/projects\/?$/.test(path)) return { view: 'projects' };
-  if (/^\/explore\/?$/.test(path)) return { view: 'explore' };
+  if (/^\/explore\/?$/.test(path)) return { view: 'create' };
   if (/^\/settings\/?$/.test(path)) return { view: 'settings' };
 
   const creativeMatch = /^\/creative\/([^/]+)\/?$/.exec(path);
@@ -173,8 +171,6 @@ export default function App() {
     } else if (section === 'projects') {
       pushRoute('/projects', { view: 'projects' });
       refreshProjects();
-    } else if (section === 'explore') {
-      pushRoute('/explore', { view: 'explore' });
     } else if (section === 'settings') {
       pushRoute('/settings', { view: 'settings' });
     }
@@ -514,21 +510,6 @@ export default function App() {
           onToggleStar={handleToggleStar}
           requestRename={(proj) => setProjectToRename(proj)}
           requestDelete={(proj) => setProjectToDelete(proj)}
-        />
-      ) : route.view === 'explore' ? (
-        <ExplorePage
-          isDarkTheme={isDarkTheme}
-          isServerAiReady={isServerAiReady}
-          isBusy={isBusy}
-          onNavigate={handleNavigateSection}
-          onToggleTheme={() => setIsDarkTheme((v) => !v)}
-          onInspectWebExample={handleInspectWebExample}
-          onInspect3dExample={handleInspect3dExample}
-          onUseAsInspiration={(prompt, cap) => {
-            setHomePrompt(prompt);
-            setHomeCapability(cap);
-            pushRoute('/', { view: 'home' });
-          }}
         />
       ) : route.view === 'settings' ? (
         <SettingsPage
