@@ -101,7 +101,7 @@ export function CreateStudioPage({
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 72 }}>
       <AppNavigation
-        activeSection="create"
+        activeSection="home"
         isDarkTheme={isDarkTheme}
         isServerAiReady={isServerAiReady}
         onNavigate={onNavigate}
