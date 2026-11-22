@@ -33,7 +33,7 @@ async function clearLegacyGeminiVault(): Promise<void> {
   if (legacyGeminiVaultCleanupAttempted || !hasKvConfig()) return;
   legacyGeminiVaultCleanupAttempted = true;
   try {
-    const base = process.env.KV_REST_API_URL!.replace(/\\/+$/, '');
+    const base = process.env.KV_REST_API_URL!.replace(/\/+$/, '');
     await fetch(`${base}/del/${encodeURIComponent('zuno_ai:gemini_keys_enc_v1')}`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN!.trim()}` },
