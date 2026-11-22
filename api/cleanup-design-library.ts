@@ -19,8 +19,9 @@ async function collectOldLibraryBlobs(): Promise<OldBlob[]> {
   const all: OldBlob[] = [];
   let cursor: string | undefined;
   do {
+    // Enumerate the connected store without a prefix filter, then match locally.
+    // This avoids provider-side prefix filtering silently missing legacy objects.
     const page = await list({
-      prefix: OLD_LIBRARY_PREFIX,
       limit: PAGE_SIZE,
       ...(cursor ? { cursor } : {}),
     });
