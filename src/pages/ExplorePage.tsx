@@ -26,7 +26,7 @@ export function ExplorePage({
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 76 }}>
       <AppNavigation
-        activeSection="explore"
+        activeSection="home"
         isDarkTheme={isDarkTheme}
         isServerAiReady={isServerAiReady}
         onNavigate={onNavigate}
