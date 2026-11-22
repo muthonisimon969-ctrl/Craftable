@@ -20,7 +20,6 @@ export function ExplorePage({
   isBusy,
   onNavigate,
   onToggleTheme,
-  onInspectWebExample,
   onInspect3dExample,
   onUseAsInspiration,
 }: ExplorePageProps) {
