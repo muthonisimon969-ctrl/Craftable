@@ -3,7 +3,6 @@ import { type NavSection } from './components/AppNavigation';
 import { DeleteProjectModal, RenameProjectModal } from './components/Modals';
 import { type CreativeBlueprint } from './data/creativeBlueprints';
 import { buildCreativeStarterBundle } from './data/creativeStarters';
-import { buildStarterTemplateBundle } from './data/starterTemplateBundles';
 import { AdminPage } from './pages/AdminPage';
 import { ChatStudioPage } from './pages/ChatStudioPage';
 import { CreateStudioPage } from './pages/CreateStudioPage';
@@ -27,7 +26,6 @@ import type {
   AppProject,
   ChatThreadMessage,
   CreativeCategory,
-  DesignTemplate,
   GeneratedVisualAsset,
   PromptAttachment,
   StudioCapability,
@@ -344,27 +342,6 @@ export default function App() {
       await handleGenerateImage(trimmed, homeAttachments);
     } else {
       await handleBuildWebApp(trimmed, 'web_app', homeAttachments);
-    }
-  };
-
-  const handleInspectWebExample = async (template: DesignTemplate) => {
-    if (isBusy) return;
-    setIsBusy(true);
-    try {
-      const bundle = buildStarterTemplateBundle(template.id);
-      const created = await storage.createProject(
-        template.starterPrompt,
-        template.defaultTemplateType,
-        bundle,
-        { mode: 'standard' }
-      );
-      upsertProject(created);
-      pushRoute(`/workspace/${encodeURIComponent(created.id)}`, {
-        view: 'workspace',
-        projectId: created.id,
-      });
-    } finally {
-      setIsBusy(false);
     }
   };
 
