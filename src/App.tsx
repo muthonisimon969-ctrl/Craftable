@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { type NavSection } from './components/AppNavigation';
 import { DeleteProjectModal, RenameProjectModal } from './components/Modals';
-import { type CreativeBlueprint } from './data/creativeBlueprints';
-import { buildCreativeStarterBundle } from './data/creativeStarters';
 import { AdminPage } from './pages/AdminPage';
 import { ChatStudioPage } from './pages/ChatStudioPage';
 import { CreativeWorkspacePage } from './pages/CreativeWorkspacePage';
@@ -261,9 +259,6 @@ export default function App() {
       setBusyStatus('');
       setHomePrompt('');
       setHomeAttachments([]);
-      if (route.view !== 'create') {
-        pushRoute('/create', { view: 'create' });
-      }
     } catch (err) {
       setIsBusy(false);
       setBusyStatus('');
@@ -329,27 +324,6 @@ export default function App() {
     }
   };
 
-  const handleInspect3dExample = async (blueprint: CreativeBlueprint) => {
-    if (isBusy) return;
-    setIsBusy(true);
-    try {
-      const bundle = buildCreativeStarterBundle(blueprint.id);
-      const created = await storage.createProject(
-        blueprint.starterPrompt,
-        'web_app',
-        bundle,
-        { mode: 'creative', creativeCategory: blueprint.category }
-      );
-      upsertProject(created);
-      pushRoute(`/creative/${encodeURIComponent(created.id)}`, {
-        view: 'creative_workspace',
-        projectId: created.id,
-      });
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
   const handleOpenProject = (project: AppProject) => {
     if (project.mode === 'creative') {
       pushRoute(`/creative/${encodeURIComponent(project.id)}`, {
@@ -380,8 +354,6 @@ export default function App() {
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
     setProjectToDelete(null);
   };
-
-  const creativeProjects = projects.filter((p) => p.mode === 'creative');
 
   return (
     <>
