@@ -179,29 +179,6 @@ export function PromptComposer({
               <span>Attach</span>
             </button>
 
-            <button
-              type="button"
-              className={`btn-outline ${capability === 'image' ? 'selected' : ''}`}
-              disabled={isBusy}
-              onClick={() =>
-                onCapabilityChange(capability === 'image' ? 'build' : 'image')
-              }
-              style={{
-                minHeight: 40,
-                padding: '6px 12px',
-                fontSize: '0.82rem',
-                ...(capability === 'image'
-                  ? {
-                      borderColor: 'var(--indigo)',
-                      background: 'var(--indigo-container)',
-                      color: 'var(--indigo-on-container)',
-                    }
-                  : {}),
-              }}
-            >
-              <ImageIcon size={15} />
-              <span>Image AI</span>
-            </button>
           </div>
 
           <button
