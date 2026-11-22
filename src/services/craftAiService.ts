@@ -249,7 +249,7 @@ async function executeZunoServerRequest(
     if (res.status === 503 || errBody?.code === 'MISSING_SERVER_KEY') {
       throw new Error(
         errBody?.error ||
-          'Zuno AI server keys are not configured yet. Site owners can add Gemini keys in Admin Control (/admin).'
+          'Zuno AI server keys are not configured yet. Site owners can add your Groq API key in Owner Admin (/admin).'
       );
     }
     throw new Error(errBody?.error || `Zuno AI server error (HTTP ${res.status}).`);
