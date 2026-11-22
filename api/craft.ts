@@ -99,6 +99,16 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
   const promptText = parsedBody.promptText?.trim() ?? '';
   const systemPrompt = parsedBody.systemPrompt?.trim() ?? '';
 
+  // Private design intelligence is configured only in the server environment.
+  // Never return it to the browser or accept it from the client request body.
+  const privateDesignIntelligence =
+    mode === 'build' || mode === 'create_3d'
+      ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim()
+      : '';
+  const effectiveSystemPrompt = [systemPrompt, privateDesignIntelligence]
+    .filter(Boolean)
+    .join('\n\n');
+
   if (!promptText) {
     res.status(400).json({ error: 'Missing promptText.' });
     return;
@@ -183,10 +193,10 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal,
           body: JSON.stringify({
-            ...(systemPrompt
+            ...(effectiveSystemPrompt
               ? {
                   systemInstruction: {
-                    parts: [{ text: systemPrompt }],
+                    parts: [{ text: effectiveSystemPrompt }],
                   },
                 }
               : {}),

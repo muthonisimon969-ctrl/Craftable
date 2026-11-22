@@ -12,6 +12,12 @@ Zuno AI is a responsive **React + TypeScript + Vite** all-in-one AI workspace de
 - **Projects & Optional Explore (`/projects`, `/explore`):** Search, star, rename, delete, or inspect example websites and Three.js experiments off the main homepage.
 - **Owner-Only Admin Key Vault (`/admin` & `/settings`):** Server-side password-protected API key control (`/api/admin`). Keys remain write-only on the server and are never exposed to client JS or browser storage.
 
+## Private Design Intelligence
+
+Build and 3D generation can receive an additional private instruction from the server environment variable `ZUNO_DESIGN_INTELLIGENCE_PROMPT`. This value is read only by `/api/craft`, is never returned to the browser, and is not stored in this repository. Configure it directly in Vercel Project Settings → Environment Variables. Do not put private prompts, asset URLs, or credentials in client-side files or commit them to this public repository.
+
+This is a private instruction layer, not private image storage. To keep original asset files private, connect a private object-storage bucket (for example, a bucket with public access disabled) and serve only the required website-ready derivatives. Any image rendered on a published public website can still be saved by its visitors.
+
 ## Local Development
 ```bash
 npm install
