@@ -5,7 +5,6 @@ import { type CreativeBlueprint } from './data/creativeBlueprints';
 import { buildCreativeStarterBundle } from './data/creativeStarters';
 import { AdminPage } from './pages/AdminPage';
 import { ChatStudioPage } from './pages/ChatStudioPage';
-import { CreateStudioPage } from './pages/CreateStudioPage';
 import { CreativeWorkspacePage } from './pages/CreativeWorkspacePage';
 import { HomePage } from './pages/HomePage';
 import { ProjectsPage } from './pages/ProjectsPage';
@@ -38,7 +37,6 @@ const LEGACY_THEME_STORAGE_KEY = 'craftable_dark_theme';
 type AppRoute =
   | { view: 'home' }
   | { view: 'chat' }
-  | { view: 'create' }
   | { view: 'projects' }
   | { view: 'settings' }
   | { view: 'admin' }
@@ -49,9 +47,8 @@ function parseRoute(): AppRoute {
   const path = window.location.pathname;
   if (/^\/admin\/?$/.test(path)) return { view: 'admin' };
   if (/^\/chat\/?$/.test(path)) return { view: 'chat' };
-  if (/^\/create\/?$/.test(path) || /^\/creative\/?$/.test(path)) return { view: 'create' };
+  if (/^\/(create|creative|explore)\/?$/.test(path)) return { view: 'home' };
   if (/^\/projects\/?$/.test(path)) return { view: 'projects' };
-  if (/^\/explore\/?$/.test(path)) return { view: 'create' };
   if (/^\/settings\/?$/.test(path)) return { view: 'settings' };
 
   const creativeMatch = /^\/creative\/([^/]+)\/?$/.exec(path);
@@ -153,19 +150,6 @@ export default function App() {
       refreshServerStatus();
     } else if (section === 'chat') {
       pushRoute('/chat', { view: 'chat' });
-    } else if (section === 'build') {
-      const latestBuild = projects.find((p) => p.mode !== 'creative');
-      if (latestBuild) {
-        pushRoute(`/workspace/${encodeURIComponent(latestBuild.id)}`, {
-          view: 'workspace',
-          projectId: latestBuild.id,
-        });
-      } else {
-        setHomeCapability('build');
-        pushRoute('/', { view: 'home' });
-      }
-    } else if (section === 'create') {
-      pushRoute('/create', { view: 'create' });
     } else if (section === 'projects') {
       pushRoute('/projects', { view: 'projects' });
       refreshProjects();
@@ -452,28 +436,6 @@ export default function App() {
             setHomeCapability('create_3d');
             handleCreate3dProject(prompt);
           }}
-        />
-      ) : route.view === 'create' ? (
-        <CreateStudioPage
-          creativeProjects={creativeProjects}
-          createdImages={createdImages}
-          isDarkTheme={isDarkTheme}
-          isServerAiReady={isServerAiReady}
-          isBusy={isBusy}
-          busyStatus={busyStatus}
-          errorMessage={errorMessage}
-          onNavigate={handleNavigateSection}
-          onToggleTheme={() => setIsDarkTheme((v) => !v)}
-          onCreate3dProject={(p, cat, atts) => handleCreate3dProject(p, cat, atts)}
-          onLaunch3dStarter={handleInspect3dExample}
-          onOpenCreativeProject={(id) =>
-            pushRoute(`/creative/${encodeURIComponent(id)}`, {
-              view: 'creative_workspace',
-              projectId: id,
-            })
-          }
-          onGenerateImage={(p, atts) => handleGenerateImage(p, atts)}
-          onDismissError={() => setErrorMessage(null)}
         />
       ) : route.view === 'projects' ? (
         <ProjectsPage
