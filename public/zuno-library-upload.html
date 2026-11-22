@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zuno — Private Design Library</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;background:#090a0c;color:#f4f4f5}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#252018 0,transparent 48%),#090a0c;display:grid;place-items:center;padding:24px}
+main{width:min(100%,620px);border:1px solid #39332a;border-radius:22px;background:#111214;padding:28px;box-shadow:0 24px 80px #0008}
+h1{font-size:24px;margin:0 0 8px;letter-spacing:-.04em}p{color:#a7a7ad;line-height:1.5;margin:0 0 22px}
+.gold{color:#e6c36a}.drop{border:1px dashed #75613a;border-radius:16px;padding:24px;text-align:center;background:#181714}
+input{max-width:100%;margin:12px auto;color:#ddd}button{border:0;border-radius:12px;padding:13px 18px;background:linear-gradient(135deg,#f2d78a,#b78b35);color:#17130b;font-weight:750;cursor:pointer}button:disabled{opacity:.45;cursor:wait}
+.preview{display:none;margin:18px 0 0}.preview img{max-width:100%;max-height:260px;border-radius:12px;object-fit:contain;background:#080808}.meta{font-size:13px;color:#a7a7ad;margin-top:8px;overflow-wrap:anywhere}.status{margin-top:18px;padding:13px;border-radius:12px;background:#1b1c1f;color:#ddd;min-height:44px;white-space:pre-wrap;overflow-wrap:anywhere}.fine{font-size:12px;margin-top:16px;color:#777}
+</style></head>
+<body><main>
+<h1><span class="gold">Zuno</span> Private Design Library</h1>
+<p>Upload individual product images into the private asset bucket. Files are not publicly accessible. Sign in to Zuno Admin in this browser first.</p>
+<div class="drop"><strong>Choose one image</strong><br><input id="file" type="file" accept="image/png,image/jpeg,image/webp"><div class="preview" id="preview"><img id="image" alt="Selected image preview"><div class="meta" id="meta"></div></div><br><button id="upload" disabled>Upload to private library</button></div>
+<div class="status" id="status">Waiting for an image.</div>
+<div class="fine">PNG, JPEG or WebP · Maximum 3 MB per image · One image per upload</div>
+</main>
+<script>
+const fileInput=document.getElementById('file'),button=document.getElementById('upload'),status=document.getElementById('status'),preview=document.getElementById('preview'),image=document.getElementById('image'),meta=document.getElementById('meta');
+let selected=null;
+fileInput.addEventListener('change',()=>{selected=fileInput.files?.[0]||null;button.disabled=!selected;if(!selected){preview.style.display='none';return;}image.src=URL.createObjectURL(selected);meta.textContent=selected.name+' · '+(selected.size/1024).toFixed(0)+' KB';preview.style.display='block';status.textContent=selected.size>3*1024*1024?'This image is over 3 MB. Choose a smaller file.':'Ready to upload.';button.disabled=selected.size>3*1024*1024;});
+button.addEventListener('click',async()=>{if(!selected)return;button.disabled=true;status.textContent='Uploading '+selected.name+'…';try{const dataBase64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=reject;reader.readAsDataURL(selected);});const response=await fetch('/api/library-upload',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:selected.name,mimeType:selected.type,dataBase64})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Upload failed');status.textContent='Uploaded successfully\nPrivate path: '+result.pathname+'\nSize: '+result.size+' bytes';}catch(error){status.textContent='Upload failed: '+(error instanceof Error?error.message:'Unknown error');}finally{button.disabled=!selected||selected.size>3*1024*1024;}});
+</script></body></html>
