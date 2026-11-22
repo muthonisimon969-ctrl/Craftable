@@ -24,7 +24,7 @@ export type PersistenceMode =
 
 const COOKIE_NAME = 'zuno_admin_session';
 const KV_STORAGE_KEY = 'zuno_ai:groq_keys_enc_v1';
-const LOCAL_VAULT_FILE = path.resolve(process.cwd(), '.zuno-keys.local.json');
+const LOCAL_VAULT_FILE = path.resolve(process.cwd(), '.zuno-groq-keys.local.json');
 
 let runtimeKeys: string[] | null = null;
 
