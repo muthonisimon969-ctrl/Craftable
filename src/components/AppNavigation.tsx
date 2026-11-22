@@ -2,7 +2,6 @@ import {
   Box,
   Compass,
   FolderKanban,
-  Hammer,
   Home,
   MessageSquare,
   Moon,
@@ -30,7 +29,6 @@ interface AppNavigationProps {
 const NAV_ITEMS: Array<{ id: NavSection; label: string; icon: typeof Home }> = [
   { id: 'home', label: 'Home', icon: Home },
   { id: 'chat', label: 'Chat', icon: MessageSquare },
-  { id: 'build', label: 'Build', icon: Hammer },
   { id: 'create', label: 'Create', icon: Box },
   { id: 'projects', label: 'Projects', icon: FolderKanban },
   { id: 'explore', label: 'Explore', icon: Compass },
