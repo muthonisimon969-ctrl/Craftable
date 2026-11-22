@@ -133,7 +133,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     for (const key of keys) {
       try {
         const probe = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/groq-2.5-flash:generateContent?key=${}`,
+          'https://api.groq.com/openai/v1/chat/completions',
           {
             method: 'POST',
             headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
