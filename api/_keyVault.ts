@@ -213,6 +213,7 @@ export async function getActiveServerKeys(): Promise<{
   keys: string[];
   persistenceMode: PersistenceMode;
 }> {
+  await clearLegacyGeminiVault();
   if (runtimeKeys && runtimeKeys.length > 0) {
     const mode: PersistenceMode = hasVercelSyncConfig()
       ? 'vercel_env'
