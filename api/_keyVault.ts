@@ -23,7 +23,7 @@ export type PersistenceMode =
   | 'unconfigured';
 
 const COOKIE_NAME = 'zuno_admin_session';
-const KV_STORAGE_KEY = 'zuno_ai:gemini_keys_enc_v1';
+const KV_STORAGE_KEY = 'zuno_ai:groq_keys_enc_v1';
 const LOCAL_VAULT_FILE = path.resolve(process.cwd(), '.zuno-keys.local.json');
 
 let runtimeKeys: string[] | null = null;
@@ -44,7 +44,7 @@ export function parseKeyList(raw: string | undefined): string[] {
 
 function getEnvKeys(): string[] {
   return parseKeyList(
-    [process.env.GEMINI_API_KEYS ?? '', process.env.GEMINI_API_KEY ?? ''].filter(Boolean).join('\n')
+    [process.env.GROQ_API_KEYS ?? '', process.env.GROQ_API_KEY ?? ''].filter(Boolean).join('\n')
   );
 }
 
@@ -54,7 +54,7 @@ export function getAdminPassword(): string {
 
 function getSigningSecret(): string {
   const adminPw = getAdminPassword();
-  const explicit = (process.env.ZUNO_SESSION_SECRET ?? process.env.GEMINI_VAULT_SECRET ?? '').trim();
+  const explicit = (process.env.ZUNO_SESSION_SECRET ?? process.env.GROQ_VAULT_SECRET ?? '').trim();
   return explicit || `zuno-session-key::${adminPw}`;
 }
 
@@ -154,7 +154,7 @@ async function syncVercelEnvKeys(keys: string[]): Promise<boolean> {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          key: 'GEMINI_API_KEYS',
+          key: 'GROQ_API_KEYS',
           value: joined,
           type: 'encrypted',
           target: ['production', 'preview', 'development'],
@@ -237,9 +237,9 @@ export async function saveServerKeys(keys: string[]): Promise<{
 }> {
   runtimeKeys = [...keys];
   if (keys.length > 0) {
-    process.env.GEMINI_API_KEYS = keys.join(',');
+    process.env.GROQ_API_KEYS = keys.join(',');
   } else {
-    delete process.env.GEMINI_API_KEYS;
+    delete process.env.GROQ_API_KEYS;
   }
 
   if (await syncVercelEnvKeys(keys)) {
