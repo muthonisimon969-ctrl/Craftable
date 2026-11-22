@@ -99,7 +99,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     const parsedKeys = parseKeyList(body.keysText ?? '');
     if (parsedKeys.length === 0 && (body.keysText ?? '').trim().length > 0) {
       res.status(400).json({
-        error: 'No valid API keys detected. Paste one Gemini API key per line.',
+        error: 'No valid API keys detected. Paste one Groq API key per line.',
       });
       return;
     }
@@ -115,7 +115,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           ? 'Cleared runtime API keys.'
           : result.persistenceMode === 'vercel_env' || result.persistenceMode === 'kv_encrypted'
           ? `Securely stored ${result.savedCount} key(s) on the server.`
-          : `Saved ${result.savedCount} key(s) in active server memory. Add GEMINI_API_KEY (or VERCEL_TOKEN + VERCEL_PROJECT_ID / Vercel KV) in Vercel for persistence across cold restarts.`,
+          : `Saved ${result.savedCount} key(s) in active server memory. Add GROQ_API_KEY (or VERCEL_TOKEN + VERCEL_PROJECT_ID / Vercel KV) in Vercel for persistence across cold restarts.`,
     });
     return;
   }
@@ -133,13 +133,13 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     for (const key of keys) {
       try {
         const probe = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/groq-2.5-flash:generateContent?key=${}`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ role: 'user', parts: [{ text: 'Reply with OK' }] }],
-              generationConfig: { maxOutputTokens: 8 },
+              messages: [{ role: 'user', content: 'Reply with OK' }],
+              model: 'llama-3.3-70b-versatile', max_tokens: 8,
             }),
           }
         );
@@ -163,7 +163,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       ok: true,
       workingCount,
       totalKeys: keys.length,
-      message: `${workingCount} of ${keys.length} key(s) verified live with Gemini.`,
+      message: `${workingCount} of ${keys.length} key(s) verified live with Groq.`,
     });
     return;
   }
