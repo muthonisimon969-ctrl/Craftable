@@ -169,7 +169,7 @@ export function AdminPage({ onNavigateHome, onStatusChanged }: AdminPageProps) {
         setFeedback({ kind: 'ok', text: data?.message || 'Server keys verified live!' });
       }
     } catch {
-      setFeedback({ kind: 'err', text: 'Failed to test Gemini connection.' });
+      setFeedback({ kind: 'err', text: 'Failed to test Groq connection.' });
     } finally {
       setBusyAction(null);
     }
@@ -190,7 +190,7 @@ export function AdminPage({ onNavigateHome, onStatusChanged }: AdminPageProps) {
   const persistenceLabel: Record<string, string> = {
     vercel_env: 'Permanent (Vercel Environment Variables)',
     kv_encrypted: 'Permanent (Encrypted Server KV Vault)',
-    env_var: 'Permanent (Server GEMINI_API_KEY)',
+    env_var: 'Permanent (Server GROQ_API_KEY)',
     local_file: 'Local Dev Vault (.zuno-keys.local.json)',
     session_memory: 'Active Server Instance Memory',
     unconfigured: 'Not configured yet',
@@ -236,7 +236,7 @@ export function AdminPage({ onNavigateHome, onStatusChanged }: AdminPageProps) {
               </div>
 
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                Sign in with your owner admin password to manage server-side Gemini API keys.
+                Sign in with your owner admin password to manage server-side Groq API keys.
                 Customers never see or access API keys.
               </p>
 
@@ -249,7 +249,7 @@ export function AdminPage({ onNavigateHome, onStatusChanged }: AdminPageProps) {
                   <p className="error-body">
                     Add <code className="font-mono">ZUNO_ADMIN_PASSWORD</code> in your Vercel Project
                     Environment Variables (and redeploy) to unlock Owner Admin login. You can also
-                    set <code className="font-mono">GEMINI_API_KEY</code> directly in Vercel
+                    set <code className="font-mono">GROQ_API_KEY</code> directly in Vercel
                     Environment Variables.
                   </p>
                 </div>
@@ -333,11 +333,11 @@ export function AdminPage({ onNavigateHome, onStatusChanged }: AdminPageProps) {
               <form onSubmit={handleSaveKeys} className="hero-card-inner">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <KeyRound size={20} style={{ color: 'var(--coral)' }} />
-                  <h2 style={{ margin: 0, fontSize: '1.12rem' }}>Paste Server Gemini API Keys</h2>
+                  <h2 style={{ margin: 0, fontSize: '1.12rem' }}>Paste Server Groq API Keys</h2>
                 </div>
 
                 <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-muted)' }}>
-                  Paste one or more Gemini API keys (one per line or comma-separated). Zuno AI
+                  Paste one or more Groq API keys (one per line or comma-separated). Zuno AI
                   automatically rotates keys on rate limits. Leave blank and save only to clear
                   runtime keys.
                 </p>
@@ -348,7 +348,7 @@ export function AdminPage({ onNavigateHome, onStatusChanged }: AdminPageProps) {
                   onChange={(e) => setKeysInput(e.target.value)}
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="AIzaSy...&#10;AIzaSy... (optional backup key)"
+                  placeholder="gsk_...&#10;gsk_... (optional backup key)"
                   style={{ minHeight: 108, WebkitTextSecurity: 'disc' } as React.CSSProperties}
                 />
 
@@ -378,7 +378,7 @@ export function AdminPage({ onNavigateHome, onStatusChanged }: AdminPageProps) {
                 <code className="font-mono">VERCEL_TOKEN</code> +{' '}
                 <code className="font-mono">VERCEL_PROJECT_ID</code> (or Vercel KV env vars) in
                 Vercel, or paste your key into Vercel &rarr; Settings &rarr; Environment Variables as{' '}
-                <code className="font-mono">GEMINI_API_KEY</code>.
+                <code className="font-mono">GROQ_API_KEY</code>.
               </p>
             </section>
           </div>
