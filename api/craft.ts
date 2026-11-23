@@ -217,6 +217,83 @@ const BUILD_QUALITY_PROMPT = `ZUNO WORLD-CLASS WEB DESIGN STANDARD — SERVER-EN
 - Never fabricate logos, customer counts, awards, testimonials, reviews, partner brands, addresses, or business claims. Use honest useful content when details are missing.
 - Before returning, privately review hierarchy, contrast, spacing, mobile navigation, every interaction, form validation, empty/error/success states, and JavaScript syntax. Fix weaknesses before output.
 - When editing an existing project, preserve its established design and working features; make only the requested changes.\n- Return the required Zuno output markers exactly.`;
+
+function inspectBuildDraft(answer: string): string[] {
+  const read = (name: string) => {
+    const match = new RegExp('<<<' + name + '>>>([\\\\s\\\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
+    return match?.[1]?.trim() ?? '';
+  };
+  const html = read('HTML');
+  const css = read('CSS');
+  const js = read('JS');
+  const issues: string[] = [];
+  if (!html || !css || !/<<<TITLE>>>/i.test(answer) || !/<<<SUMMARY>>>/i.test(answer)) {
+    issues.push('The required Zuno output sections are missing or malformed.');
+  }
+  if (html.length < 700) issues.push('The page markup is too thin to deliver a complete, useful website.');
+  if (css.length < 900) issues.push('The stylesheet is too small or incomplete for a polished responsive design.');
+  if (!/<(?:header|nav|main|section|footer)\\b/i.test(html)) {
+    issues.push('The page lacks a clear semantic page structure.');
+  }
+  if (!/(?:@media\\s*\\(|clamp\\s*\\(|minmax\\s*\\()/i.test(css)) {
+    issues.push('The CSS has no clear responsive layout strategy for phone and desktop sizes.');
+  }
+  if (/<(?:button|a)\\b/i.test(html) && !js.trim()) {
+    issues.push('The interface contains controls but has no JavaScript behavior or interaction handling.');
+  }
+  if (/lorem ipsum|coming soon|placeholder text|your company name|product name here/i.test(html)) {
+    issues.push('The page still contains placeholder copy instead of useful, specific content.');
+  }
+  return issues;
+}
+
+async function requestBuildRepair(
+  apiKey: string,
+  promptText: string,
+  draft: string,
+  issues: string[],
+  systemPrompt: string,
+  attachments?: CraftAttachmentPayload[]
+): Promise<string | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 16000);
+  try {
+    const repairPrompt = [
+      'QUALITY REPAIR — improve the supplied website draft before returning it.',
+      'Original user brief:',
+      promptText.slice(0, 7000),
+      '',
+      'Automated review findings:',
+      ...issues.map((issue) => '- ' + issue),
+      '',
+      'Repair the actual HTML, CSS and JS. Preserve the requested brand and functionality. Keep the exact Zuno output markers and return every required section in full.',
+      'Do not remove working features. Keep all image sources restricted to the approved Supabase URLs already present in the draft; do not add or alter image URLs.',
+      '',
+      'CURRENT DRAFT:',
+      draft.slice(0, 28000),
+    ].join('\\n');
+    const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: TEXT_MODEL,
+        messages: buildMessages(repairPrompt, systemPrompt + '\\n\\nYou are performing a focused repair pass. Fix the listed defects, preserve everything that already works, and return the complete required output.'),
+        temperature: 0.15,
+        max_tokens: 14000,
+      }),
+    });
+    if (!upstream.ok) return null;
+    const payload = await upstream.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const repaired = payload.choices?.[0]?.message?.content?.trim();
+    return repaired && /<<<HTML>>>/i.test(repaired) && /<<<CSS>>>/i.test(repaired) ? repaired : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function buildMessages(promptText: string, systemPrompt: string, attachments?: CraftAttachmentPayload[], vision = false) {
   const content: Array<Record<string, unknown>> = [{ type: 'text', text: promptText }];
   for (const att of (attachments ?? []).slice(0, 3)) {
@@ -244,15 +321,25 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
   const hasImages = (body.attachments ?? []).some((a) => a.dataBase64 && /^image\/(png|jpeg|jpg|webp)$/i.test(a.mimeType));
   let lastError = 'Groq did not return a response.';
   for (const apiKey of keys) {
-    const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 55000);
+    const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), mode === 'build' ? 35000 : 55000);
     try {
       const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, signal: controller.signal, body: JSON.stringify({ model: hasImages ? VISION_MODEL : TEXT_MODEL, messages: buildMessages(promptText, systemPrompt, body.attachments, hasImages), temperature: mode === 'chat' ? 0.65 : 0.25, max_tokens: 16000 }) });
       const payload = await upstream.json().catch(() => null) as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string } } | null;
       if (!upstream.ok) { lastError = payload?.error?.message || `Groq returned HTTP ${upstream.status}`; if (upstream.status === 401 || upstream.status === 403) break; continue; }
-      const rawAnswer = payload?.choices?.[0]?.message?.content?.trim();
+      let rawAnswer = payload?.choices?.[0]?.message?.content?.trim();
+      if (rawAnswer && mode === 'build' && !hasImages) {
+        const issues = inspectBuildDraft(rawAnswer);
+        if (issues.length) {
+          const repaired = await requestBuildRepair(apiKey, promptText, rawAnswer, issues, systemPrompt, body.attachments);
+          if (repaired) {
+            const remainingIssues = inspectBuildDraft(repaired);
+            if (remainingIssues.length < issues.length) rawAnswer = repaired;
+          }
+        }
+      }
       const imageEnforcedAnswer = rawAnswer && mode === 'build' ? ensureSupabaseProductImages(rawAnswer, approvedAssets, promptText) : rawAnswer;
       const answer = imageEnforcedAnswer && mode === 'build' ? sanitizeGeneratedImageSources(imageEnforcedAnswer, approvedAssets) : imageEnforcedAnswer;
-      if (answer) { res.status(200).json({ text: answer, model: hasImages ? VISION_MODEL : TEXT_MODEL, provider: 'groq' }); return; }
+      if (answer) { res.status(200).json({ text: answer, model: hasImages ? VISION_MODEL : TEXT_MODEL, provider: 'groq', qualityReview: mode === 'build' ? 'checked' : undefined }); return; }
       lastError = 'Groq returned an empty response.';
     } catch (err) { lastError = err instanceof Error ? err.message : 'Groq request failed.'; }
     finally { clearTimeout(timeout); }
