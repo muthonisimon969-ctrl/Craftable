@@ -232,13 +232,13 @@ function inspectBuildDraft(answer: string): string[] {
   }
   if (html.length < 700) issues.push('The page markup is too thin to deliver a complete, useful website.');
   if (css.length < 900) issues.push('The stylesheet is too small or incomplete for a polished responsive design.');
-  if (!/<(?:header|nav|main|section|footer)\\b/i.test(html)) {
+  if (!/<(?:header|nav|main|section|footer)\b/i.test(html)) {
     issues.push('The page lacks a clear semantic page structure.');
   }
-  if (!/(?:@media\\s*\\(|clamp\\s*\\(|minmax\\s*\\()/i.test(css)) {
+  if (!/(?:@media\s*\(|clamp\s*\(|minmax\s*\()/i.test(css)) {
     issues.push('The CSS has no clear responsive layout strategy for phone and desktop sizes.');
   }
-  if (/<(?:button|a)\\b/i.test(html) && !js.trim()) {
+  if (/<(?:button|a)\b/i.test(html) && !js.trim()) {
     issues.push('The interface contains controls but has no JavaScript behavior or interaction handling.');
   }
   if (/lorem ipsum|coming soon|placeholder text|your company name|product name here/i.test(html)) {
