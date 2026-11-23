@@ -119,8 +119,17 @@ function sanitizeGeneratedImageSources(answer: string, assets: ApprovedSupabaseA
     const href = readHtmlAttribute(tag, 'href') || readHtmlAttribute(tag, 'xlink:href');
     return href.startsWith('#') || isAllowed(href) ? tag : '';
   });
+  safe = safe.replace(/<input\b[^>]*>/gi, (tag) => {
+    if (readHtmlAttribute(tag, 'type').toLowerCase() !== 'image') return tag;
+    const src = readHtmlAttribute(tag, 'src');
+    return src && isAllowed(src) ? tag : '';
+  });
+
 
   safe = safe.replace(/\s+(?:srcset|data-src|data-original)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+  safe = safe.replace(/\s+background\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi, (attr, a, b, d) =>
+    isAllowed(a ?? b ?? d ?? '') ? attr : ''
+  );
   safe = safe.replace(/\s+poster\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi, (attr, a, b, d) =>
     isAllowed(a ?? b ?? d ?? '') ? attr : ''
   );
