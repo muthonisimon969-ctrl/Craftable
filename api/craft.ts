@@ -92,7 +92,7 @@ function buildSupabaseImageRules(assets: ApprovedSupabaseAsset[]): string {
 }
 
 function readHtmlAttribute(tag: string, name: string): string {
-  const match = new RegExp('\\b' + name + '\\s*=\\s*(?:"([^"]*)"|\\'([^\\']*)\\'|([^\\s>]+))', 'i').exec(tag);
+  const match = new RegExp("\\b" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))", "i").exec(tag);
   return (match?.[1] ?? match?.[2] ?? match?.[3] ?? '').trim();
 }
 
@@ -109,8 +109,9 @@ function sanitizeGeneratedImageSources(answer: string, assets: ApprovedSupabaseA
   safe = safe.replace(/<source\b[^>]*>/gi, (tag) => {
     const type = readHtmlAttribute(tag, 'type').toLowerCase();
     const srcset = readHtmlAttribute(tag, 'srcset');
-    if (srcset && type.startsWith('image/')) return '';
-    if (srcset) tag = tag.replace(/\s+srcset\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+    const src = readHtmlAttribute(tag, 'src');
+    if (srcset) return '';
+    if (type.startsWith('image/') && (!src || !isAllowed(src))) return '';
     return tag;
   });
 
