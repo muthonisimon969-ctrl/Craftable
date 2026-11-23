@@ -1,5 +1,6 @@
 import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 function localApiBridgePlugin(): Plugin {
   return {
@@ -67,7 +68,7 @@ function localApiBridgePlugin(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), localApiBridgePlugin()],
+  plugins: [react(), tailwindcss(), localApiBridgePlugin()],
   base: '/',
   build: {
     outDir: 'dist',
