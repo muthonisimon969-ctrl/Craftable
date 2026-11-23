@@ -252,8 +252,7 @@ async function requestBuildRepair(
   promptText: string,
   draft: string,
   issues: string[],
-  systemPrompt: string,
-  attachments?: CraftAttachmentPayload[]
+  systemPrompt: string
 ): Promise<string | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 16000);
