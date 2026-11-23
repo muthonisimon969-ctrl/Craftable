@@ -220,7 +220,7 @@ const BUILD_QUALITY_PROMPT = `ZUNO WORLD-CLASS WEB DESIGN STANDARD — SERVER-EN
 
 function inspectBuildDraft(answer: string): string[] {
   const read = (name: string) => {
-    const match = new RegExp('<<<' + name + '>>>([\\\\s\\\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
+    const match = new RegExp('<<<' + name + '>>>([\\s\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
     return match?.[1]?.trim() ?? '';
   };
   const html = read('HTML');
@@ -330,7 +330,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       if (rawAnswer && mode === 'build' && !hasImages) {
         const issues = inspectBuildDraft(rawAnswer);
         if (issues.length) {
-          const repaired = await requestBuildRepair(apiKey, promptText, rawAnswer, issues, systemPrompt, body.attachments);
+          const repaired = await requestBuildRepair(apiKey, promptText, rawAnswer, issues, systemPrompt);
           if (repaired) {
             const remainingIssues = inspectBuildDraft(repaired);
             if (remainingIssues.length < issues.length) rawAnswer = repaired;
