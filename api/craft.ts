@@ -1,7 +1,7 @@
 import { getActiveServerKeys, parseRequestJsonBody, type HttpReq, type HttpRes } from './_keyVault.js';
 export interface CraftAttachmentPayload { name: string; mimeType: string; dataBase64?: string; textContent?: string; }
 interface CraftRequestBody { mode?: 'build' | 'chat' | 'create_3d' | 'image'; promptText?: string; systemPrompt?: string; attachments?: CraftAttachmentPayload[]; }
-const TEXT_MODEL = 'llama-3.3-70b-versatile';
+const TEXT_MODEL = 'openai/gpt-oss-120b';
 const VISION_MODEL = 'qwen/qwen3.8-27b';
 function buildMessages(promptText: string, systemPrompt: string, attachments?: CraftAttachmentPayload[], vision = false) {
   const content: Array<Record<string, unknown>> = [{ type: 'text', text: promptText }];
