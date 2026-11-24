@@ -18,7 +18,7 @@ import { CodeExplorerPane } from '../components/CodeExplorerPane';
 import { WebPreviewPane } from '../components/WebPreviewPane';
 import { iterateExistingApp } from '../services/craftAiService';
 import { compileDocumentParts } from '../ir-engine/compiler';
-import { applyAssetSwap, applyHeadlineEdit, applyHeroMoodShift, computeDrift, makeRevision, rollbackDocument } from '../ir-engine/revisions';
+import { applyAssetSwap, applyHeadlineEdit, applyHeroMoodShift, computeDrift, getChangedIrIds, makeRevision, rollbackDocument } from '../ir-engine/revisions';
 import { validateIrV1Document } from '../ir-engine/validator';
 import type { IrDocument, IrRevision } from '../ir-engine/types';
 import * as storage from '../services/projectStorage';
@@ -251,14 +251,19 @@ export function WorkspacePage({
         throw new Error(validation.failures.map((issue) => issue.message).join(' '));
       }
       const latestOverride = next.overrides[next.overrides.length - 1];
-      const heroNodeId = next.sections.find((section) => section.role === 'hero')?.nodes[0]?.id;
-      const affectedIds = latestOverride?.affectedIds ?? (kind === 'headline' && heroNodeId ? [heroNodeId] : []);
+      const affectedIds = getChangedIrIds(current, next);
+      if (!affectedIds.length) throw new Error('No design changes were detected.');
+      const overrideReason = kind === 'rollback'
+        ? 'User restored a previously saved design revision.'
+        : latestOverride?.overrideReason ?? (kind === 'headline'
+          ? 'User requested a hero headline change.'
+          : 'User requested a scoped visual adjustment.');
       const drift = anchorRevision
         ? computeDrift(anchorRevision.document.anchor, next, anchorRevision.document.sections)
         : undefined;
       const revision = makeRevision(next, label, revisionKind, parent?.id ?? null, {
         affectedIds,
-        ...(latestOverride?.overrideReason ? { overrideReason: latestOverride.overrideReason } : kind === 'headline' ? { overrideReason: 'User requested a hero headline change.' } : {}),
+        overrideReason,
         ...(drift ? { drift } : {}),
       });
       const nextHistory = [...history, revision].slice(-20);
