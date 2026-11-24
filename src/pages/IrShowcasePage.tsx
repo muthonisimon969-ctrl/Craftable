@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowUpRight, Check, ChevronDown, Clock3, Monitor, RotateCcw, Smartphone, Sparkles } from 'lucide-react';
 import './IrShowcasePage.css';
 import { compileDocument } from '../ir-engine/compiler';
@@ -29,6 +29,8 @@ export default function IrShowcasePage() {
   const [headline, setHeadline] = useState('Built Light');
   const [message, setMessage] = useState('Ready for the three-edit stability test.');
   const [showDrift, setShowDrift] = useState(true);
+  const [audit, setAudit] = useState({ checked: false, horizontalOverflow: false, clippedHeading: false, brokenImages: 0 });
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const active = revisions.find((revision) => revision.id === activeId) ?? revisions[revisions.length - 1];
   const document = active.document;
@@ -103,6 +105,30 @@ export default function IrShowcasePage() {
   }
 
   const driftCount = drift.tokenDeltas.length + drift.sectionFlips.length + drift.activeOverrides.length;
+  const initialCollection = anchorRevision.document.sections.find((section) => section.role === 'collection');
+  const currentCollection = document.sections.find((section) => section.role === 'collection');
+  const collectionStable = JSON.stringify(initialCollection) === JSON.stringify(currentCollection);
+  const stableNodeIds = anchorRevision.document.sections.every((section) => {
+    const current = document.sections.find((item) => item.id === section.id);
+    return Boolean(current) && section.nodes.map((node) => node.id).join('|') === current?.nodes.map((node) => node.id).join('|');
+  });
+
+  function auditPreview() {
+    const previewDocument = iframeRef.current?.contentDocument;
+    if (!previewDocument) return;
+    const root = previewDocument.documentElement;
+    const body = previewDocument.body;
+    const heading = previewDocument.querySelector('h1');
+    const horizontalOverflow = Math.max(root.scrollWidth, body.scrollWidth) > viewport;
+    const clippedHeading = Boolean(heading && (heading.scrollWidth > heading.clientWidth + 1 || heading.scrollHeight > heading.clientHeight + 1));
+    const brokenImages = Array.from(previewDocument.images).filter((image) => !image.complete || image.naturalWidth === 0).length;
+    setAudit({ checked: true, horizontalOverflow, clippedHeading, brokenImages });
+  }
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(auditPreview);
+    return () => window.cancelAnimationFrame(frame);
+  }, [preview, viewport]);
 
   return (
     <main className="ir-shell">
@@ -133,9 +159,9 @@ export default function IrShowcasePage() {
           <div className="ir-revision-count"><Clock3 size={14} /> {revisions.length} revisions</div>
         </div>
 
-        <div className="ir-preview-meta"><span>LIVE PREVIEW / {viewport}px</span><span>{document.brandName.toUpperCase()} <i>·</i> {active.label.toUpperCase()}</span></div>
+        <div className="ir-preview-meta"><span>LIVE PREVIEW / {viewport}px</span><span>{document.brandName.toUpperCase()} <i>·</i> {active.label.toUpperCase()}</span><span>{audit.checked ? (audit.horizontalOverflow || audit.clippedHeading || audit.brokenImages ? 'AUDIT / REVIEW' : 'AUDIT / PASS') : 'AUDIT / CHECKING'}</span></div>
         <div className="ir-preview-stage">
-          <iframe title={document.brandName + ' generated website preview'} sandbox="" srcDoc={preview} style={{ width: viewport + 'px', height: (viewport === 1440 ? 900 : 812) + 'px' }} />
+          <iframe ref={iframeRef} onLoad={auditPreview} title={document.brandName + ' generated website preview'} sandbox="allow-same-origin" srcDoc={preview} style={{ width: viewport + 'px', height: (viewport === 1440 ? 900 : 812) + 'px' }} />
         </div>
 
         <div className="ir-lower-grid">
@@ -156,6 +182,7 @@ export default function IrShowcasePage() {
             {showDrift && driftCount > 0 ? <div className="ir-drift-note"><span>{driftCount} recorded design delta{driftCount === 1 ? '' : 's'}</span><button onClick={() => setShowDrift(false)} aria-label="Dismiss drift notice">Dismiss</button></div> : <p className="ir-clean-state"><Check size={15} /> {driftCount === 0 ? 'Aligned with active brand anchor.' : 'Advisory dismissed. Changes remain recorded.'}</p>}
             <div className="ir-drift-list"><div><span>tokenDeltas</span><strong>{drift.tokenDeltas.length}</strong></div><div><span>sectionFlips</span><strong>{drift.sectionFlips.length}</strong></div><div><span>activeOverrides</span><strong>{drift.activeOverrides.length}</strong></div></div>
             <div className="ir-panel-foot"><span>Anchor: {document.anchor.id}</span><span>Identity: {document.anchor.mood}</span></div>
+            <div className="ir-integrity-checks"><span><Check size={12} /> {stableNodeIds ? 'Node IDs stable' : 'Node IDs changed'}</span><span><Check size={12} /> {collectionStable ? 'Collection untouched' : 'Collection changed'}</span><span>{audit.checked && audit.horizontalOverflow ? 'Horizontal overflow detected' : 'No horizontal overflow detected'}</span><span>{audit.checked && audit.clippedHeading ? 'Heading clipping detected' : 'No heading clipping detected'}</span><span>{audit.checked ? audit.brokenImages + ' broken image(s)' : 'Image audit pending'}</span></div>
           </section>
         </div>
 
