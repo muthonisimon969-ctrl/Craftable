@@ -32,8 +32,8 @@ export default function IrShowcasePage() {
 
   const active = revisions.find((revision) => revision.id === activeId) ?? revisions[revisions.length - 1];
   const document = active.document;
-  const anchorRevision = [...revisions].reverse().find((revision) => revision.kind === 'initial' || revision.kind === 'full-redesign') ?? revisions[0];
-  const drift = useMemo(() => computeDrift(anchorRevision.document.anchor, document), [anchorRevision, document]);
+  const anchorRevision = revisions.find((revision) => revision.id === document.anchor.createdFromRevisionId) ?? revisions[0];
+  const drift = useMemo(() => computeDrift(anchorRevision.document.anchor, document, anchorRevision.document.sections), [anchorRevision, document]);
   const preview = useMemo(() => compileDocument(document), [document]);
   const previous = revisions.length > 1 ? revisions[revisions.length - 2] : null;
 
