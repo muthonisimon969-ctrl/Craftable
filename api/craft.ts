@@ -247,50 +247,104 @@ function inspectBuildDraft(answer: string): string[] {
   return issues;
 }
 
-async function requestBuildRepair(
+
+type AIProvider = 'groq' | 'openrouter';
+
+interface ModelCallResult {
+  content: string | null;
+  error: string;
+}
+
+async function callModel(
+  provider: AIProvider,
   apiKey: string,
+  model: string,
+  messages: ReturnType<typeof buildMessages>,
+  temperature: number,
+  maxTokens: number,
+  timeoutMs: number
+): Promise<ModelCallResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const endpoint = provider === 'openrouter'
+    ? 'https://openrouter.ai/api/v1/chat/completions'
+    : 'https://api.groq.com/openai/v1/chat/completions';
+  try {
+    const headers: Record<string, string> = {
+      Authorization: 'Bearer ' + apiKey,
+      'Content-Type': 'application/json',
+    };
+    if (provider === 'openrouter') {
+      headers['HTTP-Referer'] = 'https://craftable-nu.vercel.app';
+      headers['X-Title'] = 'Zuno AI';
+    }
+    const upstream = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+      }),
+    });
+    const payload = await upstream.json().catch(() => null) as {
+      choices?: Array<{ message?: { content?: string | Array<{ type?: string; text?: string }> } }>;
+      error?: { message?: string };
+    } | null;
+    if (!upstream.ok) {
+      return { content: null, error: payload?.error?.message || provider.toUpperCase() + ' returned HTTP ' + upstream.status };
+    }
+    const responseContent = payload?.choices?.[0]?.message?.content;
+    const content = typeof responseContent === 'string'
+      ? responseContent.trim()
+      : Array.isArray(responseContent)
+        ? responseContent.map((part) => typeof part.text === 'string' ? part.text : '').join('').trim()
+        : '';
+    return { content: content || null, error: content ? '' : provider.toUpperCase() + ' returned an empty response.' };
+  } catch (err) {
+    return { content: null, error: err instanceof Error ? err.message : provider.toUpperCase() + ' request failed.' };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+
+async function requestBuildRepair(
+  provider: AIProvider,
+  apiKey: string,
+  model: string,
   promptText: string,
   draft: string,
   issues: string[],
   systemPrompt: string
 ): Promise<string | null> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 16000);
-  try {
-    const repairPrompt = [
-      'QUALITY REPAIR — improve the supplied website draft before returning it.',
-      'Original user brief:',
-      promptText.slice(0, 7000),
-      '',
-      'Automated review findings:',
-      ...issues.map((issue) => '- ' + issue),
-      '',
-      'Repair the actual HTML, CSS and JS. Preserve the requested brand and functionality. Keep the exact Zuno output markers and return every required section in full.',
-      'Do not remove working features. Keep all image sources restricted to the approved Supabase URLs already present in the draft; do not add or alter image URLs.',
-      '',
-      'CURRENT DRAFT:',
-      draft.slice(0, 28000),
-    ].join('\\n');
-    const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model: TEXT_MODEL,
-        messages: buildMessages(repairPrompt, systemPrompt + '\\n\\nYou are performing a focused repair pass. Fix the listed defects, preserve everything that already works, and return the complete required output.'),
-        temperature: 0.15,
-        max_tokens: 14000,
-      }),
-    });
-    if (!upstream.ok) return null;
-    const payload = await upstream.json() as { choices?: Array<{ message?: { content?: string } }> };
-    const repaired = payload.choices?.[0]?.message?.content?.trim();
-    return repaired && /<<<HTML>>>/i.test(repaired) && /<<<CSS>>>/i.test(repaired) ? repaired : null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timeout);
-  }
+  const repairPrompt = [
+    'QUALITY REPAIR — improve the supplied website draft before returning it.',
+    'Original user brief:',
+    promptText.slice(0, 7000),
+    '',
+    'Automated review findings:',
+    ...issues.map((issue) => '- ' + issue),
+    '',
+    'Repair the actual HTML, CSS and JS. Preserve the requested brand and functionality. Keep the exact Zuno output markers and return every required section in full.',
+    'Do not remove working features. Keep all image sources restricted to the approved Supabase URLs already present in the draft; do not add or alter image URLs.',
+    '',
+    'CURRENT DRAFT:',
+    draft.slice(0, 28000),
+  ].join('\\n');
+  const result = await callModel(
+    provider,
+    apiKey,
+    model,
+    buildMessages(repairPrompt, systemPrompt + '\\n\\nYou are performing a focused repair pass. Fix the listed defects, preserve everything that already works, and return the complete required output.'),
+    0.15,
+    14000,
+    22000
+  );
+  const repaired = result.content;
+  return repaired && /<<<HTML>>>/i.test(repaired) && /<<<CSS>>>/i.test(repaired) ? repaired : null;
 }
 
 function buildMessages(promptText: string, systemPrompt: string, attachments?: CraftAttachmentPayload[], vision = false) {
@@ -303,45 +357,135 @@ function buildMessages(promptText: string, systemPrompt: string, attachments?: C
   const userContent = vision ? content : content.map((p) => p.type === 'text' ? String(p.text) : '').filter(Boolean).join('\n');
   return [...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []), { role: 'user', content: userContent }];
 }
+
 export default async function handler(req: HttpReq, res: HttpRes): Promise<void> {
   res.setHeader('Cache-Control', 'no-store');
   const { keys } = await getActiveServerKeys();
-  if (req.method === 'GET') { res.status(200).json({ ready: keys.length > 0, aiName: 'Zuno AI powered by Groq', capabilities: { chat: keys.length > 0, build: keys.length > 0, create3d: keys.length > 0, image: false, vision: keys.length > 0 } }); return; }
-  if (req.method !== 'POST') { res.setHeader('Allow', 'GET, POST'); res.status(405).json({ error: 'Method not allowed' }); return; }
-  if (!keys.length) { res.status(503).json({ code: 'MISSING_SERVER_KEY', error: 'Groq API key is not configured. Add your Groq key in Owner Admin (/admin).' }); return; }
+  const openRouterKey = process.env.OPENROUTER_API_KEY?.trim() ?? '';
+  const hasGroq = keys.length > 0;
+  const hasOpenRouter = openRouterKey.length >= 16;
+
+  if (req.method === 'GET') {
+    res.status(200).json({
+      ready: hasGroq || hasOpenRouter,
+      aiName: 'Zuno AI powered by Groq + OpenRouter',
+      providers: { groq: hasGroq, openrouter: hasOpenRouter },
+      capabilities: {
+        chat: hasGroq || hasOpenRouter,
+        build: hasGroq || hasOpenRouter,
+        create3d: hasGroq || hasOpenRouter,
+        image: false,
+        vision: hasGroq || hasOpenRouter,
+      },
+    });
+    return;
+  }
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'GET, POST');
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+  if (!hasGroq && !hasOpenRouter) {
+    res.status(503).json({
+      code: 'MISSING_SERVER_KEY',
+      error: 'Configure GROQ_API_KEY or OPENROUTER_API_KEY in the Vercel project environment.',
+    });
+    return;
+  }
+
   const body = parseRequestJsonBody<CraftRequestBody>(req);
   if (!body) { res.status(400).json({ error: 'Invalid JSON request body.' }); return; }
-  const mode = body.mode ?? 'build'; const promptText = body.promptText?.trim() ?? '';
+  const mode = body.mode ?? 'build';
+  const promptText = body.promptText?.trim() ?? '';
   if (!promptText) { res.status(400).json({ error: 'Missing promptText.' }); return; }
-  if (mode === 'image') { res.status(501).json({ code: 'IMAGE_PROVIDER_REQUIRED', error: 'Groq can understand images, but it cannot generate images. Connect a separate image-generation provider to enable this feature.' }); return; }
+  if (mode === 'image') {
+    res.status(501).json({ code: 'IMAGE_PROVIDER_REQUIRED', error: 'Image generation requires a dedicated image-generation provider.' });
+    return;
+  }
+
   const privatePrompt = mode === 'build' || mode === 'create_3d' ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim() : '';
   const approvedAssets = mode === 'build' ? await fetchApprovedSupabaseAssets() : [];
-  const systemPrompt = [body.systemPrompt?.trim() ?? '', privatePrompt, mode === 'build' ? BUILD_QUALITY_PROMPT : '', mode === 'build' ? buildSupabaseImageRules(approvedAssets, promptText) : ''].filter(Boolean).join('\n\n');
-  const hasImages = (body.attachments ?? []).some((a) => a.dataBase64 && /^image\/(png|jpeg|jpg|webp)$/i.test(a.mimeType));
-  let lastError = 'Groq did not return a response.';
-  for (const apiKey of keys) {
-    const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), mode === 'build' ? 35000 : 55000);
-    try {
-      const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', { method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' }, signal: controller.signal, body: JSON.stringify({ model: hasImages ? VISION_MODEL : TEXT_MODEL, messages: buildMessages(promptText, systemPrompt, body.attachments, hasImages), temperature: mode === 'chat' ? 0.65 : 0.25, max_tokens: 16000 }) });
-      const payload = await upstream.json().catch(() => null) as { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string } } | null;
-      if (!upstream.ok) { lastError = payload?.error?.message || `Groq returned HTTP ${upstream.status}`; if (upstream.status === 401 || upstream.status === 403) break; continue; }
-      let rawAnswer = payload?.choices?.[0]?.message?.content?.trim();
-      if (rawAnswer && mode === 'build' && !hasImages) {
-        const issues = inspectBuildDraft(rawAnswer);
-        if (issues.length) {
-          const repaired = await requestBuildRepair(apiKey, promptText, rawAnswer, issues, systemPrompt);
-          if (repaired) {
-            const remainingIssues = inspectBuildDraft(repaired);
-            if (remainingIssues.length < issues.length) rawAnswer = repaired;
-          }
+  const systemPrompt = [
+    body.systemPrompt?.trim() ?? '',
+    privatePrompt,
+    mode === 'build' ? BUILD_QUALITY_PROMPT : '',
+    mode === 'build' ? buildSupabaseImageRules(approvedAssets, promptText) : '',
+  ].filter(Boolean).join('\\n\\n');
+  const hasImages = (body.attachments ?? []).some((a) =>
+    a.dataBase64 && /^image\\/(png|jpeg|jpg|webp)$/i.test(a.mimeType)
+  );
+
+  const groqModel = hasImages ? VISION_MODEL : TEXT_MODEL;
+  const openRouterModel = (hasImages
+    ? process.env.OPENROUTER_VISION_MODEL
+    : process.env.OPENROUTER_MODEL)?.trim() || (hasImages ? VISION_MODEL : TEXT_MODEL);
+
+  // Route expensive creation work to OpenRouter first; keep conversational latency low with Groq.
+  // Image understanding prefers Groq's configured vision model, then attempts OpenRouter fallback.
+  const candidates: Array<{ provider: AIProvider; key: string; model: string }> = [];
+  const addGroq = () => { if (hasGroq) keys.forEach((key) => candidates.push({ provider: 'groq', key, model: groqModel })); };
+  const addOpenRouter = () => { if (hasOpenRouter) candidates.push({ provider: 'openrouter', key: openRouterKey, model: openRouterModel }); };
+
+  if (hasImages || mode === 'chat') {
+    addGroq();
+    addOpenRouter();
+  } else {
+    addOpenRouter();
+    addGroq();
+  }
+
+  let lastError = 'No configured AI provider returned a response.';
+  for (const candidate of candidates) {
+    const result = await callModel(
+      candidate.provider,
+      candidate.key,
+      candidate.model,
+      buildMessages(promptText, systemPrompt, body.attachments, hasImages),
+      mode === 'chat' ? 0.65 : 0.25,
+      16000,
+      mode === 'build' ? 55000 : 55000
+    );
+    if (!result.content) {
+      lastError = result.error || candidate.provider.toUpperCase() + ' returned no content.';
+      continue;
+    }
+
+    let rawAnswer = result.content;
+    if (rawAnswer && mode === 'build' && !hasImages) {
+      const issues = inspectBuildDraft(rawAnswer);
+      if (issues.length) {
+        const repaired = await requestBuildRepair(
+          candidate.provider,
+          candidate.key,
+          candidate.model,
+          promptText,
+          rawAnswer,
+          issues,
+          systemPrompt
+        );
+        if (repaired) {
+          const remainingIssues = inspectBuildDraft(repaired);
+          if (remainingIssues.length < issues.length) rawAnswer = repaired;
         }
       }
-      const imageEnforcedAnswer = rawAnswer && mode === 'build' ? ensureSupabaseProductImages(rawAnswer, approvedAssets, promptText) : rawAnswer;
-      const answer = imageEnforcedAnswer && mode === 'build' ? sanitizeGeneratedImageSources(imageEnforcedAnswer, approvedAssets) : imageEnforcedAnswer;
-      if (answer) { res.status(200).json({ text: answer, model: hasImages ? VISION_MODEL : TEXT_MODEL, provider: 'groq', qualityReview: mode === 'build' ? 'checked' : undefined }); return; }
-      lastError = 'Groq returned an empty response.';
-    } catch (err) { lastError = err instanceof Error ? err.message : 'Groq request failed.'; }
-    finally { clearTimeout(timeout); }
+    }
+
+    const imageEnforcedAnswer = mode === 'build'
+      ? ensureSupabaseProductImages(rawAnswer, approvedAssets, promptText)
+      : rawAnswer;
+    const answer = mode === 'build'
+      ? sanitizeGeneratedImageSources(imageEnforcedAnswer, approvedAssets)
+      : imageEnforcedAnswer;
+
+    res.status(200).json({
+      text: answer,
+      model: candidate.model,
+      provider: candidate.provider,
+      fallbackUsed: candidates.indexOf(candidate) > 0,
+      qualityReview: mode === 'build' ? 'checked' : undefined,
+    });
+    return;
   }
+
   res.status(502).json({ error: lastError });
 }
