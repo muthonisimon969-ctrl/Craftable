@@ -156,7 +156,8 @@ export default function App() {
     const source = fixtureName === 'kora' ? koraFixture : vektorFixture;
     const document = JSON.parse(JSON.stringify(source)) as typeof source;
     const revision = initialFixtureRevision(document);
-    const compiled = compileDocumentParts(document);
+    const activeDocument = revision.document;
+    const compiled = compileDocumentParts(activeDocument);
     const prompt = 'Create the ' + document.brandName + ' IR design benchmark in the Zuno Builder.';
     const bundle: GeneratedAppBundle = {
       projectTitle: document.brandName,
@@ -170,7 +171,7 @@ export default function App() {
     };
     storage.createProject(prompt, 'landing_page', bundle, {
       mode: 'standard',
-      irDocument: document,
+      irDocument: activeDocument,
       irRevisions: [revision],
     }).then((created) => {
       upsertProject(created);
