@@ -65,11 +65,11 @@ export function applyHeroMoodShift(document: IrDocument, sectionId: string, mood
   const previous = section.intent;
   section.intent = mood === 'technical-dark' ? 'product-led' : 'editorial';
   section.moodOverride = mood;
-  section.tokenOverrides = {
-    color: mood === 'warm-editorial'
+  section.tokenOverrides = mood === 'quiet-editorial'
+    ? { color: { ...next.anchor.tokens.color } }
+    : { color: mood === 'warm-editorial'
       ? { ink: '#29231F', paper: '#F1E9DE', accent: '#A64F35', muted: '#776D63', line: '#D8C9B9', surface: '#E8DED2' }
-      : { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' },
-  };
+      : { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' } };
   next.overrides.push({
     id: 'override_' + Math.random().toString(36).slice(2, 8),
     targetId: sectionId,
