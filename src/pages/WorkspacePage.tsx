@@ -17,6 +17,9 @@ import { BuilderChatPane } from '../components/BuilderChatPane';
 import { CodeExplorerPane } from '../components/CodeExplorerPane';
 import { WebPreviewPane } from '../components/WebPreviewPane';
 import { iterateExistingApp } from '../services/craftAiService';
+import { compileDocumentParts } from '../ir-engine/compiler';
+import { applyAssetSwap, applyHeadlineEdit, applyHeroMoodShift, makeRevision, rollbackDocument } from '../ir-engine/revisions';
+import type { IrDocument, IrRevision } from '../ir-engine/types';
 import * as storage from '../services/projectStorage';
 import type {
   AppProject,
@@ -50,6 +53,7 @@ export function WorkspacePage({
   const [draftHtml, setDraftHtml] = useState('');
   const [draftCss, setDraftCss] = useState('');
   const [draftJs, setDraftJs] = useState('');
+  const [irHeadline, setIrHeadline] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSavingCode, setIsSavingCode] = useState(false);
   const [reloadNonce, setReloadNonce] = useState(1);
@@ -91,6 +95,8 @@ export function WorkspacePage({
           setDraftHtml(proj.htmlCode);
           setDraftCss(proj.cssCode);
           setDraftJs(proj.jsCode);
+          const heroNode = proj.irDocument?.sections.find((section) => section.role === 'hero')?.nodes[0];
+          setIrHeadline(heroNode?.title ?? '');
           setHasUnsavedChanges(false);
           setReloadNonce((n) => n + 1);
         }
@@ -124,6 +130,10 @@ export function WorkspacePage({
 
   const handleSendIteration = async (overridePrompt?: string) => {
     if (!project || isGenerating) return;
+    if (project.irDocument) {
+      setErrorMessage('This project is IR-managed. Use the scoped design controls below; unrestricted AI rewrites are disabled to protect its design history.');
+      return;
+    }
     const prompt = (overridePrompt ?? promptInput).trim();
     if (!prompt) return;
 
@@ -198,6 +208,62 @@ export function WorkspacePage({
       setErrorMessage(err instanceof Error ? err.message : 'Failed to save code edits.');
     } finally {
       setIsSavingCode(false);
+    }
+  };
+
+  const applyIrChange = async (kind: 'headline' | 'asset' | 'mood' | 'rollback') => {
+    if (!project?.irDocument || isSavingCode) return;
+    try {
+      const current = project.irDocument;
+      const history = project.irRevisions ?? [];
+      const parent = history[history.length - 1];
+      let next: IrDocument;
+      let label: string;
+      let revisionKind: IrRevision['kind'] = 'edit';
+      if (kind === 'headline') {
+        const hero = current.sections.find((section) => section.role === 'hero')?.nodes[0];
+        if (!hero) throw new Error('Hero section is missing.');
+        next = applyHeadlineEdit(current, hero.id, irHeadline.trim() || 'A considered beginning');
+        label = 'Hero headline edit';
+      } else if (kind === 'asset') {
+        const hero = current.sections.find((section) => section.role === 'hero')?.nodes[0];
+        if (!hero?.imageAssetId) throw new Error('This brand has no hero image to swap.');
+        const nextAsset = hero.imageAssetId === 'jbl-charge-6' ? 'jbl-flip-7' : 'jbl-charge-6';
+        next = applyAssetSwap(current, hero.id, nextAsset, 'User selected a fitting approved product image.');
+        label = 'Approved hero image swap';
+      } else if (kind === 'mood') {
+        const hero = current.sections.find((section) => section.role === 'hero');
+        if (!hero) throw new Error('Hero section is missing.');
+        const mood = hero.moodOverride === 'warm-editorial' ? current.anchor.mood : 'warm-editorial';
+        next = applyHeroMoodShift(current, hero.id, mood, 'User explicitly changed the hero mood.');
+        label = 'Scoped hero mood shift';
+      } else {
+        if (history.length < 2) throw new Error('There is no earlier revision to restore.');
+        const previous = history[history.length - 2];
+        next = rollbackDocument(previous);
+        label = 'Rollback to ' + previous.label;
+        revisionKind = 'rollback';
+      }
+      const revision = makeRevision(next, label, revisionKind, parent?.id ?? null);
+      const nextHistory = [...history, revision].slice(-20);
+      const compiled = compileDocumentParts(next);
+      const updated = await storage.saveIrProjectState(
+        project.id, project.version, next, nextHistory, compiled.html, compiled.css, compiled.js
+      );
+      setProject(updated);
+      onProjectUpdated(updated);
+      setDraftHtml(updated.htmlCode);
+      setDraftCss(updated.cssCode);
+      setDraftJs(updated.jsCode);
+      const updatedHero = updated.irDocument?.sections.find((section) => section.role === 'hero')?.nodes[0];
+      setIrHeadline(updatedHero?.title ?? '');
+      setHasUnsavedChanges(false);
+      setReloadNonce((value) => value + 1);
+      setConsoleLogs([]);
+      setActiveTab('preview');
+      setErrorMessage(null);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'The scoped design edit could not be saved safely.');
     }
   };
 
@@ -470,6 +536,17 @@ export function WorkspacePage({
         </div>
       )}
 
+      {project.irDocument && (
+        <section aria-label="IR design controls" style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-soft)', background: 'var(--surface)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+          <strong style={{ fontSize: 12, color: 'var(--text-muted)', letterSpacing: '.08em' }}>IR DESIGN CONTROLS</strong>
+          <input aria-label="Hero headline" value={irHeadline} onChange={(event) => setIrHeadline(event.target.value)} style={{ minWidth: 160, flex: '1 1 180px', minHeight: 38, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--surface-high)', color: 'var(--text-primary)', padding: '0 10px' }} />
+          <button type="button" className="btn-outline" onClick={() => applyIrChange('headline')}>Apply headline</button>
+          {project.irDocument.sections.find((section) => section.role === 'hero')?.nodes[0]?.imageAssetId && <button type="button" className="btn-outline" onClick={() => applyIrChange('asset')}>Swap approved image</button>}
+          <button type="button" className="btn-outline" onClick={() => applyIrChange('mood')}>Shift hero mood</button>
+          <button type="button" className="btn-outline" disabled={(project.irRevisions?.length ?? 0) < 2} onClick={() => applyIrChange('rollback')}>Rollback</button>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{project.irRevisions?.length ?? 0} saved revisions · collection protected</span>
+        </section>
+      )}
       <div className="workspace-body">
         {isFullscreenPreview ? (
           renderPreview()
