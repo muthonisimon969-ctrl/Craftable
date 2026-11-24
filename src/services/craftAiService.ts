@@ -10,6 +10,10 @@ import { getTemplateDisplayName } from '../types/project';
 import { serializeAttachmentsForApi } from '../utils/attachmentReader';
 import { extractBodyIfFullDocument } from '../utils/webBundleAssembler';
 import { auditGeneratedBundle } from './webQualityValidator';
+import type { IrDocument } from '../ir-engine/types';
+import { compileDocumentParts } from '../ir-engine/compiler';
+import { makeRevision } from '../ir-engine/revisions';
+import { validateIrV1Document } from '../ir-engine/validator';
 
 const SYSTEM_PROMPT = `You are Zuno AI, a principal product designer and senior front-end engineer inside Zuno AI (an AI platform where users create custom websites, web apps, and 3D games).
 
@@ -296,6 +300,57 @@ function finalizeBundle(
   };
 }
 
+async function requestStructuredLandingPage(
+  prompt: string,
+  onStageUpdate: (stage: string) => void,
+  attachments?: PromptAttachment[]
+): Promise<GeneratedAppBundle | null> {
+  onStageUpdate('Creating the Brand Anchor...');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 52_000);
+  try {
+    const response = await fetch('/api/craft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        mode: 'ir_build',
+        promptText: prompt,
+        attachments: serializeAttachmentsForApi(attachments),
+      }),
+    });
+    if (!response.ok) return null;
+    const payload = await response.json() as { irDocument?: IrDocument };
+    if (!payload.irDocument) return null;
+    onStageUpdate('Composing sections from the Brand Anchor...');
+    const document = payload.irDocument;
+    const validation = validateIrV1Document(document);
+    if (!validation.canPublish) return null;
+    const revision = makeRevision(document, 'Initial website design', 'initial', null, {
+      affectedIds: document.sections.map((section) => section.id),
+      overrideReason: 'Initial Brand Anchor and Section IR synthesis.',
+    });
+    const compiled = compileDocumentParts(revision.document);
+    return {
+      projectTitle: revision.document.brandName,
+      description: 'A business landing page composed from a reusable Brand Anchor and structured Section IR.',
+      summary: 'Created the first website draft from a separate Brand Anchor and page-specific Section IR. Its design source and initial revision are saved with the project.',
+      htmlCode: compiled.html,
+      cssCode: compiled.css,
+      jsCode: compiled.js,
+      changedFiles: ['index.html', 'styles.css'],
+      followUpSuggestions: ['Refine the hero headline', 'Change the approved hero image', 'Adjust the visual direction'],
+      irDocument: revision.document,
+      irRevisions: [revision],
+      designStrategy: 'Brand Anchor + deterministic Section IR composition',
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function generateNewApp(
   prompt: string,
   templateType: TemplateType,
@@ -303,6 +358,15 @@ export async function generateNewApp(
   onStageUpdate: (stage: string) => void = () => {},
   attachments?: PromptAttachment[]
 ): Promise<GeneratedAppBundle> {
+  const isSimpleBusinessLandingPage = templateType === 'landing_page' &&
+    /\\b(website|business|company|brand|service|studio|agency|salon|restaurant|portfolio|consultancy)\\b/i.test(prompt) &&
+    !/\\b(online store|e-?commerce|shopping cart|multi-?page|dashboard|web app|marketplace)\\b/i.test(prompt);
+  if (isSimpleBusinessLandingPage) {
+    const structured = await requestStructuredLandingPage(prompt, onStageUpdate, attachments);
+    if (structured) return structured;
+    onStageUpdate('Using the standard website builder for this request...');
+  }
+
   const lines: string[] = [
     'BUILD EXACTLY THIS WEBSITE / APP / GAME:',
     `"${prompt}"`,
