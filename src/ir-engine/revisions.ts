@@ -123,6 +123,45 @@ export function applyFullRedesign(document: IrDocument, mood: BrandIdentityAncho
   return next;
 }
 
+
+export function getChangedIrIds(before: IrDocument, after: IrDocument): string[] {
+  const changed = new Set<string>();
+  const beforeSections = new Map(before.sections.map((section) => [section.id, section]));
+  const afterSections = new Map(after.sections.map((section) => [section.id, section]));
+
+  for (const sectionId of new Set([...beforeSections.keys(), ...afterSections.keys()])) {
+    const left = beforeSections.get(sectionId);
+    const right = afterSections.get(sectionId);
+    if (!left || !right) {
+      changed.add(sectionId);
+      continue;
+    }
+    if (left.intent !== right.intent || left.moodOverride !== right.moodOverride ||
+        JSON.stringify(left.tokenOverrides) !== JSON.stringify(right.tokenOverrides)) {
+      changed.add(sectionId);
+    }
+    const beforeNodes = new Map(left.nodes.map((node) => [node.id, node]));
+    const afterNodes = new Map(right.nodes.map((node) => [node.id, node]));
+    for (const nodeId of new Set([...beforeNodes.keys(), ...afterNodes.keys()])) {
+      if (JSON.stringify(beforeNodes.get(nodeId)) !== JSON.stringify(afterNodes.get(nodeId))) {
+        changed.add(nodeId);
+      }
+      const beforeItems = beforeNodes.get(nodeId)?.items ?? [];
+      const afterItems = afterNodes.get(nodeId)?.items ?? [];
+      const beforeItemMap = new Map(beforeItems.map((item) => [item.id, item]));
+      const afterItemMap = new Map(afterItems.map((item) => [item.id, item]));
+      for (const itemId of new Set([...beforeItemMap.keys(), ...afterItemMap.keys()])) {
+        if (JSON.stringify(beforeItemMap.get(itemId)) !== JSON.stringify(afterItemMap.get(itemId))) {
+          changed.add(itemId);
+        }
+      }
+    }
+  }
+
+  if (JSON.stringify(before.anchor) !== JSON.stringify(after.anchor)) changed.add(after.anchor.id);
+  return [...changed];
+}
+
 export function rollbackDocument(revision: IrRevision): IrDocument {
   return clone(revision.document);
 }
