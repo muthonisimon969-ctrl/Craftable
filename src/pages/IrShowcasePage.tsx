@@ -86,7 +86,7 @@ export default function IrShowcasePage() {
   function runMoodShift() {
     const hero = document.sections.find((section) => section.role === 'hero');
     if (!hero) return;
-    const mood = (hero.moodOverride ?? document.anchor.mood) === 'warm-editorial' ? 'quiet-editorial' : 'warm-editorial';
+    const mood = hero.moodOverride === 'warm-editorial' ? document.anchor.mood : 'warm-editorial';
     commit(applyHeroMoodShift(document, hero.id, mood, 'User explicitly requested a warmer hero direction.'), 'Edit 3 · Hero mood and token shift');
   }
 
