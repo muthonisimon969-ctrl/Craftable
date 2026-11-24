@@ -82,7 +82,7 @@ export function applyHeroMoodShift(document: IrDocument, sectionId: string, mood
 
 export function applyFullRedesign(document: IrDocument, mood: BrandIdentityAnchor['mood']): IrDocument {
   const next = clone(document);
-  const anchorId = 'anchor_' + (Number(next.anchor.id.split('_v')[1] ?? 1) + 1);
+  const anchorId = 'anchor_v' + (Number(next.anchor.id.split('_v')[1] ?? 1) + 1);
   next.anchor = {
     ...next.anchor,
     id: anchorId,
