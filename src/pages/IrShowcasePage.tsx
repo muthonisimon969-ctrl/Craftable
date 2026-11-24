@@ -53,7 +53,7 @@ export default function IrShowcasePage() {
     setFixture(nextFixture);
     setRevisions([revision]);
     setActiveId(revision.id);
-    setHeadline('Built Light');
+    setHeadline(nextFixture === 'kora' ? 'Built Light' : 'Sound, with intention.');
     setMessage(nextFixture === 'kora' ? 'Kora Spatial loaded. Photography intentionally omitted.' : 'Vektor Audio loaded with three approved Supabase assets.');
     setShowDrift(true);
   }
@@ -86,7 +86,7 @@ export default function IrShowcasePage() {
   function runMoodShift() {
     const hero = document.sections.find((section) => section.role === 'hero');
     if (!hero) return;
-    const mood = document.anchor.mood === 'warm-editorial' ? 'quiet-editorial' : 'warm-editorial';
+    const mood = (hero.moodOverride ?? document.anchor.mood) === 'warm-editorial' ? 'quiet-editorial' : 'warm-editorial';
     commit(applyHeroMoodShift(document, hero.id, mood, 'User explicitly requested a warmer hero direction.'), 'Edit 3 · Hero mood and token shift');
   }
 
@@ -181,6 +181,7 @@ export default function IrShowcasePage() {
             <div className="ir-panel-heading"><div><span>02 / DESIGN INTEGRITY</span><h2>Drift diagnostics.</h2></div><span className="ir-advisory">ADVISORY</span></div>
             {showDrift && driftCount > 0 ? <div className="ir-drift-note"><span>{driftCount} recorded design delta{driftCount === 1 ? '' : 's'}</span><button onClick={() => setShowDrift(false)} aria-label="Dismiss drift notice">Dismiss</button></div> : <p className="ir-clean-state"><Check size={15} /> {driftCount === 0 ? 'Aligned with active brand anchor.' : 'Advisory dismissed. Changes remain recorded.'}</p>}
             <div className="ir-drift-list"><div><span>tokenDeltas</span><strong>{drift.tokenDeltas.length}</strong></div><div><span>sectionFlips</span><strong>{drift.sectionFlips.length}</strong></div><div><span>activeOverrides</span><strong>{drift.activeOverrides.length}</strong></div></div>
+            {drift.activeOverrides.map((override) => <p className="ir-override-detail" key={override.id}><strong>{override.field}</strong> · {override.overrideReason} <small>Affects: {override.affectedIds.join(', ')}</small></p>)}
             <div className="ir-panel-foot"><span>Anchor: {document.anchor.id}</span><span>Identity: {document.anchor.mood}</span></div>
             <div className="ir-integrity-checks"><span><Check size={12} /> {stableNodeIds ? 'Node IDs stable' : 'Node IDs changed'}</span><span><Check size={12} /> {collectionStable ? 'Collection untouched' : 'Collection changed'}</span><span>{audit.checked && audit.horizontalOverflow ? 'Horizontal overflow detected' : 'No horizontal overflow detected'}</span><span>{audit.checked && audit.clippedHeading ? 'Heading clipping detected' : 'No heading clipping detected'}</span><span>{audit.checked ? audit.brokenImages + ' broken image(s)' : 'Image audit pending'}</span></div>
           </section>
