@@ -6,6 +6,7 @@ import type {
   ProjectMode,
   TemplateType,
 } from '../types/project';
+import type { IrDocument, IrRevision } from '../ir-engine/types';
 
 const DB_NAME = 'craftable_studio_db';
 const DB_VERSION = 1;
@@ -156,7 +157,7 @@ export async function createProject(
   prompt: string,
   templateType: TemplateType,
   bundle: GeneratedAppBundle,
-  options?: { mode?: ProjectMode; creativeCategory?: CreativeCategory }
+  options?: { mode?: ProjectMode; creativeCategory?: CreativeCategory; irDocument?: IrDocument; irRevisions?: IrRevision[] }
 ): Promise<AppProject> {
   const projectId = createId();
   const now = Date.now();
@@ -173,6 +174,12 @@ export async function createProject(
     htmlCode: bundle.htmlCode,
     cssCode: bundle.cssCode,
     jsCode: bundle.jsCode,
+    ...(options?.irDocument ? {
+      irSchemaVersion: 1 as const,
+      irDocument: options.irDocument,
+      irRevisions: (options.irRevisions ?? []).slice(-20),
+      irManagedSectionIds: options.irDocument.sections.map((section) => section.id),
+    } : {}),
     createdAtMillis: now,
     updatedAtMillis: now,
   };
@@ -210,6 +217,9 @@ export async function applyIterationTurn(
 ): Promise<{ project: AppProject; messages: ProjectMessage[] }> {
   const existing = await getProject(projectId);
   if (!existing) throw new Error('Project not found.');
+  if (existing.irDocument) {
+    throw new Error('This project is IR-managed. Use a scoped design edit so its structured source and revision history stay in sync.');
+  }
 
   const nextVersion = currentVersion + 1;
   const now = Date.now();
@@ -259,8 +269,39 @@ export async function updateProjectCodeManual(
 ): Promise<AppProject> {
   const existing = await getProject(projectId);
   if (!existing) throw new Error('Project not found.');
+  if (existing.irDocument) {
+    throw new Error('Manual whole-file code saving is disabled for IR-managed projects. Apply a scoped IR edit instead.');
+  }
   const updated: AppProject = {
     ...existing,
+    version: currentVersion + 1,
+    htmlCode,
+    cssCode,
+    jsCode,
+    updatedAtMillis: Date.now(),
+  };
+  await putProjectAndMessages(updated, []);
+  return updated;
+}
+
+export async function saveIrProjectState(
+  projectId: string,
+  currentVersion: number,
+  irDocument: IrDocument,
+  irRevisions: IrRevision[],
+  htmlCode: string,
+  cssCode: string,
+  jsCode = ''
+): Promise<AppProject> {
+  const existing = await getProject(projectId);
+  if (!existing) throw new Error('Project not found.');
+  if (!existing.irDocument) throw new Error('This project is not IR-managed.');
+  const updated: AppProject = {
+    ...existing,
+    irSchemaVersion: 1,
+    irDocument,
+    irRevisions: irRevisions.slice(-20),
+    irManagedSectionIds: irDocument.sections.map((section) => section.id),
     version: currentVersion + 1,
     htmlCode,
     cssCode,
