@@ -116,12 +116,15 @@ export function rollbackDocument(revision: IrRevision): IrDocument {
 
 export function computeDrift(anchor: BrandIdentityAnchor, document: IrDocument, anchorSections?: IrSection[]): DriftReport {
   const tokenDeltas: DriftReport['tokenDeltas'] = [];
-  const flatten = (value: object, prefix = ''): Array<[string, string | number]> =>
-    Object.entries(value).flatMap(([key, child]) =>
-      child && typeof child === 'object'
-        ? flatten(child as object, prefix ? prefix + '.' + key : key)
-        : [[prefix ? prefix + '.' + key : key, child as string | number]]
-    );
+  const flatten = (value: object, prefix = ''): Array<[string, string | number]> => {
+    const entries: Array<[string, string | number]> = [];
+    Object.entries(value).forEach(([key, child]) => {
+      const token = prefix ? prefix + '.' + key : key;
+      if (child && typeof child === 'object') entries.push(...flatten(child as object, token));
+      else entries.push([token, child as string | number]);
+    });
+    return entries;
+  };
   const base = new Map(flatten(anchor.tokens));
   flatten(document.anchor.tokens).forEach(([token, value]) => {
     const from = base.get(token);
