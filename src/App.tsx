@@ -229,6 +229,7 @@ export default function App() {
       setBusyStatus('Saving project...');
       const created = await storage.createProject(prompt, templateType, bundle, {
         mode: 'standard',
+        ...(bundle.irDocument ? { irDocument: bundle.irDocument, irRevisions: bundle.irRevisions ?? [] } : {}),
       });
       upsertProject(created);
       setIsBusy(false);
