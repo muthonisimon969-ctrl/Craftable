@@ -41,6 +41,7 @@ export interface IrNode {
   eyebrow?: string;
   title?: string;
   body?: string;
+  ctaLabel?: string;
   imageAssetId?: string;
   alt?: string;
   items?: Array<{ id: string; title: string; detail: string; imageAssetId?: string }>;
