@@ -54,7 +54,28 @@ function readFallbackProjects(): AppProject[] {
 }
 
 function writeFallbackProjects(projects: AppProject[]): void {
-  localStorage.setItem(FALLBACK_PROJECTS_KEY, JSON.stringify(projects));
+  const serialized = JSON.stringify(projects);
+  try {
+    localStorage.setItem(FALLBACK_PROJECTS_KEY, serialized);
+    return;
+  } catch (error) {
+    const hasIrHistory = projects.some((project) => Boolean(project.irDocument && project.irRevisions?.length));
+    if (!hasIrHistory) throw error;
+  }
+
+  // localStorage is the constrained fallback only. Keep the current IR source
+  // plus a short rollback window rather than failing the entire project write.
+  const compact = projects.map((project) =>
+    project.irDocument && project.irRevisions
+      ? { ...project, irRevisions: project.irRevisions.slice(-5) }
+      : project
+  );
+  try {
+    localStorage.setItem(FALLBACK_PROJECTS_KEY, JSON.stringify(compact));
+  } catch {
+    // setItem is atomic: the previous value remains intact on quota failure.
+    throw new Error('Browser storage is full. Your previous saved project data was preserved; free device storage before saving again.');
+  }
 }
 
 function readFallbackMessages(): ProjectMessage[] {
