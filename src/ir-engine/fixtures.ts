@@ -39,7 +39,7 @@ export const koraFixture: IrDocument = {
     mood: 'quiet-editorial',
     createdFromRevisionId: 'initial',
     tokens: {
-      color: { ink: '#24231F', paper: '#F2EFE9', accent: '#A85C43', muted: '#77736C', line: '#D8D2C8', surface: '#E8E3DA' },
+      color: { ink: '#24231F', paper: '#F2EFE9', accent: '#A85C43', muted: '#6D675F', line: '#D8D2C8', surface: '#E8E3DA' },
       type: { family: 'Inter', display: 104, body: 15 },
       space: { section: 120, content: 88, tight: 18 },
       radius: { card: 0, image: 0 },
