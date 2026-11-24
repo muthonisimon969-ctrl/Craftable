@@ -3,7 +3,7 @@ export type BrandMood = 'quiet-editorial' | 'technical-dark' | 'warm-editorial';
 
 export interface DesignTokens {
   color: { ink: string; paper: string; accent: string; muted: string; line: string; surface: string };
-  type: { family: string; display: string; body: string };
+  type: { family: string; display: number; body: number };
   space: { section: number; content: number; tight: number };
   radius: { card: number; image: number };
 }
