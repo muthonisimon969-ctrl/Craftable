@@ -57,3 +57,38 @@ export function compileDocument(document: IrDocument): string {
 export function findApprovedAsset(document: IrDocument, assetId: string): ApprovedAsset | undefined {
   return document.approvedAssets.find((asset) => asset.id === assetId);
 }
+
+
+export interface CompiledIrOutput {
+  html: string;
+  css: string;
+  js: string;
+  hash: string;
+}
+
+/**
+ * Browser-side adapter for the existing preview pipeline. The IR compiler owns
+ * the complete document; DOMParser separates its body and stylesheet without
+ * regex slicing. The preview iframe isolates the stylesheet from Zuno's UI.
+ */
+export function compileDocumentParts(document: IrDocument): CompiledIrOutput {
+  if (typeof DOMParser === 'undefined') {
+    throw new Error('IR compilation requires a browser DOM environment.');
+  }
+  const fullDocument = compileDocument(document);
+  const parsed = new DOMParser().parseFromString(fullDocument, 'text/html');
+  const style = parsed.head.querySelector('style');
+  const main = parsed.body.querySelector('main.site');
+  if (!style || !main) {
+    throw new Error('The IR compiler returned an incomplete document.');
+  }
+  const html = '<div class="zuno-ir-project">' + main.innerHTML + '</div>';
+  const css = style.textContent ?? '';
+  const source = JSON.stringify(document);
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return { html, css, js: '', hash: (hash >>> 0).toString(16).padStart(8, '0') };
+}
