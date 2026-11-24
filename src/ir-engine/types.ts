@@ -40,6 +40,8 @@ export interface IrSection {
   id: string;
   role: 'hero' | 'collection';
   intent: SectionMode;
+  moodOverride?: BrandMood;
+  tokenOverrides?: Partial<DesignTokens>;
   nodes: IrNode[];
 }
 
