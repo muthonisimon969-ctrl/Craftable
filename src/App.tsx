@@ -26,6 +26,7 @@ import type {
   ChatThreadMessage,
   CreativeCategory,
   GeneratedVisualAsset,
+  GeneratedAppBundle,
   PromptAttachment,
   StudioCapability,
   TemplateType,
@@ -46,7 +47,7 @@ type AppRoute =
 
 function parseRoute(): AppRoute {
   const path = window.location.pathname;
-  const irCreateMatch = /^\\/ir-create\\/(kora|vektor)\\/?$/.exec(path);
+  const irCreateMatch = /^\/ir-create\/(kora|vektor)\/?$/.exec(path);
   if (irCreateMatch) return { view: 'ir_create', fixture: irCreateMatch[1] as 'kora' | 'vektor' };
   if (/^\/admin\/?$/.test(path)) return { view: 'admin' };
   if (/^\/chat\/?$/.test(path)) return { view: 'chat' };
