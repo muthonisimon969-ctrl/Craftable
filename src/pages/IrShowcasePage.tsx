@@ -35,7 +35,7 @@ export default function IrShowcasePage() {
   const anchorRevision = revisions.find((revision) => revision.id === document.anchor.createdFromRevisionId) ?? revisions[0];
   const drift = useMemo(() => computeDrift(anchorRevision.document.anchor, document, anchorRevision.document.sections), [anchorRevision, document]);
   const preview = useMemo(() => compileDocument(document), [document]);
-  const previous = revisions.length > 1 ? revisions[revisions.length - 2] : null;
+  const previous = active.parentId ? revisions.find((revision) => revision.id === active.parentId) ?? null : null;
 
   function commit(next: IrDocument, label: string, kind: IrRevision['kind'] = 'edit') {
     const revision = makeRevision(next, label, kind, active.id);
