@@ -57,7 +57,7 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
 
   if (!document.brandName.trim()) fail('BRAND_NAME_MISSING', 'A brand name is required.');
   const validIntents = ['home', 'launch', 'services', 'projects', 'about', 'product', 'contact', 'other'];
-  if (!validIntents.includes(document.pageIntent)) fail('PAGE_INTENT_INVALID', 'Choose a supported page intent.');
+  if (document.pageIntent && !validIntents.includes(document.pageIntent)) fail('PAGE_INTENT_INVALID', 'Choose a supported page intent.');
   const compositionRules = document.anchor.compositionRules;
   if (compositionRules) {
     if (!compositionRules.allowedHeroLayouts.length || !compositionRules.allowedCollectionLayouts.length) {
