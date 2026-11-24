@@ -333,7 +333,7 @@ async function requestBuildRepair(
     '',
     'CURRENT DRAFT:',
     draft.slice(0, 28000),
-  ].join('\\n');
+  ].join('\n');
   const result = await callModel(
     provider,
     apiKey,
@@ -410,9 +410,9 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     privatePrompt,
     mode === 'build' ? BUILD_QUALITY_PROMPT : '',
     mode === 'build' ? buildSupabaseImageRules(approvedAssets, promptText) : '',
-  ].filter(Boolean).join('\\n\\n');
+  ].filter(Boolean).join('\n\n');
   const hasImages = (body.attachments ?? []).some((a) =>
-    a.dataBase64 && /^image\\/(png|jpeg|jpg|webp)$/i.test(a.mimeType)
+    a.dataBase64 && /^image\/(png|jpeg|jpg|webp)$/i.test(a.mimeType)
   );
 
   const groqModel = hasImages ? VISION_MODEL : TEXT_MODEL;
