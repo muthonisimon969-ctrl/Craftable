@@ -120,39 +120,6 @@ function buildSupabaseImageRules(assets: ApprovedSupabaseAsset[], promptText: st
   ].filter(Boolean).join('\n');
 }
 
-function ensureSupabaseProductImages(answer: string, assets: ApprovedSupabaseAsset[], promptText: string): string {
-  const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products|fashion|clothing|apparel|electronics|gadgets)\b/i.test(promptText);
-  if (!isCommerce || !assets.length) return answer;
-
-  const htmlStart = answer.indexOf('<<<HTML>>>');
-  const cssStart = answer.indexOf('<<<CSS>>>', htmlStart + 1);
-  if (htmlStart < 0 || cssStart < 0) return answer;
-  const html = answer.slice(htmlStart + '<<<HTML>>>'.length, cssStart);
-  const selected = selectRelevantSupabaseAssets(promptText, assets);
-  const used = selected.filter((asset) => html.includes(asset.image_url));
-  if (used.length >= 3) return answer;
-
-  const additions = selected.filter((asset) => !html.includes(asset.image_url)).slice(0, 3 - used.length);
-  if (!additions.length) return answer;
-  const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-  })[char] ?? char);
-  const cards = additions.map((asset) =>
-    '<article style="min-width:0;border:1px solid rgba(127,127,127,.22);border-radius:16px;padding:12px;">' +
-    '<div style="aspect-ratio:4/3;background:#f1f1ef;border-radius:11px;overflow:hidden;display:grid;place-items:center;">' +
-    '<img src="' + asset.image_url + '" alt="' + escapeHtml(asset.alt_text) + '" loading="lazy" style="width:100%;height:100%;object-fit:contain;display:block;" />' +
-    '</div><h3 style="font-size:15px;line-height:1.35;margin:12px 2px 4px;">' + escapeHtml(asset.title) + '</h3>' +
-    '<p style="font-size:12px;opacity:.68;margin:0 2px;">' + escapeHtml(asset.category.replace(/[-_]+/g, ' ')) + '</p></article>'
-  ).join('');
-  const section = '<section aria-label="Featured products from the approved product library" style="padding:clamp(32px,6vw,76px) clamp(16px,4vw,48px);">' +
-    '<div style="max-width:1200px;margin:0 auto;"><p style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.65;margin:0 0 10px;">Selected collection</p>' +
-    '<h2 style="font-size:clamp(26px,4vw,42px);line-height:1.12;margin:0 0 24px;">Featured products</h2>' +
-    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:16px;">' + cards + '</div></div></section>';
-  const mainClose = html.toLowerCase().lastIndexOf('</main>');
-  const insertPosition = mainClose >= 0 ? html.lastIndexOf('</main>') : html.length;
-  const updatedHtml = html.slice(0, insertPosition) + section + html.slice(insertPosition);
-  return answer.slice(0, htmlStart + '<<<HTML>>>'.length) + updatedHtml + answer.slice(cssStart);
-}
 function readHtmlAttribute(tag: string, name: string): string {
   const match = new RegExp("\\b" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))", "i").exec(tag);
   return (match?.[1] ?? match?.[2] ?? match?.[3] ?? '').trim();
