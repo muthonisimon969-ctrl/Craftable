@@ -424,7 +424,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       const anchorResult = await callModel(
         candidate.provider, candidate.key, candidate.model,
         buildMessages(anchorPrompt, 'You are a senior brand identity designer. Return strict JSON only.'),
-        0.2, 3000, 55000
+        0.2, 3000, 22000
       );
       const parseObject = (raw: string | null): Record<string, unknown> | null => {
         if (!raw) return null;
@@ -459,7 +459,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       const sectionResult = await callModel(
         candidate.provider, candidate.key, candidate.model,
         buildMessages(sectionPrompt, 'You are a structured website information architect. Return strict JSON only.'),
-        0.25, 7000, 55000
+        0.25, 7000, 22000
       );
       const sectionData = parseObject(sectionResult.content);
       const rawSections = Array.isArray(sectionData?.sections) ? sectionData.sections as Array<Record<string, unknown>> : [];
