@@ -60,11 +60,20 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
   if (document.pageIntent && !validIntents.includes(document.pageIntent)) fail('PAGE_INTENT_INVALID', 'Choose a supported page intent.');
   const compositionRules = document.anchor.compositionRules;
   if (compositionRules) {
-    if (!compositionRules.allowedHeroLayouts.length || !compositionRules.allowedCollectionLayouts.length) {
-      fail('COMPOSITION_PERMISSION_EMPTY', 'The Brand Anchor must allow at least one hero and collection layout.');
+    const heroLayouts = ['type-led', 'editorial-split', 'product-led'];
+    const collectionLayouts = ['index-list', 'editorial-grid', 'product-grid'];
+    if (!Array.isArray(compositionRules.allowedHeroLayouts) ||
+        !compositionRules.allowedHeroLayouts.length ||
+        compositionRules.allowedHeroLayouts.some((layout) => !heroLayouts.includes(layout))) {
+      fail('HERO_COMPOSITION_PERMISSION_INVALID', 'The Brand Anchor contains an empty or unsupported hero layout permission.');
+    }
+    if (!Array.isArray(compositionRules.allowedCollectionLayouts) ||
+        !compositionRules.allowedCollectionLayouts.length ||
+        compositionRules.allowedCollectionLayouts.some((layout) => !collectionLayouts.includes(layout))) {
+      fail('COLLECTION_COMPOSITION_PERMISSION_INVALID', 'The Brand Anchor contains an empty or unsupported collection layout permission.');
     }
     const budget = compositionRules.tensionBudget;
-    if (![budget.min, budget.max, budget.recommended].every(Number.isFinite) ||
+    if (!budget || ![budget.min, budget.max, budget.recommended].every((value) => Number.isFinite(value)) ||
         budget.min < 0 || budget.max > 3 || budget.min > budget.max ||
         budget.recommended < budget.min || budget.recommended > budget.max) {
       fail('TENSION_BUDGET_INVALID', 'The Brand Anchor tension budget must be ordered between 0 and 3.');
@@ -152,7 +161,8 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
   if (!/^[a-zA-Z0-9 ,'-]{1,80}$/.test(tokens.type.family)) {
     fail('FONT_FAMILY_INVALID', 'The font family contains unsupported characters.');
   }
-  if (tokens.type.display < 32 || tokens.type.display > 160 || tokens.type.body < 12 || tokens.type.body > 24) {
+  if (![tokens.type.display, tokens.type.body].every((value) => Number.isFinite(value)) ||
+      tokens.type.display < 32 || tokens.type.display > 160 || tokens.type.body < 12 || tokens.type.body > 24) {
     fail('TYPE_SCALE_INVALID', 'Typography sizes are outside the supported design range.');
   }
   if ([tokens.space.section, tokens.space.content, tokens.space.tight].some((value) => !Number.isFinite(value) || value < 0 || value > 240)) {
