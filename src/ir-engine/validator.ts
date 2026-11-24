@@ -56,6 +56,20 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
     warnings.push({ code, message, ...(targetId ? { targetId } : {}) });
 
   if (!document.brandName.trim()) fail('BRAND_NAME_MISSING', 'A brand name is required.');
+  const validIntents = ['home', 'launch', 'services', 'projects', 'about', 'product', 'contact', 'other'];
+  if (!validIntents.includes(document.pageIntent)) fail('PAGE_INTENT_INVALID', 'Choose a supported page intent.');
+  const compositionRules = document.anchor.compositionRules;
+  if (compositionRules) {
+    if (!compositionRules.allowedHeroLayouts.length || !compositionRules.allowedCollectionLayouts.length) {
+      fail('COMPOSITION_PERMISSION_EMPTY', 'The Brand Anchor must allow at least one hero and collection layout.');
+    }
+    const budget = compositionRules.tensionBudget;
+    if (![budget.min, budget.max, budget.recommended].every(Number.isFinite) ||
+        budget.min < 0 || budget.max > 3 || budget.min > budget.max ||
+        budget.recommended < budget.min || budget.recommended > budget.max) {
+      fail('TENSION_BUDGET_INVALID', 'The Brand Anchor tension budget must be ordered between 0 and 3.');
+    }
+  }
   if (document.sections.length !== 2) {
     fail('V1_SECTION_COUNT', 'IR v1 currently requires exactly one hero and one collection section.');
   }
@@ -71,6 +85,8 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
   const collectionSections = document.sections.filter((section) => section.role === 'collection');
   if (heroSections.length !== 1) fail('HERO_SECTION_COUNT', 'The document must contain exactly one hero section.');
   if (collectionSections.length !== 1) fail('COLLECTION_SECTION_COUNT', 'The document must contain exactly one collection section.');
+  if (heroSections[0] && heroSections[0].nodes.length !== 1) fail('HERO_NODE_COUNT', 'The v1 hero section must contain exactly one hero node.', heroSections[0].id);
+  if (collectionSections[0] && collectionSections[0].nodes.length !== 1) fail('COLLECTION_NODE_COUNT', 'The v1 collection section must contain exactly one collection node.', collectionSections[0].id);
 
   document.sections.forEach((section) => {
     registerId(section.id, 'Section');
