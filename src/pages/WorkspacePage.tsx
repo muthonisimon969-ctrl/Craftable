@@ -18,7 +18,7 @@ import { CodeExplorerPane } from '../components/CodeExplorerPane';
 import { WebPreviewPane } from '../components/WebPreviewPane';
 import { iterateExistingApp } from '../services/craftAiService';
 import { compileDocumentParts } from '../ir-engine/compiler';
-import { applyAssetSwap, applyHeadlineEdit, applyHeroMoodShift, makeRevision, rollbackDocument } from '../ir-engine/revisions';
+import { applyAssetSwap, applyHeadlineEdit, applyHeroMoodShift, computeDrift, makeRevision, rollbackDocument } from '../ir-engine/revisions';
 import type { IrDocument, IrRevision } from '../ir-engine/types';
 import * as storage from '../services/projectStorage';
 import type {
@@ -244,7 +244,18 @@ export function WorkspacePage({
         label = 'Rollback to ' + previous.label;
         revisionKind = 'rollback';
       }
-      const revision = makeRevision(next, label, revisionKind, parent?.id ?? null);
+      const anchorRevision = history.find((item) => item.kind === 'initial') ?? history[0];
+      const latestOverride = next.overrides[next.overrides.length - 1];
+      const heroNodeId = next.sections.find((section) => section.role === 'hero')?.nodes[0]?.id;
+      const affectedIds = latestOverride?.affectedIds ?? (kind === 'headline' && heroNodeId ? [heroNodeId] : []);
+      const drift = anchorRevision
+        ? computeDrift(anchorRevision.document.anchor, next, anchorRevision.document.sections)
+        : undefined;
+      const revision = makeRevision(next, label, revisionKind, parent?.id ?? null, {
+        affectedIds,
+        ...(latestOverride?.overrideReason ? { overrideReason: latestOverride.overrideReason } : kind === 'headline' ? { overrideReason: 'User requested a hero headline change.' } : {}),
+        ...(drift ? { drift } : {}),
+      });
       const nextHistory = [...history, revision].slice(-20);
       const compiled = compileDocumentParts(next);
       const updated = await storage.saveIrProjectState(
