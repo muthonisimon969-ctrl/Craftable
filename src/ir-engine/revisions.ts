@@ -20,6 +20,7 @@ export function makeRevision(
 ): IrRevision {
   const id = 'rev_' + Math.random().toString(36).slice(2, 9);
   const snapshot = clone(document);
+  if (kind === 'initial' || kind === 'full-redesign') snapshot.anchor.createdFromRevisionId = id;
   return freezeDeep({
     id,
     parentId,
@@ -89,7 +90,12 @@ export function applyFullRedesign(document: IrDocument, mood: BrandIdentityAncho
     createdFromRevisionId: 'pending',
   };
   next.overrides = [];
-  next.sections = next.sections.map((section) => ({ ...section, moodOverride: undefined, tokenOverrides: undefined }));
+  next.sections = next.sections.map((section) => ({
+    ...section,
+    intent: section.role === 'hero' ? 'editorial' : 'index',
+    moodOverride: undefined,
+    tokenOverrides: undefined,
+  }));
   if (mood === 'technical-dark') {
     next.anchor.tokens = {
       ...next.anchor.tokens,
@@ -108,7 +114,7 @@ export function rollbackDocument(revision: IrRevision): IrDocument {
   return clone(revision.document);
 }
 
-export function computeDrift(anchor: BrandIdentityAnchor, document: IrDocument): DriftReport {
+export function computeDrift(anchor: BrandIdentityAnchor, document: IrDocument, anchorSections?: IrSection[]): DriftReport {
   const tokenDeltas: DriftReport['tokenDeltas'] = [];
   const flatten = (value: object, prefix = ''): Array<[string, string | number]> =>
     Object.entries(value).flatMap(([key, child]) =>
@@ -130,7 +136,7 @@ export function computeDrift(anchor: BrandIdentityAnchor, document: IrDocument):
   });
   const sectionFlips: DriftReport['sectionFlips'] = [];
   const anchorModes = new Map<string, IrSection['intent']>();
-  document.sections.forEach((section) => anchorModes.set(section.id, section.role === 'hero' ? 'editorial' : 'index'));
+  (anchorSections ?? document.sections).forEach((section) => anchorModes.set(section.id, section.intent));
   document.sections.forEach((section) => {
     const original = anchorModes.get(section.id);
     if (original && original !== section.intent) sectionFlips.push({ sectionId: section.id, from: original, to: section.intent });
