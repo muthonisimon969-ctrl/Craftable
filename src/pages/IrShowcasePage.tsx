@@ -157,6 +157,7 @@ export default function IrShowcasePage() {
             <button className={viewport === 375 ? 'active' : ''} onClick={() => setViewport(375)}><Smartphone size={15} /> Mobile</button>
           </div>
           <div className="ir-revision-count"><Clock3 size={14} /> {revisions.length} revisions</div>
+          <a className="ir-exit" href={fixture === 'kora' ? '/ir-create/kora' : '/ir-create/vektor'}>Open in Zuno Builder <ArrowUpRight size={14} /></a>
         </div>
 
         <div className="ir-preview-meta"><span>LIVE PREVIEW / {viewport}px</span><span>{document.brandName.toUpperCase()} <i>·</i> {active.label.toUpperCase()}</span><span>{audit.checked ? (audit.horizontalOverflow || audit.clippedHeading || audit.brokenImages ? 'AUDIT / REVIEW' : 'AUDIT / PASS') : 'AUDIT / CHECKING'}</span></div>
