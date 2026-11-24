@@ -1,3 +1,4 @@
+import type { IrDocument, IrRevision } from '../ir-engine/types';
 export type TemplateType = 'web_app' | 'dashboard' | 'landing_page' | 'utility';
 
 export type ProjectMode = 'standard' | 'creative';
@@ -77,6 +78,11 @@ export interface AppProject {
   htmlCode: string;
   cssCode: string;
   jsCode: string;
+  /** Optional structured source for IR-managed projects; absent on all legacy projects. */
+  irSchemaVersion?: 1;
+  irDocument?: IrDocument;
+  irRevisions?: IrRevision[];
+  irManagedSectionIds?: string[];
   createdAtMillis: number;
   updatedAtMillis: number;
 }
