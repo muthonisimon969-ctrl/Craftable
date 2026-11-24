@@ -106,6 +106,9 @@ export interface GeneratedAppBundle {
   jsCode: string;
   changedFiles: string[];
   followUpSuggestions: string[];
+  /** Present when the initial site was created through the structured IR pipeline. */
+  irDocument?: IrDocument;
+  irRevisions?: IrRevision[];
   designStrategy?: string;
   templateId?: string;
   designDirection?: string;
