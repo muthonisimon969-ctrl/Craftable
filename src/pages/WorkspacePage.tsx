@@ -74,15 +74,9 @@ export function WorkspacePage({
   const [consoleLogs, setConsoleLogs] = useState<ConsoleEntry[]>([]);
   const [showConsoleSheet, setShowConsoleSheet] = useState(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
-  const [isWideScreen, setIsWideScreen] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth >= 900 : false
-  );
-
-  useEffect(() => {
-    const onResize = () => setIsWideScreen(window.innerWidth >= 900);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+  // The builder is intentionally desktop-first on every device. Narrow screens
+  // keep the same chat + preview workspace and can pan across its full canvas.
+  const isWideScreen = true;
 
   useEffect(() => {
     let active = true;
