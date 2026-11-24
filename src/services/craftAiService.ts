@@ -359,8 +359,8 @@ export async function generateNewApp(
   attachments?: PromptAttachment[]
 ): Promise<GeneratedAppBundle> {
   const isSimpleBusinessLandingPage = templateType === 'landing_page' &&
-    /\\b(website|business|company|brand|service|studio|agency|salon|restaurant|portfolio|consultancy)\\b/i.test(prompt) &&
-    !/\\b(online store|e-?commerce|shopping cart|multi-?page|dashboard|web app|marketplace)\\b/i.test(prompt);
+    /\b(website|business|company|brand|service|studio|agency|salon|restaurant|portfolio|consultancy)\b/i.test(prompt) &&
+    !/\b(online store|e-?commerce|shopping cart|multi-?page|dashboard|web app|marketplace)\b/i.test(prompt);
   if (isSimpleBusinessLandingPage) {
     const structured = await requestStructuredLandingPage(prompt, onStageUpdate, attachments);
     if (structured) return structured;
