@@ -358,7 +358,7 @@ export async function generateNewApp(
   onStageUpdate: (stage: string) => void = () => {},
   attachments?: PromptAttachment[]
 ): Promise<GeneratedAppBundle> {
-  const isSimpleBusinessLandingPage = templateType === 'landing_page' &&
+  const isSimpleBusinessLandingPage = templateType === 'landing_page' && !blueprintTemplate &&
     /\b(website|business|company|brand|service|studio|agency|salon|restaurant|portfolio|consultancy)\b/i.test(prompt) &&
     !/\b(online store|e-?commerce|shopping cart|multi-?page|dashboard|web app|marketplace)\b/i.test(prompt);
   if (isSimpleBusinessLandingPage) {
