@@ -495,7 +495,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           ...(role === 'collection' ? { items } : {}),
         };
       };
-      const sections = rawSections.map((section, index) => {
+      const sections = rawSections.map((section) => {
         const role = section.role === 'hero' ? 'hero' : 'collection';
         const rawNodes = Array.isArray(section.nodes) ? section.nodes : [];
         return {
