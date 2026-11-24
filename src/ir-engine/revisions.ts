@@ -48,6 +48,7 @@ export function applyAssetSwap(document: IrDocument, nodeId: string, assetId: st
   if (!node) throw new Error('The requested image node no longer exists.');
   node.imageAssetId = asset.id;
   node.alt = asset.alt;
+  next.overrides = next.overrides.filter((override) => !(override.targetId === nodeId && override.field === 'imageAssetId'));
   next.overrides.push({
     id: 'override_' + Math.random().toString(36).slice(2, 8),
     targetId: nodeId,
@@ -62,14 +63,24 @@ export function applyHeroMoodShift(document: IrDocument, sectionId: string, mood
   const next = clone(document);
   const section = next.sections.find((item) => item.id === sectionId);
   if (!section) throw new Error('The requested section no longer exists.');
+
+  if (mood === next.anchor.mood) {
+    section.intent = section.role === 'hero' ? 'editorial' : 'index';
+    section.moodOverride = undefined;
+    section.tokenOverrides = undefined;
+    next.overrides = next.overrides.filter((override) => !(override.targetId === sectionId && override.field === 'intent+tokens'));
+    return next;
+  }
+
   const previous = section.intent;
   section.intent = mood === 'technical-dark' ? 'product-led' : 'editorial';
   section.moodOverride = mood;
-  section.tokenOverrides = mood === 'quiet-editorial'
-    ? { color: { ...next.anchor.tokens.color } }
-    : { color: mood === 'warm-editorial'
+  section.tokenOverrides = {
+    color: mood === 'warm-editorial'
       ? { ink: '#29231F', paper: '#F1E9DE', accent: '#A64F35', muted: '#776D63', line: '#D8C9B9', surface: '#E8DED2' }
-      : { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' } };
+      : { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' },
+  };
+  next.overrides = next.overrides.filter((override) => !(override.targetId === sectionId && override.field === 'intent+tokens'));
   next.overrides.push({
     id: 'override_' + Math.random().toString(36).slice(2, 8),
     targetId: sectionId,
