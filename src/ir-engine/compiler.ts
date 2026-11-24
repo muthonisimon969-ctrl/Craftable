@@ -82,7 +82,7 @@ export function compileDocumentParts(document: IrDocument): CompiledIrOutput {
   if (!style || !main) {
     throw new Error('The IR compiler returned an incomplete document.');
   }
-  const html = '<div class="zuno-ir-project">' + main.innerHTML + '</div>';
+  const html = '<main class="site zuno-ir-project">' + main.innerHTML + '</main>';
   const css = style.textContent ?? '';
   const source = JSON.stringify(document);
   let hash = 2166136261;
