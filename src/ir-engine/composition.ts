@@ -13,10 +13,12 @@ export interface CompositionPlan {
 function chooseAllowed<T extends string>(
   preferred: T,
   allowed: T[] | undefined,
+  valid: readonly T[],
   fallback: T
 ): T {
-  if (!allowed?.length) return preferred;
-  return allowed.includes(preferred) ? preferred : allowed[0] ?? fallback;
+  const safeAllowed = Array.isArray(allowed) ? allowed.filter((value) => valid.includes(value)) : [];
+  if (!safeAllowed.length) return valid.includes(preferred) ? preferred : fallback;
+  return safeAllowed.includes(preferred) ? preferred : safeAllowed[0] ?? fallback;
 }
 
 /**
@@ -47,8 +49,8 @@ export function resolveComposition(document: IrDocument): CompositionPlan {
         : 'index-list';
 
   const rules = document.anchor.compositionRules;
-  const hero = chooseAllowed(preferredHero, rules?.allowedHeroLayouts, 'editorial-split');
-  const collection = chooseAllowed(preferredCollection, rules?.allowedCollectionLayouts, 'index-list');
+  const hero = chooseAllowed(preferredHero, rules?.allowedHeroLayouts, ['type-led', 'editorial-split', 'product-led'], 'editorial-split');
+  const collection = chooseAllowed(preferredCollection, rules?.allowedCollectionLayouts, ['index-list', 'editorial-grid', 'product-grid'], 'index-list');
   const budget = rules?.tensionBudget ?? { min: 0, max: 1, recommended: 0 };
 
   return {
