@@ -449,7 +449,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       }));
       const sectionPrompt = [
         'Now synthesize the page-specific Section IR, constrained by this already-created Brand Anchor. Return ONE valid JSON object only, no markdown.',
-        'Schema: {"brandName":string,"pageIntent":"home"|"launch"|"services"|"projects"|"about"|"product"|"contact"|"other","sections":[{"id":string,"role":"hero"|"collection","intent":"editorial"|"index"|"product-led","nodes":[{"id":string,"type":"hero"|"collection","eyebrow":string,"title":string,"body":string,"imageAssetId":string|null,"alt":string,"artwork":"architecture-lines"|"audio-rings"|null,"items":[{"id":string,"title":string,"detail":string,"imageAssetId":string|null}]}]}]}',
+        'Schema: {"brandName":string,"pageIntent":"home"|"launch"|"services"|"projects"|"about"|"product"|"contact"|"other","sections":[{"id":string,"role":"hero"|"collection","intent":"editorial"|"index"|"product-led","nodes":[{"id":string,"type":"hero"|"collection","eyebrow":string,"title":string,"body":string,"ctaLabel":string,"imageAssetId":string|null,"alt":string,"artwork":"architecture-lines"|"audio-rings"|null,"items":[{"id":string,"title":string,"detail":string,"imageAssetId":string|null}]}]}]}',
         'For v1 create exactly two sections in semantic order: one hero then one collection. Create exactly one node in each section. The collection should contain 3–5 relevant items. Keep the writing specific, commercially useful and truthful; do not fabricate testimonials, ratings, awards, addresses, prices or guarantees.',
         'Choose pageIntent from the brief. Use imageAssetId only from the approved asset IDs below; otherwise null. Do not invent image URLs. Hero and collection layout will be selected deterministically from the Anchor permissions.',
         'BRIEF: ' + promptText,
@@ -489,6 +489,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           eyebrow: typeof node.eyebrow === 'string' ? node.eyebrow.slice(0, 100) : '',
           title: typeof node.title === 'string' ? node.title.slice(0, 120) : '',
           body: typeof node.body === 'string' ? node.body.slice(0, 500) : '',
+          ctaLabel: typeof node.ctaLabel === 'string' ? node.ctaLabel.slice(0, 48) : '',
           ...(assetId ? { imageAssetId: assetId } : {}),
           alt: typeof node.alt === 'string' ? node.alt.slice(0, 240) : '',
           ...(node.artwork === 'architecture-lines' || node.artwork === 'audio-rings' ? { artwork: node.artwork } : {}),
