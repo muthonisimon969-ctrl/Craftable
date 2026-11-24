@@ -126,6 +126,16 @@ export function applyFullRedesign(document: IrDocument, mood: BrandIdentityAncho
 
 export function getChangedIrIds(before: IrDocument, after: IrDocument): string[] {
   const changed = new Set<string>();
+  if (before.brandName !== after.brandName) changed.add('brand-name');
+  if (before.pageIntent !== after.pageIntent) changed.add('page-intent');
+
+  const beforeAssets = new Map(before.approvedAssets.map((asset) => [asset.id, asset] as const));
+  const afterAssets = new Map(after.approvedAssets.map((asset) => [asset.id, asset] as const));
+  for (const assetId of new Set([...beforeAssets.keys(), ...afterAssets.keys()])) {
+    if (JSON.stringify(beforeAssets.get(assetId)) !== JSON.stringify(afterAssets.get(assetId))) {
+      changed.add(assetId);
+    }
+  }
   const beforeSections = new Map(before.sections.map((section) => [section.id, section] as const));
   const afterSections = new Map(after.sections.map((section) => [section.id, section] as const));
 
