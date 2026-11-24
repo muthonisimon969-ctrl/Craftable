@@ -1,6 +1,5 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App';
 import './index.css';
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
@@ -9,8 +8,22 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   });
 }
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+const root = createRoot(document.getElementById('root')!);
+
+if (window.location.pathname === '/ir-showcase') {
+  import('./pages/IrShowcasePage').then(({ default: IrShowcasePage }) => {
+    root.render(
+      <StrictMode>
+        <IrShowcasePage />
+      </StrictMode>
+    );
+  });
+} else {
+  import('./App').then(({ default: App }) => {
+    root.render(
+      <StrictMode>
+        <App />
+      </StrictMode>
+    );
+  });
+}
