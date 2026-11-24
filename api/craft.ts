@@ -1,6 +1,6 @@
 import { getActiveServerKeys, parseRequestJsonBody, type HttpReq, type HttpRes } from './_keyVault.js';
 export interface CraftAttachmentPayload { name: string; mimeType: string; dataBase64?: string; textContent?: string; }
-interface CraftRequestBody { mode?: 'build' | 'chat' | 'create_3d' | 'image'; promptText?: string; systemPrompt?: string; attachments?: CraftAttachmentPayload[]; }
+interface CraftRequestBody { mode?: 'build' | 'chat' | 'create_3d' | 'image' | 'ir_build'; promptText?: string; systemPrompt?: string; attachments?: CraftAttachmentPayload[]; }
 const TEXT_MODEL = 'openai/gpt-oss-120b';
 const VISION_MODEL = 'qwen/qwen3.8-27b';
 interface ApprovedSupabaseAsset {
@@ -379,8 +379,8 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     return;
   }
 
-  const privatePrompt = mode === 'build' || mode === 'create_3d' ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim() : '';
-  const approvedAssets = mode === 'build' ? await fetchApprovedSupabaseAssets() : [];
+  const privatePrompt = mode === 'build' || mode === 'create_3d' || mode === 'ir_build' ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim() : '';
+  const approvedAssets = mode === 'build' || mode === 'ir_build' ? await fetchApprovedSupabaseAssets() : [];
   const systemPrompt = [
     body.systemPrompt?.trim() ?? '',
     privatePrompt,
@@ -412,6 +412,131 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
 
   let lastError = 'No configured AI provider returned a response.';
   for (const candidate of candidates) {
+    if (mode === 'ir_build') {
+      const selectedAssets = selectRelevantSupabaseAssets(promptText, approvedAssets);
+      const anchorPrompt = [
+        'Synthesize the durable Brand Identity Anchor for this business website. Return ONE valid JSON object only, with no markdown.',
+        'Schema: {"name":string,"mood":"quiet-editorial"|"technical-dark"|"warm-editorial","tokens":{"color":{"ink":"#RRGGBB","paper":"#RRGGBB","accent":"#RRGGBB","muted":"#RRGGBB","line":"#RRGGBB","surface":"#RRGGBB"},"type":{"family":string,"display":number,"body":number},"space":{"section":number,"content":number,"tight":number},"radius":{"card":number,"image":number}},"compositionRules":{"allowedHeroLayouts":["type-led"|"editorial-split"|"product-led"],"allowedCollectionLayouts":["index-list"|"editorial-grid"|"product-grid"],"forbiddenPatterns":string[],"tensionBudget":{"min":number,"max":number,"recommended":number}}}',
+        'Use accessible body and heading contrast (at least 4.5:1 for the supplied color pairs), font display 32–96px, body 14–20px, bounded spacing and radius. Choose only supported moods and layout names.',
+        'The Anchor defines a distinctive identity and permitted visual language, not a generic template. Do not invent brand facts.',
+        'BUSINESS BRIEF: ' + promptText,
+      ].join('\n');
+      const anchorResult = await callModel(
+        candidate.provider, candidate.key, candidate.model,
+        buildMessages(anchorPrompt, 'You are a senior brand identity designer. Return strict JSON only.'),
+        0.2, 3000, 55000
+      );
+      const parseObject = (raw: string | null): Record<string, unknown> | null => {
+        if (!raw) return null;
+        const cleaned = raw.trim().replace(/^\`\`\`(?:json)?/i, '').replace(/\`\`\`$/i, '').trim();
+        const start = cleaned.indexOf('{');
+        const end = cleaned.lastIndexOf('}');
+        if (start < 0 || end <= start) return null;
+        try {
+          const value = JSON.parse(cleaned.slice(start, end + 1));
+          return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+        } catch { return null; }
+      };
+      const anchorData = parseObject(anchorResult.content);
+      if (!anchorData || !anchorData.tokens || !anchorData.compositionRules) {
+        lastError = anchorResult.error || 'The Brand Anchor response was not valid structured JSON.';
+        continue;
+      }
+
+      const assetContext = selectedAssets.map((asset) => ({
+        id: asset.id, title: asset.title, category: asset.category,
+        imageUrl: asset.image_url, alt: asset.alt_text, usageType: asset.usage_type,
+      }));
+      const sectionPrompt = [
+        'Now synthesize the page-specific Section IR, constrained by this already-created Brand Anchor. Return ONE valid JSON object only, no markdown.',
+        'Schema: {"brandName":string,"pageIntent":"home"|"launch"|"services"|"projects"|"about"|"product"|"contact"|"other","sections":[{"id":string,"role":"hero"|"collection","intent":"editorial"|"index"|"product-led","nodes":[{"id":string,"type":"hero"|"collection","eyebrow":string,"title":string,"body":string,"imageAssetId":string|null,"alt":string,"artwork":"architecture-lines"|"audio-rings"|null,"items":[{"id":string,"title":string,"detail":string,"imageAssetId":string|null}]}]}]}',
+        'For v1 create exactly two sections in semantic order: one hero then one collection. Create exactly one node in each section. The collection should contain 3–5 relevant items. Keep the writing specific, commercially useful and truthful; do not fabricate testimonials, ratings, awards, addresses, prices or guarantees.',
+        'Choose pageIntent from the brief. Use imageAssetId only from the approved asset IDs below; otherwise null. Do not invent image URLs. Hero and collection layout will be selected deterministically from the Anchor permissions.',
+        'BRIEF: ' + promptText,
+        'BRAND ANCHOR (immutable constraint for this page): ' + JSON.stringify(anchorData),
+        'APPROVED ASSETS: ' + JSON.stringify(assetContext),
+      ].join('\n');
+      const sectionResult = await callModel(
+        candidate.provider, candidate.key, candidate.model,
+        buildMessages(sectionPrompt, 'You are a structured website information architect. Return strict JSON only.'),
+        0.25, 7000, 55000
+      );
+      const sectionData = parseObject(sectionResult.content);
+      const rawSections = Array.isArray(sectionData?.sections) ? sectionData.sections as Array<Record<string, unknown>> : [];
+      if (rawSections.length !== 2 || !sectionData) {
+        lastError = sectionResult.error || 'The Section IR response did not contain the required v1 hero and collection sections.';
+        continue;
+      }
+      const approvedIds = new Set(selectedAssets.map((asset) => asset.id));
+      const safeId = (value: unknown, fallback: string) =>
+        typeof value === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(value) ? value : fallback;
+      const normalizeNode = (value: unknown, role: 'hero' | 'collection', fallbackId: string) => {
+        const node = value && typeof value === 'object' ? value as Record<string, unknown> : {};
+        const items = Array.isArray(node.items) ? node.items.slice(0, 6).map((entry, index) => {
+          const item = entry && typeof entry === 'object' ? entry as Record<string, unknown> : {};
+          const assetId = typeof item.imageAssetId === 'string' && approvedIds.has(item.imageAssetId) ? item.imageAssetId : undefined;
+          return {
+            id: safeId(item.id, fallbackId + '_item_' + (index + 1)),
+            title: typeof item.title === 'string' ? item.title.slice(0, 100) : 'Explore',
+            detail: typeof item.detail === 'string' ? item.detail.slice(0, 240) : '',
+            ...(assetId ? { imageAssetId: assetId } : {}),
+          };
+        }) : [];
+        const assetId = typeof node.imageAssetId === 'string' && approvedIds.has(node.imageAssetId) ? node.imageAssetId : undefined;
+        return {
+          id: safeId(node.id, fallbackId),
+          type: role,
+          eyebrow: typeof node.eyebrow === 'string' ? node.eyebrow.slice(0, 100) : '',
+          title: typeof node.title === 'string' ? node.title.slice(0, 120) : '',
+          body: typeof node.body === 'string' ? node.body.slice(0, 500) : '',
+          ...(assetId ? { imageAssetId: assetId } : {}),
+          alt: typeof node.alt === 'string' ? node.alt.slice(0, 240) : '',
+          ...(node.artwork === 'architecture-lines' || node.artwork === 'audio-rings' ? { artwork: node.artwork } : {}),
+          ...(role === 'collection' ? { items } : {}),
+        };
+      };
+      const sections = rawSections.map((section, index) => {
+        const role = section.role === 'hero' ? 'hero' : 'collection';
+        const rawNodes = Array.isArray(section.nodes) ? section.nodes : [];
+        return {
+          id: safeId(section.id, role === 'hero' ? 'section_hero' : 'section_collection'),
+          role,
+          intent: section.intent === 'product-led' ? 'product-led' : section.intent === 'index' ? 'index' : 'editorial',
+          nodes: [normalizeNode(rawNodes[0], role, role === 'hero' ? 'node_hero' : 'node_collection')],
+        };
+      });
+      if (sections.filter((section) => section.role === 'hero').length !== 1 ||
+          sections.filter((section) => section.role === 'collection').length !== 1) {
+        lastError = 'The Section IR must contain exactly one hero and one collection.';
+        continue;
+      }
+      const tokens = anchorData.tokens as Record<string, unknown>;
+      const rules = anchorData.compositionRules as Record<string, unknown>;
+      const mood = ['quiet-editorial', 'technical-dark', 'warm-editorial'].includes(String(anchorData.mood))
+        ? String(anchorData.mood) : 'quiet-editorial';
+      const document = {
+        brandName: typeof sectionData.brandName === 'string' && sectionData.brandName.trim()
+          ? sectionData.brandName.trim().slice(0, 100) : String(anchorData.name ?? 'New business').slice(0, 100),
+        pageIntent: ['home', 'launch', 'services', 'projects', 'about', 'product', 'contact', 'other'].includes(String(sectionData.pageIntent))
+          ? sectionData.pageIntent : 'home',
+        anchor: {
+          id: 'anchor_initial',
+          name: typeof anchorData.name === 'string' ? anchorData.name.slice(0, 100) : 'Brand identity',
+          mood,
+          tokens,
+          compositionRules: rules,
+          createdFromRevisionId: 'initial',
+        },
+        sections,
+        approvedAssets: selectedAssets.map((asset) => ({
+          id: asset.id, title: asset.title, category: asset.category, imageUrl: asset.image_url, alt: asset.alt_text,
+        })),
+        overrides: [],
+      };
+      res.status(200).json({ irDocument: document, model: candidate.model, provider: candidate.provider, fallbackUsed: candidates.indexOf(candidate) > 0 });
+      return;
+    }
+
     const result = await callModel(
       candidate.provider,
       candidate.key,
