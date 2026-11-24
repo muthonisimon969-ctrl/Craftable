@@ -19,6 +19,7 @@ import { WebPreviewPane } from '../components/WebPreviewPane';
 import { iterateExistingApp } from '../services/craftAiService';
 import { compileDocumentParts } from '../ir-engine/compiler';
 import { applyAssetSwap, applyHeadlineEdit, applyHeroMoodShift, computeDrift, makeRevision, rollbackDocument } from '../ir-engine/revisions';
+import { validateIrV1Document } from '../ir-engine/validator';
 import type { IrDocument, IrRevision } from '../ir-engine/types';
 import * as storage from '../services/projectStorage';
 import type {
@@ -245,6 +246,10 @@ export function WorkspacePage({
         revisionKind = 'rollback';
       }
       const anchorRevision = history.find((item) => item.kind === 'initial') ?? history[0];
+      const validation = validateIrV1Document(next, anchorRevision?.document);
+      if (!validation.canPublish) {
+        throw new Error(validation.failures.map((issue) => issue.message).join(' '));
+      }
       const latestOverride = next.overrides[next.overrides.length - 1];
       const heroNodeId = next.sections.find((section) => section.role === 'hero')?.nodes[0]?.id;
       const affectedIds = latestOverride?.affectedIds ?? (kind === 'headline' && heroNodeId ? [heroNodeId] : []);
