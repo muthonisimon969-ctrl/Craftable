@@ -126,8 +126,8 @@ export function applyFullRedesign(document: IrDocument, mood: BrandIdentityAncho
 
 export function getChangedIrIds(before: IrDocument, after: IrDocument): string[] {
   const changed = new Set<string>();
-  const beforeSections = new Map(before.sections.map((section) => [section.id, section]));
-  const afterSections = new Map(after.sections.map((section) => [section.id, section]));
+  const beforeSections = new Map(before.sections.map((section) => [section.id, section] as const));
+  const afterSections = new Map(after.sections.map((section) => [section.id, section] as const));
 
   for (const sectionId of new Set([...beforeSections.keys(), ...afterSections.keys()])) {
     const left = beforeSections.get(sectionId);
@@ -140,16 +140,16 @@ export function getChangedIrIds(before: IrDocument, after: IrDocument): string[]
         JSON.stringify(left.tokenOverrides) !== JSON.stringify(right.tokenOverrides)) {
       changed.add(sectionId);
     }
-    const beforeNodes = new Map(left.nodes.map((node) => [node.id, node]));
-    const afterNodes = new Map(right.nodes.map((node) => [node.id, node]));
+    const beforeNodes = new Map(left.nodes.map((node) => [node.id, node] as const));
+    const afterNodes = new Map(right.nodes.map((node) => [node.id, node] as const));
     for (const nodeId of new Set([...beforeNodes.keys(), ...afterNodes.keys()])) {
       if (JSON.stringify(beforeNodes.get(nodeId)) !== JSON.stringify(afterNodes.get(nodeId))) {
         changed.add(nodeId);
       }
       const beforeItems = beforeNodes.get(nodeId)?.items ?? [];
       const afterItems = afterNodes.get(nodeId)?.items ?? [];
-      const beforeItemMap = new Map(beforeItems.map((item) => [item.id, item]));
-      const afterItemMap = new Map(afterItems.map((item) => [item.id, item]));
+      const beforeItemMap = new Map(beforeItems.map((item) => [item.id, item] as const));
+      const afterItemMap = new Map(afterItems.map((item) => [item.id, item] as const));
       for (const itemId of new Set([...beforeItemMap.keys(), ...afterItemMap.keys()])) {
         if (JSON.stringify(beforeItemMap.get(itemId)) !== JSON.stringify(afterItemMap.get(itemId))) {
           changed.add(itemId);
