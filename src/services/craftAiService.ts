@@ -319,12 +319,23 @@ async function executeZunoProjectChat(promptText: string, onStageUpdate: (stage:
   }
 }
 
-function isProjectQuestionOnly(prompt: string): boolean {
+function shouldKeepProjectRequestInChat(prompt: string): boolean {
   const value = prompt.trim().toLowerCase();
-  if (!value) return false;
-  const requestsChange = /\b(add|build|create|change|edit|fix|insert|make|modify|move|remove|replace|redesign|update|rewrite|implement|put|include|generate)\b/.test(value);
-  if (requestsChange) return false;
-  return /\?|^(what|where|when|why|how|which|who|is|are|was|were|do|does|did|can you explain|could you explain|tell me|explain)\b/.test(value);
+  if (!value) return true;
+
+  // Questions and feedback requests are never permission to mutate a project,
+  // even when they contain words such as "change", "add", or "make".
+  if (/[?]$/.test(value) ||
+      /^(what|where|when|why|how|which|who|is|are|was|were|do|does|did|can you explain|could you explain|tell me|explain|what do you think|how does)\\b/.test(value)) {
+    return true;
+  }
+
+  // A safe edit needs BOTH an action and an identifiable target. Vague requests
+  // like "make it more premium" stay in chat instead of silently rebuilding.
+  const hasEditAction = /\\b(add|build|create|change|edit|fix|insert|modify|move|remove|replace|redesign|update|rewrite|implement|put|include|generate|swap|resize|shorten|lengthen|increase|decrease|set)\\b/.test(value);
+  const hasTarget = /\\b(whole site|entire site|website|site|page|hero|headline|heading|title|subtitle|copy|text|button|cta|header|navigation|nav|footer|section|image|photo|product|card|background|colour|color|font|typography|spacing|padding|margin|layout|grid|search|filter|price|logo|menu|payment|checkout)\\b/.test(value);
+
+  return !(hasEditAction && hasTarget);
 }
 
 export async function iterateExistingApp(
@@ -336,10 +347,11 @@ export async function iterateExistingApp(
   activeJs: string,
   onStageUpdate: (stage: string) => void = () => {}
 ): Promise<GeneratedAppBundle> {
-  if (isProjectQuestionOnly(userPrompt)) {
+  if (shouldKeepProjectRequestInChat(userPrompt)) {
     const imageCount = (activeHtml.match(/<img\b/gi) ?? []).length;
     const questionContext = [
-      'The user is asking a question about the EXISTING website project. Answer the question only.',
+      'The request is not a clearly scoped edit to the EXISTING website project. Keep this turn conversational and do not mutate project state.',
+      'Answer genuine questions directly. If the user gave a vague change request, ask exactly one concise clarifying question about the target or intended result.',
       'Do not generate code, modify the project, add features, create extra pages, or suggest unrelated integrations.',
       `Project title: ${project.title}`,
       `Original brief: ${project.initialPrompt.slice(0, 1800)}`,
