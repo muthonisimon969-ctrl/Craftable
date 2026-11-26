@@ -421,9 +421,9 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       const selectedAssets = selectRelevantSupabaseAssets(promptText, approvedAssets);
       const anchorPrompt = [
         'Synthesize the durable Brand Identity Anchor for this business website. Return ONE valid JSON object only, with no markdown.',
-        'Schema: {"name":string,"mood":"quiet-editorial"|"technical-dark"|"warm-editorial","tokens":{"color":{"ink":"#RRGGBB","paper":"#RRGGBB","accent":"#RRGGBB","muted":"#RRGGBB","line":"#RRGGBB","surface":"#RRGGBB"},"type":{"family":string,"display":number,"body":number},"space":{"section":number,"content":number,"tight":number},"radius":{"card":number,"image":number}},"compositionRules":{"allowedHeroLayouts":["type-led"|"editorial-split"|"product-led"],"allowedCollectionLayouts":["index-list"|"editorial-grid"|"product-grid"],"forbiddenPatterns":string[],"tensionBudget":{"min":number,"max":number,"recommended":number}}}',
+        'Schema: {"name":string,"mood":"quiet-editorial"|"technical-dark"|"warm-editorial","tokens":{"color":{"ink":"#RRGGBB","paper":"#RRGGBB","accent":"#RRGGBB","muted":"#RRGGBB","line":"#RRGGBB","surface":"#RRGGBB"},"type":{"family":string,"display":number,"body":number},"space":{"section":number,"content":number,"tight":number},"radius":{"card":number,"image":number}},"compositionRules":{"allowedHeroLayouts":["type-led"|"editorial-split"|"product-led"],"allowedCollectionLayouts":["index-list"|"editorial-grid"|"product-grid"],"forbiddenPatterns":string[],"tensionBudget":{"min":number,"max":number,"recommended":number}},"artDirection":{"imageVoice":string,"typographyIntent":string,"visualMotifs":string[],"restraintNotes":string[],"paletteIntent":string}}',
         'Use accessible body and heading contrast (at least 4.5:1 for the supplied color pairs), font display 32–96px, body 14–20px, bounded spacing and radius. Choose only supported moods and layout names.',
-        'The Anchor defines a distinctive identity and permitted visual language, not a generic template. Do not invent brand facts.',
+        'The Anchor defines a distinctive identity and permitted visual language, not a generic template. Do not invent brand facts. Make artDirection specific: describe image voice (subject, lighting, framing and texture), typography hierarchy, 2–4 ownable visual motifs, explicit restraint choices, and how ink/paper/surface/accent colors should be balanced. Avoid arbitrary extra accents and repeated generic gradients. These are guidance, not universal hard limits.',
         'BUSINESS BRIEF: ' + promptText,
       ].join('\n');
       const anchorResult = await callModel(
@@ -531,6 +531,13 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           mood,
           tokens,
           compositionRules: rules,
+          artDirection: {
+            imageVoice: typeof (anchorData.artDirection as Record<string, unknown> | undefined)?.imageVoice === 'string' ? String((anchorData.artDirection as Record<string, unknown>).imageVoice).slice(0, 400) : '',
+            typographyIntent: typeof (anchorData.artDirection as Record<string, unknown> | undefined)?.typographyIntent === 'string' ? String((anchorData.artDirection as Record<string, unknown>).typographyIntent).slice(0, 400) : '',
+            visualMotifs: Array.isArray((anchorData.artDirection as Record<string, unknown> | undefined)?.visualMotifs) ? ((anchorData.artDirection as Record<string, unknown>).visualMotifs as unknown[]).filter((item): item is string => typeof item === 'string').slice(0, 4).map((item) => item.slice(0, 100)) : [],
+            restraintNotes: Array.isArray((anchorData.artDirection as Record<string, unknown> | undefined)?.restraintNotes) ? ((anchorData.artDirection as Record<string, unknown>).restraintNotes as unknown[]).filter((item): item is string => typeof item === 'string').slice(0, 5).map((item) => item.slice(0, 140)) : [],
+            paletteIntent: typeof (anchorData.artDirection as Record<string, unknown> | undefined)?.paletteIntent === 'string' ? String((anchorData.artDirection as Record<string, unknown>).paletteIntent).slice(0, 400) : '',
+          },
           createdFromRevisionId: 'initial',
         },
         sections,
