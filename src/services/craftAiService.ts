@@ -11,43 +11,6 @@ import { serializeAttachmentsForApi } from '../utils/attachmentReader';
 import { extractBodyIfFullDocument } from '../utils/webBundleAssembler';
 import { auditGeneratedBundle } from './webQualityValidator';
 
-const SYSTEM_PROMPT = `You are Zuno AI, a principal product designer and senior front-end engineer inside Zuno AI (an AI platform where users create custom websites, web apps, and 3D games).
-
-RULE #0 — STRICTLY OBEY THE USER'S PROMPT:
-- Build or edit EXACTLY what the user asks for: their exact website, business name, pages, sections, controls, colors, game mechanics, and workflows.
-- NEVER ignore the user's request or substitute a generic or unrelated app.
-
-1. MANUAL PAYMENTS & KENYAN CONTEXT:
-- Unless the user explicitly asks for Safaricom Daraja API integration, ALWAYS implement MANUAL M-Pesa payments when checkout/payment is needed: show Buy Goods Till / Paybill + Account number with a Copy button, KSh total, customer phone (+254 / 07XX) and M-Pesa Confirmation Code input, plus an owner verification view ("Pending Verification" -> "Confirm Payment"). Never fake automatic STK Push when manual payments are requested.
-- Only include Kenyan cues (KSh, +254, M-Pesa) when relevant to a Kenyan/East African request or asked by the user.
-
-2. DESIGN & ENGINEERING QUALITY:
-- Crisp, spacious mobile-first UI: :root CSS custom properties (--bg, --surface, --ink, --muted, --accent, --border), intentional typography pairing, 16px+ readable body text, large clickable buttons (min-height: 44px), and fluid widths (max-width, never fixed widths > 900px).
-- Images: Use ONLY exact image URLs supplied by the server's approved Supabase asset-library context. Never guess, invent, rewrite, or use external image URLs (including Unsplash/Pexels), data:image URLs, or arbitrary CDN images. Use the supplied asset title and alt text. If no matching Supabase image is supplied, omit the photo and use a deliberate CSS/inline-SVG visual instead. The server validates and removes unapproved image references. Never load external CDN scripts. Wire all buttons, forms, tabs, modals, and localStorage state with real vanilla JS event listeners. Never use alert(), confirm(), or prompt().
-- For commerce websites, design a complete, coherent shopping experience: polished header/search/navigation, category discovery, editorial hero, curated product collections, consistent product cards, product detail views, trust/delivery information, support content, and a deliberate footer. Make all navigation and shopping interactions work in the preview.
-- When a user supplies a reference website, study its overall quality, hierarchy, spacing, navigation, content completeness, and responsive behavior. Transfer those principles without copying its branding, exact layout, text, or assets.
-- Never use a generic centered hero plus repeated identical card grids as a default. Establish a specific art direction and vary section composition while maintaining one consistent design system.
-- Do not invent ratings, reviews, certifications, customer counts, stock status, warranties, delivery promises, or business details. Make sample/demo data clearly plausible and avoid presenting it as verified fact.
-- Do not add generic sections or product cards after the main design is generated. Preserve the chosen art direction and use only relevant approved assets.
-- HTML section must contain ONLY inner <body> markup (no <!DOCTYPE>, <html>, <head>, <body>, <style>, or <script> tags).
-- When building or editing a 3D game (platformer/obby, endless runner, space shooter, or block/puzzle game): render true perspective 3D projection or WebGL with depth-sorted shaded 3D faces, directional lighting & horizon fog, animated 3D characters/meshes, 3D particle bursts, floating score popups, camera shake, frosted glassmorphic HUD (Score, Best, Lives/Level), polished Start/Pause/Game Over cards, responsive 16:10 canvas, and both keyboard (WASD/Arrows/Space/P) + mobile touch controls.
-
-3. REQUIRED OUTPUT FORMAT (use these exact section markers):
-<<<TITLE>>>
-2 to 4 word project title
-<<<DESCRIPTION>>>
-One concise sentence describing the app
-<<<SUMMARY>>>
-Friendly 2-sentence explanation of what you built, changed, or answered for the user
-<<<HTML>>>
-Inner <body> HTML markup
-<<<CSS>>>
-Complete CSS stylesheet
-<<<JS>>>
-Complete vanilla JavaScript
-<<<SUGGESTIONS>>>
-Suggestion 1 | Suggestion 2 | Suggestion 3`;
-
 export interface ServerAiStatus {
   ready: boolean;
   aiName: string;
@@ -238,7 +201,6 @@ async function executeZunoServerRequest(
       body: JSON.stringify({
         mode: 'build',
         promptText,
-        systemPrompt: SYSTEM_PROMPT,
         attachments: serializeAttachmentsForApi(attachments),
       }),
     });
@@ -333,6 +295,38 @@ export async function generateNewApp(
   return finalizeBundle(prompt, bundle, null, onStageUpdate);
 }
 
+async function executeZunoProjectChat(promptText: string, onStageUpdate: (stage: string) => void): Promise<string> {
+  onStageUpdate('Zuno AI is answering...');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 54_000);
+  try {
+    const res = await fetch('/api/craft', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({ mode: 'project_chat', promptText }),
+    });
+    const data = (await res.json().catch(() => null)) as { text?: string; error?: string } | null;
+    if (!res.ok) throw new Error(data?.error || 'Zuno could not answer just now. Please try again.');
+    const answer = data?.text?.trim();
+    if (!answer) throw new Error('Zuno returned an empty answer. Please try again.');
+    return answer;
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') throw new Error('Zuno took too long to reply. Please retry.');
+    throw err instanceof Error ? err : new Error('Failed to reach Zuno.');
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function isProjectQuestionOnly(prompt: string): boolean {
+  const value = prompt.trim().toLowerCase();
+  if (!value) return false;
+  const requestsChange = /\b(add|build|create|change|edit|fix|insert|make|modify|move|remove|replace|redesign|update|rewrite|implement|put|include|generate)\b/.test(value);
+  if (requestsChange) return false;
+  return /\?|^(what|where|when|why|how|which|who|is|are|was|were|do|does|did|can you explain|could you explain|tell me|explain)\b/.test(value);
+}
+
 export async function iterateExistingApp(
   project: AppProject,
   userPrompt: string,
@@ -342,6 +336,33 @@ export async function iterateExistingApp(
   activeJs: string,
   onStageUpdate: (stage: string) => void = () => {}
 ): Promise<GeneratedAppBundle> {
+  if (isProjectQuestionOnly(userPrompt)) {
+    const imageCount = (activeHtml.match(/<img\b/gi) ?? []).length;
+    const questionContext = [
+      'The user is asking a question about the EXISTING website project. Answer the question only.',
+      'Do not generate code, modify the project, add features, create extra pages, or suggest unrelated integrations.',
+      \`Project title: \${project.title}\`,
+      \`Original brief: \${project.initialPrompt.slice(0, 1800)}\`,
+      \`Current page has \${imageCount} image element(s).\`,
+      'Current page HTML excerpt:',
+      activeHtml.slice(0, 6500),
+      '',
+      'User question:',
+      userPrompt,
+    ].join('\n');
+    const answer = await executeZunoProjectChat(questionContext, onStageUpdate);
+    return {
+      projectTitle: project.title,
+      description: project.description,
+      summary: answer,
+      htmlCode: activeHtml,
+      cssCode: activeCss,
+      jsCode: activeJs,
+      changedFiles: [],
+      followUpSuggestions: [],
+    };
+  }
+
   const historyTail = recentMessages.slice(-6);
   const lines: string[] = [
     `EXISTING PROJECT: "${project.title}" (v${project.version})`,
