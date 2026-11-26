@@ -17,9 +17,21 @@ export const vektorFixture: IrDocument = {
     },
     tokens: {
       color: { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' },
-      type: { family: 'Inter', display: 94, body: 15 },
-      space: { section: 104, content: 76, tight: 16 },
+      type: { family: 'Inter', display: 56, body: 16 },
+      space: { section: 80, content: 76, tight: 16 },
       radius: { card: 4, image: 4 },
+    },
+    designContract: {
+      layoutIntent: { primary: 'dense', secondary: 'shoppable' },
+      spacing: { scale: [8, 16, 24, 32, 48, 80, 120], contentWidth: 1200, mobileScale: 0.6 },
+      typography: {
+        displayFamily: 'Inter', bodyFamily: 'Inter', display: 56, heading: 40, body: 16, label: 10,
+        lineHeight: { display: 1.05, heading: 1.2, body: 1.55, label: 1.4 },
+        labelLetterSpacing: 0.12, labelUppercase: true,
+      },
+      palette: { dominant: '#101317', supporting: '#1B2229', ink: '#F4F5F7', accent: '#B8D8E8', gradient: 'none' },
+      restraint: { maxColors: 4, maxTypefaces: 2, maxShadowStyles: 1, maxRadiusSystems: 1 },
+      exceptions: [],
     },
   },
   sections: [
@@ -54,9 +66,21 @@ export const koraFixture: IrDocument = {
     },
     tokens: {
       color: { ink: '#24231F', paper: '#F2EFE9', accent: '#A85C43', muted: '#6D675F', line: '#D8D2C8', surface: '#E8E3DA' },
-      type: { family: 'Inter', display: 104, body: 15 },
+      type: { family: 'Inter', display: 72, body: 16 },
       space: { section: 120, content: 88, tight: 18 },
       radius: { card: 0, image: 0 },
+    },
+    designContract: {
+      layoutIntent: { primary: 'editorial', secondary: 'trust' },
+      spacing: { scale: [8, 16, 24, 32, 48, 80, 120], contentWidth: 1200, mobileScale: 0.6, heroTopException: { value: 160, reason: 'Editorial architecture hero needs a deliberate, spacious opening.' } },
+      typography: {
+        displayFamily: 'Inter', bodyFamily: 'Inter', display: 72, heading: 56, body: 16, label: 11,
+        lineHeight: { display: 1.05, heading: 1.2, body: 1.55, label: 1.4 },
+        labelLetterSpacing: 0.12, labelUppercase: true,
+      },
+      palette: { dominant: '#F2EFE9', supporting: '#E8E3DA', ink: '#24231F', accent: '#A85C43', gradient: 'none' },
+      restraint: { maxColors: 4, maxTypefaces: 2, maxShadowStyles: 1, maxRadiusSystems: 1 },
+      exceptions: [{ rule: 'hero-top-padding', scope: 'hero', reason: 'Editorial architecture hero needs a deliberate, spacious opening.' }],
     },
   },
   sections: [
