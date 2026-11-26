@@ -452,7 +452,8 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     let rawAnswer = result.content;
     if (rawAnswer && mode === 'build' && !hasImages) {
       const expectsCommerceImages = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|shop|store|retail|marketplace|electronics|gadgets|fashion|clothing|apparel)\b/i.test(promptText) && approvedAssets.length > 0;
-      const requiredImageUrls = expectsCommerceImages ? approvedAssets.map((asset) => asset.image_url) : [];\n      const issues = inspectBuildDraft(rawAnswer, requiredImageUrls);
+      const requiredImageUrls = expectsCommerceImages ? approvedAssets.map((asset) => asset.image_url) : [];
+      const issues = inspectBuildDraft(rawAnswer, requiredImageUrls);
       if (issues.length) {
         const repaired = await requestBuildRepair(
           candidate.provider,
