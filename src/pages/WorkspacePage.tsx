@@ -148,7 +148,7 @@ export function WorkspacePage({
         return;
       }
 
-      setGenerationStage(\`Deploying v\${project.version + 1} to preview...\`);
+      setGenerationStage(`Deploying v\${project.version + 1} to preview...`);
       const { project: updatedProj, messages: updatedMsgs } = await storage.applyIterationTurn(
         project.id,
         prompt,
