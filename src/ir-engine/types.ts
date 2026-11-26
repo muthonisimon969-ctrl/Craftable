@@ -18,6 +18,19 @@ export interface DesignTokens {
   radius: { card: number; image: number };
 }
 
+export interface BrandArtDirection {
+  /** Describes the photographic / illustrative character; never an external asset source. */
+  imageVoice: string;
+  /** Describes the intended type hierarchy and character. */
+  typographyIntent: string;
+  /** A small set of visual motifs that make the identity recognisable. */
+  visualMotifs: string[];
+  /** Explicit choices about what to avoid or keep restrained. */
+  restraintNotes: string[];
+  /** Explains how the existing semantic color tokens should be balanced. */
+  paletteIntent: string;
+}
+
 export interface BrandIdentityAnchor {
   id: string;
   name: string;
@@ -25,6 +38,8 @@ export interface BrandIdentityAnchor {
   tokens: DesignTokens;
   createdFromRevisionId: string;
   compositionRules?: BrandCompositionRules;
+  /** Optional for backwards compatibility with saved IR v1 documents. */
+  artDirection?: BrandArtDirection;
 }
 
 export interface ScopedOverride {
