@@ -175,81 +175,97 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
   const contract = document.anchor.designContract;
   if (contract) {
     const validIntents = ['editorial', 'dense', 'shoppable', 'trust'];
-    if (!validIntents.includes(contract.layoutIntent.primary) ||
-        !validIntents.includes(contract.layoutIntent.secondary) ||
-        contract.layoutIntent.primary === contract.layoutIntent.secondary) {
+    const layoutIntent = contract.layoutIntent;
+    if (!layoutIntent || !validIntents.includes(layoutIntent.primary) ||
+        !validIntents.includes(layoutIntent.secondary) ||
+        layoutIntent.primary === layoutIntent.secondary) {
       fail('ANCHOR_LAYOUT_INTENT_INVALID', 'The Anchor must declare distinct primary and secondary layout intents.');
     }
 
-    const scale = contract.spacing.scale;
-    const expectedScale = [8, 16, 24, 32, 48, 80, 120];
-    if (!Array.isArray(scale) || scale.length !== expectedScale.length ||
-        expectedScale.some((value, index) => scale[index] !== value)) {
-      fail('ANCHOR_SPACING_SCALE_INVALID', 'The Anchor spacing scale must use the shared 8, 16, 24, 32, 48, 80, 120px reference stops.');
-    }
-    if (!Number.isFinite(contract.spacing.contentWidth) ||
-        contract.spacing.contentWidth < 960 || contract.spacing.contentWidth > 1600) {
-      fail('ANCHOR_CONTENT_WIDTH_INVALID', 'Anchor content width must be between 960px and 1600px.');
-    }
-    if (!Number.isFinite(contract.spacing.mobileScale) ||
-        contract.spacing.mobileScale < 0.45 || contract.spacing.mobileScale > 0.8) {
-      fail('ANCHOR_MOBILE_SCALE_INVALID', 'Mobile spacing scale must be between 0.45 and 0.8.');
-    }
-    const heroException = contract.spacing.heroTopException;
-    if (heroException && (!Number.isFinite(heroException.value) ||
-        heroException.value < 120 || heroException.value > 200 || !heroException.reason.trim())) {
-      fail('ANCHOR_HERO_EXCEPTION_INVALID', 'A hero spacing exception needs a value between 120px and 200px and a reason.');
+    const spacing = contract.spacing;
+    if (!spacing) {
+      fail('ANCHOR_SPACING_MISSING', 'The Anchor spacing contract is missing.');
+    } else {
+      const scale = spacing.scale;
+      const expectedScale = [8, 16, 24, 32, 48, 80, 120];
+      if (!Array.isArray(scale) || scale.length !== expectedScale.length ||
+          expectedScale.some((value, index) => scale[index] !== value)) {
+        fail('ANCHOR_SPACING_SCALE_INVALID', 'The Anchor spacing scale must use the shared 8, 16, 24, 32, 48, 80, 120px reference stops.');
+      }
+      if (!Number.isFinite(spacing.contentWidth) || spacing.contentWidth < 960 || spacing.contentWidth > 1600) {
+        fail('ANCHOR_CONTENT_WIDTH_INVALID', 'Anchor content width must be between 960px and 1600px.');
+      }
+      if (!Number.isFinite(spacing.mobileScale) || spacing.mobileScale < 0.45 || spacing.mobileScale > 0.8) {
+        fail('ANCHOR_MOBILE_SCALE_INVALID', 'Mobile spacing scale must be between 0.45 and 0.8.');
+      }
+      const heroException = spacing.heroTopException;
+      if (heroException && (!Number.isFinite(heroException.value) ||
+          heroException.value < 120 || heroException.value > 200 || !heroException.reason?.trim())) {
+        fail('ANCHOR_HERO_EXCEPTION_INVALID', 'A hero spacing exception needs a value between 120px and 200px and a reason.');
+      }
     }
 
     const typography = contract.typography;
-    const typefaces = [typography.displayFamily, typography.bodyFamily].filter(Boolean);
-    if (new Set(typefaces).size > 2 || typefaces.some((family) => !/^[a-zA-Z0-9 ,'-]{1,80}$/.test(family ?? ''))) {
-      fail('ANCHOR_TYPEFACES_INVALID', 'The Anchor may use at most two valid typefaces.');
-    }
-    if (![typography.display, typography.heading, typography.body, typography.label].every(Number.isFinite) ||
-        typography.display < 32 || typography.display > 120 ||
-        typography.heading < 24 || typography.heading > typography.display ||
-        typography.body < 14 || typography.body > 22 ||
-        typography.label < 9 || typography.label > 14) {
-      fail('ANCHOR_TYPE_SCALE_INVALID', 'Anchor typography sizes are outside the supported design range.');
-    }
-    const leading = typography.lineHeight;
-    if (![leading.display, leading.heading, leading.body, leading.label].every(Number.isFinite) ||
-        leading.display < 1 || leading.display > 1.2 ||
-        leading.heading < 1.1 || leading.heading > 1.4 ||
-        leading.body < 1.4 || leading.body > 1.8 ||
-        leading.label < 1.2 || leading.label > 1.6) {
-      fail('ANCHOR_LINE_HEIGHT_INVALID', 'Anchor line heights must remain within readable display, heading, body and label ranges.');
-    }
-    if (!Number.isFinite(typography.labelLetterSpacing) ||
-        typography.labelLetterSpacing < 0 || typography.labelLetterSpacing > 0.25) {
-      fail('ANCHOR_LABEL_TRACKING_INVALID', 'Label letter spacing must be between 0 and 0.25em.');
+    if (!typography) {
+      fail('ANCHOR_TYPOGRAPHY_MISSING', 'The Anchor typography contract is missing.');
+    } else {
+      const typefaces = [typography.displayFamily, typography.bodyFamily].filter(Boolean);
+      if (new Set(typefaces).size > 2 || typefaces.some((family) => !/^[a-zA-Z0-9 ,'-]{1,80}$/.test(family ?? ''))) {
+        fail('ANCHOR_TYPEFACES_INVALID', 'The Anchor may use at most two valid typefaces.');
+      }
+      if (![typography.display, typography.heading, typography.body, typography.label].every(Number.isFinite) ||
+          typography.display < 32 || typography.display > 120 ||
+          typography.heading < 24 || typography.heading > typography.display ||
+          typography.body < 14 || typography.body > 22 ||
+          typography.label < 9 || typography.label > 14) {
+        fail('ANCHOR_TYPE_SCALE_INVALID', 'Anchor typography sizes are outside the supported design range.');
+      }
+      const leading = typography.lineHeight;
+      if (!leading || ![leading.display, leading.heading, leading.body, leading.label].every(Number.isFinite) ||
+          leading.display < 1 || leading.display > 1.2 ||
+          leading.heading < 1.1 || leading.heading > 1.4 ||
+          leading.body < 1.4 || leading.body > 1.8 ||
+          leading.label < 1.2 || leading.label > 1.6) {
+        fail('ANCHOR_LINE_HEIGHT_INVALID', 'Anchor line heights must remain within readable display, heading, body and label ranges.');
+      }
+      if (!Number.isFinite(typography.labelLetterSpacing) ||
+          typography.labelLetterSpacing < 0 || typography.labelLetterSpacing > 0.25) {
+        fail('ANCHOR_LABEL_TRACKING_INVALID', 'Label letter spacing must be between 0 and 0.25em.');
+      }
     }
 
     const palette = contract.palette;
-    const paletteColors = [palette.dominant, palette.supporting, palette.ink, palette.accent];
-    if (paletteColors.some((value) => !/^#[0-9a-f]{6}$/i.test(value))) {
-      fail('ANCHOR_PALETTE_INVALID', 'Anchor UI palette roles must use six-digit hexadecimal colors.');
-    }
-    if (palette.gradient === 'subtle-depth' && !palette.gradientReason?.trim()) {
-      fail('ANCHOR_GRADIENT_REASON_MISSING', 'A subtle UI gradient must be declared with a reason.');
-    }
-    if (palette.gradient !== 'none' && palette.gradient !== 'subtle-depth') {
-      fail('ANCHOR_GRADIENT_INVALID', 'Only no gradient or one subtle depth gradient is supported.');
+    if (!palette) {
+      fail('ANCHOR_PALETTE_MISSING', 'The Anchor UI palette contract is missing.');
+    } else {
+      const paletteColors = [palette.dominant, palette.supporting, palette.ink, palette.accent];
+      if (paletteColors.some((value) => !/^#[0-9a-f]{6}$/i.test(value))) {
+        fail('ANCHOR_PALETTE_INVALID', 'Anchor UI palette roles must use six-digit hexadecimal colors.');
+      }
+      if (palette.gradient === 'subtle-depth' && !palette.gradientReason?.trim()) {
+        fail('ANCHOR_GRADIENT_REASON_MISSING', 'A subtle UI gradient must be declared with a reason.');
+      }
+      if (palette.gradient !== 'none' && palette.gradient !== 'subtle-depth') {
+        fail('ANCHOR_GRADIENT_INVALID', 'Only no gradient or one subtle depth gradient is supported.');
+      }
     }
 
     const restraint = contract.restraint;
-    if (restraint.maxColors < 3 || restraint.maxColors > 6 ||
+    if (!restraint || restraint.maxColors < 3 || restraint.maxColors > 6 ||
         restraint.maxTypefaces < 1 || restraint.maxTypefaces > 2 ||
         restraint.maxShadowStyles < 0 || restraint.maxShadowStyles > 1 ||
-        restraint.maxRadiusSystems < 1 || restraint.maxRadiusSystems > 1) {
+        restraint.maxRadiusSystems !== 1) {
       fail('ANCHOR_RESTRAINT_INVALID', 'Anchor restraint limits exceed the supported palette, typeface, shadow or radius system.');
     }
-    contract.exceptions.forEach((exception) => {
-      if (!exception.rule.trim() || !exception.scope.trim() || !exception.reason.trim()) {
-        fail('ANCHOR_EXCEPTION_INCOMPLETE', 'Every Anchor exception must declare its rule, scope and reason.');
-      }
-    });
+    if (!Array.isArray(contract.exceptions)) {
+      fail('ANCHOR_EXCEPTIONS_INVALID', 'Anchor exceptions must be an array.');
+    } else {
+      contract.exceptions.forEach((exception) => {
+        if (!exception?.rule?.trim() || !exception?.scope?.trim() || !exception?.reason?.trim()) {
+          fail('ANCHOR_EXCEPTION_INCOMPLETE', 'Every Anchor exception must declare its rule, scope and reason.');
+        }
+      });
+    }
   }
 
   if (baseline) {
