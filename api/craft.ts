@@ -467,7 +467,9 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
         );
         if (repaired) {
           const remainingIssues = inspectBuildDraft(repaired, requiredImageUrls);
-          if (remainingIssues.length < issues.length) rawAnswer = repaired;
+          const beforeImageCount = requiredImageUrls.filter((url) => rawAnswer.includes(url)).length;
+          const afterImageCount = requiredImageUrls.filter((url) => repaired.includes(url)).length;
+          if (remainingIssues.length < issues.length || afterImageCount > beforeImageCount) rawAnswer = repaired;
         }
       }
     }
