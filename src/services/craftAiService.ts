@@ -332,7 +332,7 @@ function shouldKeepProjectRequestInChat(prompt: string): boolean {
 
   // A safe edit needs BOTH an action and an identifiable target. Vague requests
   // like "make it more premium" stay in chat instead of silently rebuilding.
-  const hasEditAction = /\\b(add|build|create|change|edit|fix|insert|modify|move|remove|replace|redesign|update|rewrite|implement|put|include|generate|swap|resize|shorten|lengthen|increase|decrease|set)\\b/.test(value);
+  const hasEditAction = /\\b(add|build|create|change|edit|fix|insert|make|modify|move|remove|replace|redesign|update|rewrite|implement|put|include|generate|swap|resize|shorten|lengthen|increase|decrease|set)\\b/.test(value);
   const hasTarget = /\\b(whole site|entire site|website|site|page|hero|headline|heading|title|subtitle|copy|text|button|cta|header|navigation|nav|footer|section|image|photo|product|card|background|colour|color|font|typography|spacing|padding|margin|layout|grid|search|filter|price|logo|menu|payment|checkout)\\b/.test(value);
 
   return !(hasEditAction && hasTarget);
