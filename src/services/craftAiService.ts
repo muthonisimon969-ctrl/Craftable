@@ -341,9 +341,9 @@ export async function iterateExistingApp(
     const questionContext = [
       'The user is asking a question about the EXISTING website project. Answer the question only.',
       'Do not generate code, modify the project, add features, create extra pages, or suggest unrelated integrations.',
-      \`Project title: \${project.title}\`,
-      \`Original brief: \${project.initialPrompt.slice(0, 1800)}\`,
-      \`Current page has \${imageCount} image element(s).\`,
+      `Project title: ${project.title}`,
+      `Original brief: ${project.initialPrompt.slice(0, 1800)}`,
+      `Current page has ${imageCount} image element(s).`,
       'Current page HTML excerpt:',
       activeHtml.slice(0, 6500),
       '',
