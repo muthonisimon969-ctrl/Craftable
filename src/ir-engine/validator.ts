@@ -113,9 +113,14 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
         else if (!isApprovedAssetUrl(asset.imageUrl)) fail('ASSET_URL_UNAPPROVED', 'An image URL is outside the approved asset storage path.', asset.id);
         else if (!asset.alt.trim()) warn('ASSET_ALT_MISSING', 'Add descriptive alternative text for this image.', asset.id);
       }
+      const productLedCollection = document.anchor.mood === 'technical-dark' ||
+        document.pageIntent === 'product' || section.intent === 'product-led';
       (node.items ?? []).forEach((item) => {
         registerId(item.id, 'Collection item');
         if (!item.title.trim()) fail('COLLECTION_ITEM_TITLE_MISSING', 'A collection item needs a title.', item.id);
+        if (productLedCollection && !item.imageAssetId) {
+          fail('PRODUCT_CARD_IMAGE_ID_REQUIRED', 'A product card needs a verifiable approved product image ID.', item.id);
+        }
         if (item.imageAssetId) {
           const asset = document.approvedAssets.find((candidate) => candidate.id === item.imageAssetId);
           if (!asset) fail('ASSET_REFERENCE_BROKEN', 'A collection item references an unapproved image.', item.id);
