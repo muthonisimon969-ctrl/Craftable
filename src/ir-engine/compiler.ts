@@ -56,8 +56,9 @@ export function compileDocument(document: IrDocument): string {
   const nearestSpacing = (value: number) => spacingScale.reduce((best, current) =>
     Math.abs(current - value) < Math.abs(best - value) ? current : best, spacingScale[0]);
   const mobileFactor = spacingContract?.mobileScale ?? 0.6;
-  const sectionMobile = nearestSpacing(space.section * mobileFactor);
-  const heroTop = spacingContract?.heroTopException?.value ?? space.section;
+  const sectionSpace = nearestSpacing(space.section);
+  const sectionMobile = nearestSpacing(sectionSpace * mobileFactor);
+  const heroTop = spacingContract?.heroTopException?.value ?? sectionSpace;
   const heroTopMobile = nearestSpacing(heroTop * mobileFactor);
   const contentWidth = spacingContract?.contentWidth ?? 1200;
   const displayFamily = typeContract?.displayFamily ?? type.family;
