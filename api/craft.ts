@@ -124,6 +124,22 @@ function buildSupabaseImageRules(assets: ApprovedSupabaseAsset[], promptText: st
   ].filter(Boolean).join('\n');
 }
 
+
+function sanitizeCustomerChatText(value: string): string {
+  const secretPatterns = [
+    /\b(?:gsk_|sk-or-v1-|sk-[A-Za-z0-9_-]{16,})[A-Za-z0-9_-]{8,}\b/gi,
+    /\bBearer\s+[A-Za-z0-9._-]{20,}\b/gi,
+    /\b(?:password|api[_ -]?key|access[_ -]?token|secret)\s*[:=]\s*\S+/gi,
+  ];
+  let safe = value;
+  for (const pattern of secretPatterns) safe = safe.replace(pattern, '[hidden]');
+  return safe.split('\n').map((line) =>
+    /\b(supabase|groq|openrouter|vercel|environment variable|system prompt|private prompt|storage bucket|database schema|internal endpoint|source code|provider configuration)\b/i.test(line)
+      ? 'I can explain what Zuno can do, but I can’t share private implementation or security details.'
+      : line
+  ).join('\n');
+}
+
 function readHtmlAttribute(tag: string, name: string): string {
   const match = new RegExp("\\b" + name + "\\s*=\\s*(?:\"([^\"]*)\"|'([^']*)'|([^\\s>]+))", "i").exec(tag);
   return (match?.[1] ?? match?.[2] ?? match?.[3] ?? '').trim();
@@ -419,7 +435,6 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     addGroq();
   }
 
-  let lastError = 'No configured AI provider returned a response.';
   for (const candidate of candidates) {
     const result = await callModel(
       candidate.provider,
@@ -431,7 +446,6 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       mode === 'build' ? 55000 : 55000
     );
     if (!result.content) {
-      lastError = result.error || candidate.provider.toUpperCase() + ' returned no content.';
       continue;
     }
 
@@ -461,7 +475,9 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     const imageEnforcedAnswer = rawAnswer;
     const answer = mode === 'build'
       ? sanitizeGeneratedImageSources(imageEnforcedAnswer, approvedAssets)
-      : imageEnforcedAnswer;
+      : (mode === 'chat' || mode === 'project_chat')
+        ? sanitizeCustomerChatText(imageEnforcedAnswer)
+        : imageEnforcedAnswer;
 
     res.status(200).json({
       text: answer,
