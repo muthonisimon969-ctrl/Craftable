@@ -1,5 +1,15 @@
 export type SectionMode = 'editorial' | 'index' | 'product-led';
 export type BrandMood = 'quiet-editorial' | 'technical-dark' | 'warm-editorial';
+export type PageIntent = 'home' | 'launch' | 'services' | 'projects' | 'about' | 'product' | 'contact' | 'other';
+export type HeroLayout = 'type-led' | 'editorial-split' | 'product-led';
+export type CollectionLayout = 'index-list' | 'editorial-grid' | 'product-grid';
+
+export interface BrandCompositionRules {
+  allowedHeroLayouts: HeroLayout[];
+  allowedCollectionLayouts: CollectionLayout[];
+  forbiddenPatterns: string[];
+  tensionBudget: { min: number; max: number; recommended: number };
+}
 
 export interface DesignTokens {
   color: { ink: string; paper: string; accent: string; muted: string; line: string; surface: string };
@@ -14,6 +24,7 @@ export interface BrandIdentityAnchor {
   mood: BrandMood;
   tokens: DesignTokens;
   createdFromRevisionId: string;
+  compositionRules?: BrandCompositionRules;
 }
 
 export interface ScopedOverride {
@@ -30,6 +41,7 @@ export interface IrNode {
   eyebrow?: string;
   title?: string;
   body?: string;
+  ctaLabel?: string;
   imageAssetId?: string;
   alt?: string;
   items?: Array<{ id: string; title: string; detail: string; imageAssetId?: string }>;
@@ -55,6 +67,7 @@ export interface ApprovedAsset {
 
 export interface IrDocument {
   brandName: string;
+  pageIntent: PageIntent;
   anchor: BrandIdentityAnchor;
   sections: IrSection[];
   approvedAssets: ApprovedAsset[];

@@ -314,23 +314,75 @@ export async function saveIrProjectState(
   cssCode: string,
   jsCode = ''
 ): Promise<AppProject> {
-  const existing = await getProject(projectId);
-  if (!existing) throw new Error('Project not found.');
-  if (!existing.irDocument) throw new Error('This project is not IR-managed.');
-  const updated: AppProject = {
-    ...existing,
-    irSchemaVersion: 1,
-    irDocument,
-    irRevisions: irRevisions.slice(-20),
-    irManagedSectionIds: irDocument.sections.map((section) => section.id),
-    version: currentVersion + 1,
-    htmlCode,
-    cssCode,
-    jsCode,
-    updatedAtMillis: Date.now(),
+  const buildUpdated = (existing: AppProject): AppProject => {
+    if (!existing.irDocument) throw new Error('This project is not IR-managed.');
+    if (existing.version !== currentVersion) {
+      throw new Error('This project changed in another session. Reload it before applying another design edit.');
+    }
+    return {
+      ...existing,
+      irSchemaVersion: 1,
+      irDocument,
+      irRevisions: irRevisions.slice(-20),
+      irManagedSectionIds: irDocument.sections.map((section) => section.id),
+      version: currentVersion + 1,
+      htmlCode,
+      cssCode,
+      jsCode,
+      updatedAtMillis: Date.now(),
+    };
   };
-  await putProjectAndMessages(updated, []);
-  return updated;
+
+  // IndexedDB read + compare + write share one readwrite transaction. This
+  // prevents two tabs from silently overwriting each other's IR revisions.
+  let db: IDBDatabase;
+  try {
+    db = await openDatabase();
+  } catch {
+    const projects = readFallbackProjects();
+    const existing = projects.find((project) => project.id === projectId);
+    if (!existing) throw new Error('Project not found.');
+    const updated = buildUpdated(existing);
+    const fallbackUpdated = {
+      ...updated,
+      irRevisions: updated.irRevisions?.slice(-5) ?? [],
+    };
+    writeFallbackProjects(projects.map((project) => project.id === projectId ? fallbackUpdated : project));
+    return fallbackUpdated;
+  }
+
+  return await new Promise<AppProject>((resolve, reject) => {
+    const tx = db.transaction(PROJECTS_STORE, 'readwrite');
+    const store = tx.objectStore(PROJECTS_STORE);
+    const request = store.get(projectId);
+    let updated: AppProject | null = null;
+    let failure: Error | null = null;
+
+    request.onsuccess = () => {
+      const existing = request.result as AppProject | undefined;
+      if (!existing) {
+        failure = new Error('Project not found.');
+        tx.abort();
+        return;
+      }
+      try {
+        updated = buildUpdated(existing);
+        store.put(updated);
+      } catch (error) {
+        failure = error instanceof Error ? error : new Error('Could not validate the current project version.');
+        tx.abort();
+      }
+    };
+    request.onerror = () => {
+      failure = request.error ?? new Error('Could not read the current project version.');
+    };
+    tx.oncomplete = () => {
+      if (updated) resolve(updated);
+      else reject(new Error('The design edit was not committed.'));
+    };
+    tx.onerror = () => reject(failure ?? tx.error ?? new Error('The design edit transaction failed.'));
+    tx.onabort = () => reject(failure ?? tx.error ?? new Error('The design edit transaction was aborted.'));
+  });
 }
 
 export async function toggleProjectStar(projectId: string, isStarred: boolean): Promise<AppProject | null> {

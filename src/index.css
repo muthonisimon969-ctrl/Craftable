@@ -1190,3 +1190,29 @@ html.light .zuno-nav-bar {
   .zuno-home-redesign .zuno-home-center > *:nth-child(4) { animation-delay: .18s; }
   @keyframes zuno-rise-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 }
+
+
+/* Zuno builder: preserve the desktop workspace on phones.
+   The complete chat + preview canvas remains mounted side-by-side; narrow
+   screens pan horizontally instead of switching to a separate mobile editor. */
+.workspace-body {
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+@media (max-width: 999px) {
+  .workspace-body {
+    align-items: stretch;
+  }
+  .workspace-split-chat {
+    flex: 0 0 360px;
+    width: 360px;
+    min-width: 360px;
+    max-width: 360px;
+  }
+  .workspace-split-right {
+    flex: 0 0 640px;
+    width: 640px;
+    min-width: 640px;
+  }
+}

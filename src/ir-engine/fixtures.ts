@@ -3,11 +3,18 @@ import { makeRevision } from './revisions';
 
 export const vektorFixture: IrDocument = {
   brandName: 'Vektor Audio',
+  pageIntent: 'home',
   anchor: {
     id: 'anchor_v1',
     name: 'Vektor Audio',
     mood: 'technical-dark',
     createdFromRevisionId: 'initial',
+    compositionRules: {
+      allowedHeroLayouts: ['product-led', 'editorial-split'],
+      allowedCollectionLayouts: ['product-grid', 'index-list'],
+      forbiddenPatterns: ['soft-editorial-cards', 'oversized-empty-hero'],
+      tensionBudget: { min: 0, max: 2, recommended: 1 },
+    },
     tokens: {
       color: { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' },
       type: { family: 'Inter', display: 94, body: 15 },
@@ -33,13 +40,20 @@ export const vektorFixture: IrDocument = {
 
 export const koraFixture: IrDocument = {
   brandName: 'Kora Spatial',
+  pageIntent: 'home',
   anchor: {
     id: 'anchor_v1',
     name: 'Kora Spatial',
     mood: 'quiet-editorial',
     createdFromRevisionId: 'initial',
+    compositionRules: {
+      allowedHeroLayouts: ['type-led', 'editorial-split'],
+      allowedCollectionLayouts: ['index-list', 'editorial-grid'],
+      forbiddenPatterns: ['rounded-product-cards', 'dense-commerce-grid'],
+      tensionBudget: { min: 0, max: 1, recommended: 0 },
+    },
     tokens: {
-      color: { ink: '#24231F', paper: '#F2EFE9', accent: '#A85C43', muted: '#77736C', line: '#D8D2C8', surface: '#E8E3DA' },
+      color: { ink: '#24231F', paper: '#F2EFE9', accent: '#A85C43', muted: '#6D675F', line: '#D8D2C8', surface: '#E8E3DA' },
       type: { family: 'Inter', display: 104, body: 15 },
       space: { section: 120, content: 88, tight: 18 },
       radius: { card: 0, image: 0 },

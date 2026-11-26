@@ -18,7 +18,8 @@ import { CodeExplorerPane } from '../components/CodeExplorerPane';
 import { WebPreviewPane } from '../components/WebPreviewPane';
 import { iterateExistingApp } from '../services/craftAiService';
 import { compileDocumentParts } from '../ir-engine/compiler';
-import { applyAssetSwap, applyHeadlineEdit, applyHeroMoodShift, computeDrift, makeRevision, rollbackDocument } from '../ir-engine/revisions';
+import { applyAssetSwap, applyHeadlineEdit, applyHeroMoodShift, computeDrift, getChangedIrIds, makeRevision, rollbackDocument } from '../ir-engine/revisions';
+import { validateIrV1Document } from '../ir-engine/validator';
 import type { IrDocument, IrRevision } from '../ir-engine/types';
 import * as storage from '../services/projectStorage';
 import type {
@@ -54,6 +55,7 @@ export function WorkspacePage({
   const [draftCss, setDraftCss] = useState('');
   const [draftJs, setDraftJs] = useState('');
   const [irHeadline, setIrHeadline] = useState('');
+  const [irAssetId, setIrAssetId] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSavingCode, setIsSavingCode] = useState(false);
   const [reloadNonce, setReloadNonce] = useState(1);
@@ -73,15 +75,19 @@ export function WorkspacePage({
   const [consoleLogs, setConsoleLogs] = useState<ConsoleEntry[]>([]);
   const [showConsoleSheet, setShowConsoleSheet] = useState(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
-  const [isWideScreen, setIsWideScreen] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth >= 900 : false
-  );
-
-  useEffect(() => {
-    const onResize = () => setIsWideScreen(window.innerWidth >= 900);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+  // The builder is intentionally desktop-first on every device. Narrow screens
+  // keep the same chat + preview workspace and can pan across its full canvas.
+  const isWideScreen = true;
+  const irHeroNode = project?.irDocument?.sections.find((section) => section.role === 'hero')?.nodes[0];
+  const irHeroAsset = project?.irDocument?.approvedAssets.find((asset) => asset.id === irHeroNode?.imageAssetId);
+  const irAssetOptions = project?.irDocument?.approvedAssets.filter((asset) => {
+    const category = irHeroAsset?.category.toLowerCase() ?? '';
+    const electronicsCategories = ['bluetooth-speakers', 'cameras', 'gaming-controllers', 'headphones', 'keyboards', 'laptops', 'mice', 'power-banks', 'projectors', 'smartwatches', 'tablets', 'webcams'];
+    const fashionCategories = ['handbags', 'menswear', 'womenswear', 'sportswear', 'streetwear', 'sunglasses', 'sneakers'];
+    if (electronicsCategories.includes(category)) return electronicsCategories.includes(asset.category.toLowerCase());
+    if (fashionCategories.includes(category)) return fashionCategories.includes(asset.category.toLowerCase());
+    return asset.category.toLowerCase() === category;
+  }) ?? [];
 
   useEffect(() => {
     let active = true;
@@ -97,6 +103,7 @@ export function WorkspacePage({
           setDraftJs(proj.jsCode);
           const heroNode = proj.irDocument?.sections.find((section) => section.role === 'hero')?.nodes[0];
           setIrHeadline(heroNode?.title ?? '');
+          setIrAssetId(heroNode?.imageAssetId ?? '');
           setHasUnsavedChanges(false);
           setReloadNonce((n) => n + 1);
         }
@@ -227,9 +234,11 @@ export function WorkspacePage({
         label = 'Hero headline edit';
       } else if (kind === 'asset') {
         const hero = current.sections.find((section) => section.role === 'hero')?.nodes[0];
-        if (!hero?.imageAssetId) throw new Error('This brand has no hero image to swap.');
-        const nextAsset = hero.imageAssetId === 'jbl-charge-6' ? 'jbl-flip-7' : 'jbl-charge-6';
-        next = applyAssetSwap(current, hero.id, nextAsset, 'User selected a fitting approved product image.');
+        if (!hero) throw new Error('Hero section is missing.');
+        const selectedAsset = current.approvedAssets.find((asset) => asset.id === irAssetId);
+        if (!selectedAsset) throw new Error('Choose an image from this project’s approved asset library.');
+        if (selectedAsset.id === hero.imageAssetId) throw new Error('Choose a different approved image before applying the swap.');
+        next = applyAssetSwap(current, hero.id, selectedAsset.id, `User selected ${selectedAsset.title} from the approved asset library.`);
         label = 'Approved hero image swap';
       } else if (kind === 'mood') {
         const hero = current.sections.find((section) => section.role === 'hero');
@@ -245,15 +254,24 @@ export function WorkspacePage({
         revisionKind = 'rollback';
       }
       const anchorRevision = history.find((item) => item.kind === 'initial') ?? history[0];
+      const validation = validateIrV1Document(next, anchorRevision?.document);
+      if (!validation.canPublish) {
+        throw new Error(validation.failures.map((issue) => issue.message).join(' '));
+      }
       const latestOverride = next.overrides[next.overrides.length - 1];
-      const heroNodeId = next.sections.find((section) => section.role === 'hero')?.nodes[0]?.id;
-      const affectedIds = latestOverride?.affectedIds ?? (kind === 'headline' && heroNodeId ? [heroNodeId] : []);
+      const affectedIds = getChangedIrIds(current, next);
+      if (!affectedIds.length) throw new Error('No design changes were detected.');
+      const overrideReason = kind === 'rollback'
+        ? 'User restored a previously saved design revision.'
+        : latestOverride?.overrideReason ?? (kind === 'headline'
+          ? 'User requested a hero headline change.'
+          : 'User requested a scoped visual adjustment.');
       const drift = anchorRevision
         ? computeDrift(anchorRevision.document.anchor, next, anchorRevision.document.sections)
         : undefined;
       const revision = makeRevision(next, label, revisionKind, parent?.id ?? null, {
         affectedIds,
-        ...(latestOverride?.overrideReason ? { overrideReason: latestOverride.overrideReason } : kind === 'headline' ? { overrideReason: 'User requested a hero headline change.' } : {}),
+        overrideReason,
         ...(drift ? { drift } : {}),
       });
       const nextHistory = [...history, revision].slice(-20);
@@ -268,6 +286,7 @@ export function WorkspacePage({
       setDraftJs(updated.jsCode);
       const updatedHero = updated.irDocument?.sections.find((section) => section.role === 'hero')?.nodes[0];
       setIrHeadline(updatedHero?.title ?? '');
+      setIrAssetId(updatedHero?.imageAssetId ?? '');
       setHasUnsavedChanges(false);
       setReloadNonce((value) => value + 1);
       setConsoleLogs([]);
@@ -552,7 +571,14 @@ export function WorkspacePage({
           <strong style={{ fontSize: 12, color: 'var(--text-muted)', letterSpacing: '.08em' }}>IR DESIGN CONTROLS</strong>
           <input aria-label="Hero headline" value={irHeadline} onChange={(event) => setIrHeadline(event.target.value)} style={{ minWidth: 160, flex: '1 1 180px', minHeight: 38, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--surface-high)', color: 'var(--text-primary)', padding: '0 10px' }} />
           <button type="button" className="btn-outline" onClick={() => applyIrChange('headline')}>Apply headline</button>
-          {project.irDocument.sections.find((section) => section.role === 'hero')?.nodes[0]?.imageAssetId && <button type="button" className="btn-outline" onClick={() => applyIrChange('asset')}>Swap approved image</button>}
+          {irHeroNode?.imageAssetId && irAssetOptions.length > 1 && (
+            <>
+              <select aria-label="Choose approved hero image" value={irAssetId} onChange={(event) => setIrAssetId(event.target.value)} style={{ minWidth: 180, minHeight: 38, borderRadius: 8, border: '1px solid var(--border-soft)', background: 'var(--surface-high)', color: 'var(--text-primary)', padding: '0 10px' }}>
+                {irAssetOptions.map((asset) => <option key={asset.id} value={asset.id}>{asset.title} · {asset.category}</option>)}
+              </select>
+              <button type="button" className="btn-outline" disabled={!irAssetId || irAssetId === irHeroNode.imageAssetId} onClick={() => applyIrChange('asset')}>Apply image</button>
+            </>
+          )}
           <button type="button" className="btn-outline" onClick={() => applyIrChange('mood')}>Shift hero mood</button>
           <button type="button" className="btn-outline" disabled={(project.irRevisions?.length ?? 0) < 2} onClick={() => applyIrChange('rollback')}>Rollback</button>
           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{project.irRevisions?.length ?? 0} saved revisions · collection protected</span>

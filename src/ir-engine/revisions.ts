@@ -79,7 +79,7 @@ export function applyHeroMoodShift(document: IrDocument, sectionId: string, mood
   section.moodOverride = mood;
   section.tokenOverrides = {
     color: mood === 'warm-editorial'
-      ? { ink: '#29231F', paper: '#F1E9DE', accent: '#A64F35', muted: '#776D63', line: '#D8C9B9', surface: '#E8DED2' }
+      ? { ink: '#29231F', paper: '#F1E9DE', accent: '#A64F35', muted: '#6D675F', line: '#D8C9B9', surface: '#E8DED2' }
       : { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' },
   };
   next.overrides = next.overrides.filter((override) => !(override.targetId === sectionId && override.field === 'intent+tokens'));
@@ -121,6 +121,55 @@ export function applyFullRedesign(document: IrDocument, mood: BrandIdentityAncho
     };
   }
   return next;
+}
+
+
+export function getChangedIrIds(before: IrDocument, after: IrDocument): string[] {
+  const changed = new Set<string>();
+  if (before.brandName !== after.brandName) changed.add('brand-name');
+  if (before.pageIntent !== after.pageIntent) changed.add('page-intent');
+
+  const beforeAssets = new Map(before.approvedAssets.map((asset) => [asset.id, asset] as const));
+  const afterAssets = new Map(after.approvedAssets.map((asset) => [asset.id, asset] as const));
+  for (const assetId of new Set([...beforeAssets.keys(), ...afterAssets.keys()])) {
+    if (JSON.stringify(beforeAssets.get(assetId)) !== JSON.stringify(afterAssets.get(assetId))) {
+      changed.add(assetId);
+    }
+  }
+  const beforeSections = new Map(before.sections.map((section) => [section.id, section] as const));
+  const afterSections = new Map(after.sections.map((section) => [section.id, section] as const));
+
+  for (const sectionId of new Set([...beforeSections.keys(), ...afterSections.keys()])) {
+    const left = beforeSections.get(sectionId);
+    const right = afterSections.get(sectionId);
+    if (!left || !right) {
+      changed.add(sectionId);
+      continue;
+    }
+    if (left.intent !== right.intent || left.moodOverride !== right.moodOverride ||
+        JSON.stringify(left.tokenOverrides) !== JSON.stringify(right.tokenOverrides)) {
+      changed.add(sectionId);
+    }
+    const beforeNodes = new Map(left.nodes.map((node) => [node.id, node] as const));
+    const afterNodes = new Map(right.nodes.map((node) => [node.id, node] as const));
+    for (const nodeId of new Set([...beforeNodes.keys(), ...afterNodes.keys()])) {
+      if (JSON.stringify(beforeNodes.get(nodeId)) !== JSON.stringify(afterNodes.get(nodeId))) {
+        changed.add(nodeId);
+      }
+      const beforeItems = beforeNodes.get(nodeId)?.items ?? [];
+      const afterItems = afterNodes.get(nodeId)?.items ?? [];
+      const beforeItemMap = new Map(beforeItems.map((item) => [item.id, item] as const));
+      const afterItemMap = new Map(afterItems.map((item) => [item.id, item] as const));
+      for (const itemId of new Set([...beforeItemMap.keys(), ...afterItemMap.keys()])) {
+        if (JSON.stringify(beforeItemMap.get(itemId)) !== JSON.stringify(afterItemMap.get(itemId))) {
+          changed.add(itemId);
+        }
+      }
+    }
+  }
+
+  if (JSON.stringify(before.anchor) !== JSON.stringify(after.anchor)) changed.add(after.anchor.id);
+  return [...changed];
 }
 
 export function rollbackDocument(revision: IrRevision): IrDocument {
