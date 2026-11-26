@@ -80,6 +80,7 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
   const prompt = promptText.toLowerCase();
   const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments)\b/.test(prompt);
   const wantsElectronics = /\b(electronics?|gadgets?|laptops?|computers?|headphones?|earbuds?|speakers?|cameras?|smartphones?|smartwatches?|keyboards?|tablets?|webcams?|projectors?|gaming|power banks?|tech store)\b/.test(prompt);
+  const isAudioBrand = /\b(audio brand|sound brand|speaker brand|headphone brand|audio studio|sound studio)\b/.test(prompt);
   const isSpatialDesign = /\b(architecture studio|architectural studio|architecture firm|architectural practice|architecture portfolio|interior design studio|spatial design studio|landscape architecture|architectural design|architecture website|architectural website)\b/.test(prompt);
   if (isSpatialDesign && !wantsFashion && !wantsElectronics) return [];
   const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products)\b/.test(prompt) ||
@@ -87,8 +88,10 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
 
   const fashionCategories = new Set(['handbags', 'menswear', 'womenswear', 'sportswear', 'streetwear', 'sunglasses', 'sneakers']);
   const electronicsCategories = new Set(['bluetooth-speakers', 'cameras', 'gaming-controllers', 'headphones', 'keyboards', 'laptops', 'mice', 'power-banks', 'projectors', 'smartwatches', 'tablets', 'webcams']);
+  const audioCategories = new Set(['bluetooth-speakers', 'headphones']);
   let pool = assets;
   if (wantsFashion) pool = assets.filter((asset) => fashionCategories.has(asset.category.toLowerCase()));
+  else if (isAudioBrand) pool = assets.filter((asset) => audioCategories.has(asset.category.toLowerCase()));
   else if (wantsElectronics) pool = assets.filter((asset) => electronicsCategories.has(asset.category.toLowerCase()));
 
   const directMatches = assets.filter((asset) => {
