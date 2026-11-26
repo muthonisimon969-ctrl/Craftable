@@ -214,7 +214,7 @@ const BUILD_QUALITY_PROMPT = `ZUNO WORLD-CLASS WEB DESIGN STANDARD — SERVER-EN
 - Before returning, privately review hierarchy, contrast, spacing, mobile navigation, every interaction, form validation, empty/error/success states, and JavaScript syntax. Fix weaknesses before output.
 - When editing an existing project, preserve its established design and working features; make only the requested changes.\n- Return the required Zuno output markers exactly.`;
 
-function inspectBuildDraft(answer: string, requireImages = false): string[] {
+function inspectBuildDraft(answer: string, requiredImageUrls: string[] = []): string[] {
   const read = (name: string) => {
     const match = new RegExp('<<<' + name + '>>>([\\s\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
     return match?.[1]?.trim() ?? '';
@@ -234,8 +234,8 @@ function inspectBuildDraft(answer: string, requireImages = false): string[] {
   if (!/(?:@media\s*\(|clamp\s*\(|minmax\s*\()/i.test(css)) {
     issues.push('The CSS has no clear responsive layout strategy for phone and desktop sizes.');
   }
-  if (requireImages && !/<img\b[^>]*\bsrc\s*=/i.test(html)) {
-    issues.push('The commerce website contains no visible product imagery. Include at least one suitable image using an exact approved image URL from the supplied asset list.');
+  if (requiredImageUrls.length > 0 && !requiredImageUrls.some((url) => html.includes(url))) {
+    issues.push('The commerce website is missing visible imagery from the approved image collection. Add at least one relevant image using an exact approved image URL from the supplied asset list.');
   }
   if (/<(?:button|a)\b/i.test(html) && !js.trim()) {
     issues.push('The interface contains controls but has no JavaScript behavior or interaction handling.');
@@ -452,7 +452,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     let rawAnswer = result.content;
     if (rawAnswer && mode === 'build' && !hasImages) {
       const expectsCommerceImages = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|shop|store|retail|marketplace|electronics|gadgets|fashion|clothing|apparel)\b/i.test(promptText) && approvedAssets.length > 0;
-      const issues = inspectBuildDraft(rawAnswer, expectsCommerceImages);
+      const requiredImageUrls = expectsCommerceImages ? approvedAssets.map((asset) => asset.image_url) : [];\n      const issues = inspectBuildDraft(rawAnswer, requiredImageUrls);
       if (issues.length) {
         const repaired = await requestBuildRepair(
           candidate.provider,
@@ -464,7 +464,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           systemPrompt
         );
         if (repaired) {
-          const remainingIssues = inspectBuildDraft(repaired, expectsCommerceImages);
+          const remainingIssues = inspectBuildDraft(repaired, requiredImageUrls);
           if (remainingIssues.length < issues.length) rawAnswer = repaired;
         }
       }
