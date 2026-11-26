@@ -421,8 +421,8 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       const selectedAssets = selectRelevantSupabaseAssets(promptText, approvedAssets);
       const anchorPrompt = [
         'Synthesize the durable Brand Identity Anchor for this business website. Return ONE valid JSON object only, with no markdown.',
-        'Schema: {"name":string,"mood":"quiet-editorial"|"technical-dark"|"warm-editorial","tokens":{"color":{"ink":"#RRGGBB","paper":"#RRGGBB","accent":"#RRGGBB","muted":"#RRGGBB","line":"#RRGGBB","surface":"#RRGGBB"},"type":{"family":string,"display":number,"body":number},"space":{"section":number,"content":number,"tight":number},"radius":{"card":number,"image":number}},"compositionRules":{"allowedHeroLayouts":["type-led"|"editorial-split"|"product-led"],"allowedCollectionLayouts":["index-list"|"editorial-grid"|"product-grid"],"forbiddenPatterns":string[],"tensionBudget":{"min":number,"max":number,"recommended":number}}}',
-        'Use accessible body and heading contrast (at least 4.5:1 for the supplied color pairs), font display 32–96px, body 14–20px, bounded spacing and radius. Choose only supported moods and layout names.',
+        'Schema: {"name":string,"mood":"quiet-editorial"|"technical-dark"|"warm-editorial","tokens":{"color":{"ink":"#RRGGBB","paper":"#RRGGBB","accent":"#RRGGBB","muted":"#RRGGBB","line":"#RRGGBB","surface":"#RRGGBB"},"type":{"family":string,"display":number,"body":number},"space":{"section":number,"content":number,"tight":number},"radius":{"card":number,"image":number}},"compositionRules":{"allowedHeroLayouts":["type-led"|"editorial-split"|"product-led"],"allowedCollectionLayouts":["index-list"|"editorial-grid"|"product-grid"],"forbiddenPatterns":string[],"tensionBudget":{"min":number,"max":number,"recommended":number}},"designContract":{"layoutIntent":{"primary":"editorial"|"dense"|"shoppable"|"trust","secondary":"editorial"|"dense"|"shoppable"|"trust"},"spacing":{"scale":[8,16,24,32,48,80,120],"contentWidth":1200,"mobileScale":0.6,"heroTopException":{"value":160,"reason":string}|null},"typography":{"displayFamily":string,"bodyFamily":string,"display":number,"heading":number,"body":number,"label":number,"lineHeight":{"display":1.05,"heading":1.2,"body":1.55,"label":1.4},"labelLetterSpacing":0.12,"labelUppercase":true},"palette":{"dominant":"#RRGGBB","supporting":"#RRGGBB","ink":"#RRGGBB","accent":"#RRGGBB","gradient":"none"|"subtle-depth","gradientReason":string|null},"restraint":{"maxColors":4,"maxTypefaces":2,"maxShadowStyles":1,"maxRadiusSystems":1},"exceptions":[{"rule":string,"scope":string,"reason":string}]}}',
+        'Use accessible body and heading contrast (at least 4.5:1), the shared spacing reference stops, 1200px content width, and mobile spacing scale 0.6. Use display line-height 1.0–1.1, heading 1.2, body 1.5–1.6, and label 1.4 with uppercase tracking near 0.12em. Select brand-specific type sizes and a primary plus secondary layout intent. Palette roles govern UI only; real product colours remain visible in approved product images/swatches. Use at most one subtle depth gradient and declare its reason. Any exception must include rule, scope and reason. Do not force the same values onto every brand.',
         'The Anchor defines a distinctive identity and permitted visual language, not a generic template. Do not invent brand facts.',
         'BUSINESS BRIEF: ' + promptText,
       ].join('\n');
@@ -443,7 +443,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
         } catch { return null; }
       };
       const anchorData = parseObject(anchorResult.content);
-      if (!anchorData || !anchorData.tokens || !anchorData.compositionRules) {
+      if (!anchorData || !anchorData.tokens || !anchorData.compositionRules || !anchorData.designContract) {
         lastError = anchorResult.error || 'The Brand Anchor response was not valid structured JSON.';
         continue;
       }
@@ -531,6 +531,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           mood,
           tokens,
           compositionRules: rules,
+          designContract: anchorData.designContract,
           createdFromRevisionId: 'initial',
         },
         sections,
