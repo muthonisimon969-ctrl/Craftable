@@ -133,6 +133,50 @@ export async function listMessages(projectId: string): Promise<ProjectMessage[]>
   }
 }
 
+
+export async function appendProjectConversationTurn(
+  projectId: string,
+  prompt: string,
+  answer: string
+): Promise<ProjectMessage[]> {
+  const project = await getProject(projectId);
+  if (!project) throw new Error('Project not found.');
+  const now = Date.now();
+  const messages: ProjectMessage[] = [
+    {
+      id: createId(),
+      projectId,
+      role: 'user',
+      content: prompt.trim(),
+      filesChanged: [],
+      versionTag: project.version,
+      createdAtMillis: now,
+    },
+    {
+      id: createId(),
+      projectId,
+      role: 'assistant',
+      content: answer.trim(),
+      filesChanged: [],
+      versionTag: project.version,
+      createdAtMillis: now + 1,
+    },
+  ];
+  try {
+    const db = await openDatabase();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(MESSAGES_STORE, 'readwrite');
+      const store = tx.objectStore(MESSAGES_STORE);
+      messages.forEach((message) => store.put(message));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch {
+    writeFallbackMessages([...readFallbackMessages(), ...messages]);
+  }
+  return listMessages(projectId);
+}
+
 async function putProjectAndMessages(project: AppProject, messages: ProjectMessage[]): Promise<void> {
   try {
     const db = await openDatabase();
