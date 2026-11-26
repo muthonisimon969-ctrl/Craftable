@@ -8,9 +8,7 @@ import { serializeAttachmentsForApi } from '../utils/attachmentReader';
 const CHAT_STORAGE_KEY = 'zuno_unified_chat_v1';
 const IMAGES_STORAGE_KEY = 'zuno_created_images_v1';
 
-const CHAT_SYSTEM_PROMPT = `You are Zuno AI — an intelligent, concise creative & technical partner (Philosophy: Chat. Think. Create. Build.).
-Help users brainstorm product ideas, reason through architecture, analyze uploaded images/files, write copy or code, and refine concepts.
-Be direct, insightful, and practical. If the user asks a broad idea that would look great as an interactive website, web app, or 3D experience, end with a short line starting with "BUILD_IDEA: " suggesting a concrete 1-sentence build prompt they can launch with one click.`;
+
 
 export function loadChatHistory(): ChatThreadMessage[] {
   try {
@@ -72,7 +70,6 @@ export async function sendUnifiedChatTurn(
       body: JSON.stringify({
         mode: 'chat',
         promptText: contextLines.join('\n'),
-        systemPrompt: CHAT_SYSTEM_PROMPT,
         attachments: serializeAttachmentsForApi(attachments),
       }),
     });
@@ -134,7 +131,7 @@ export async function generateAiVisual(
     if (!res.ok || !data?.imageDataUrl) {
       throw new Error(
         data?.error ||
-          `Image generation did not succeed (HTTP ${res.status}). Verify that your server Gemini key allows image generation.`
+          `Image generation did not succeed (HTTP ${res.status}). Check the image-generation capability in your account settings.`
       );
     }
 
