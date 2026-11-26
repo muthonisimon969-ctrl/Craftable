@@ -326,6 +326,7 @@ async function requestStructuredLandingPage(
     const document = payload.irDocument;
     const validation = validateIrV1Document(document);
     if (!validation.canPublish) return null;
+    const designNotes = validation.warnings.slice(0, 3).map((issue) => issue.message);
     const revision = makeRevision(document, 'Initial website design', 'initial', null, {
       affectedIds: document.sections.map((section) => section.id),
       overrideReason: 'Initial Brand Anchor and Section IR synthesis.',
@@ -334,7 +335,7 @@ async function requestStructuredLandingPage(
     return {
       projectTitle: revision.document.brandName,
       description: 'A business landing page composed from a reusable Brand Anchor and structured Section IR.',
-      summary: 'Created the first website draft from a separate Brand Anchor and page-specific Section IR. Its design source and initial revision are saved with the project.',
+      summary: 'Created the first website draft from a separate Brand Anchor and page-specific Section IR. Its design source and initial revision are saved with the project.' + (designNotes.length ? '\n\nDesign notes: ' + designNotes.join(' ') : ''),
       htmlCode: compiled.html,
       cssCode: compiled.css,
       jsCode: compiled.js,
