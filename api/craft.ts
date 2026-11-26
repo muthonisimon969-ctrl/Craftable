@@ -328,7 +328,7 @@ async function requestBuildRepair(
     ...issues.map((issue) => '- ' + issue),
     '',
     'Repair the actual HTML, CSS and JS. Preserve the requested brand and functionality. Keep the exact Zuno output markers and return every required section in full.',
-    'Do not remove working features. Keep all image sources restricted to the approved Supabase URLs already present in the draft; do not add or alter image URLs.',
+    'Do not remove working features. Use only exact approved image URLs supplied in the system context. If QA reports missing imagery, add relevant img elements using those exact URLs. Never invent, rewrite, or substitute image URLs.',
     '',
     'CURRENT DRAFT:',
     draft.slice(0, 28000),
