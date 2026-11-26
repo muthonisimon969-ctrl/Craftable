@@ -80,6 +80,8 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
   const prompt = promptText.toLowerCase();
   const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments)\b/.test(prompt);
   const wantsElectronics = /\b(electronics?|gadgets?|laptops?|computers?|headphones?|earbuds?|speakers?|cameras?|smartphones?|smartwatches?|keyboards?|tablets?|webcams?|projectors?|gaming|power banks?|tech store)\b/.test(prompt);
+  const isSpatialDesign = /\b(architecture studio|architectural studio|architecture firm|architectural practice|architecture portfolio|interior design studio|spatial design studio|landscape architecture|architectural design|architecture website|architectural website)\b/.test(prompt);
+  if (isSpatialDesign && !wantsFashion && !wantsElectronics) return [];
   const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products)\b/.test(prompt) ||
     ((wantsFashion || wantsElectronics) && /\b(website|brand|business|store|shop|collection)\b/.test(prompt));
 
