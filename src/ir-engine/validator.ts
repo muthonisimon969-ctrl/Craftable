@@ -58,6 +58,17 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
   if (!document.brandName.trim()) fail('BRAND_NAME_MISSING', 'A brand name is required.');
   const validIntents = ['home', 'launch', 'services', 'projects', 'about', 'product', 'contact', 'other'];
   if (document.pageIntent && !validIntents.includes(document.pageIntent)) fail('PAGE_INTENT_INVALID', 'Choose a supported page intent.');
+  const artDirection = document.anchor.artDirection;
+  if (!artDirection) {
+    warn('BRAND_ART_DIRECTION_MISSING', 'This saved Brand Anchor predates the art-direction brief. Existing design remains valid; add image, type, motif and restraint guidance when next refined.', document.anchor.id);
+  } else {
+    if (typeof artDirection.imageVoice !== 'string' || !artDirection.imageVoice.trim()) warn('IMAGE_VOICE_UNDEFINED', 'Describe the image subject, lighting, framing and texture so imagery supports the brand.', document.anchor.id);
+    if (typeof artDirection.typographyIntent !== 'string' || !artDirection.typographyIntent.trim()) warn('TYPE_DIRECTION_UNDEFINED', 'Describe the intended typography hierarchy and character.', document.anchor.id);
+    if (typeof artDirection.paletteIntent !== 'string' || !artDirection.paletteIntent.trim()) warn('PALETTE_INTENT_UNDEFINED', 'Explain how the existing ink, paper, surface and accent tokens should be balanced.', document.anchor.id);
+    if (!Array.isArray(artDirection.visualMotifs) || !artDirection.visualMotifs.length) warn('VISUAL_MOTIFS_UNDEFINED', 'Choose a small set of recognisable visual motifs instead of relying on generic decoration.', document.anchor.id);
+    if (!Array.isArray(artDirection.restraintNotes) || !artDirection.restraintNotes.length) warn('RESTRAINT_NOTES_UNDEFINED', 'Record what the design should avoid to protect visual coherence.', document.anchor.id);
+  }
+
   const compositionRules = document.anchor.compositionRules;
   if (compositionRules) {
     const heroLayouts = ['type-led', 'editorial-split', 'product-led'];
