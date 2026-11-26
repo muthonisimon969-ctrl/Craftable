@@ -94,7 +94,7 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
   else if (isAudioBrand) pool = assets.filter((asset) => audioCategories.has(asset.category.toLowerCase()));
   else if (wantsElectronics) pool = assets.filter((asset) => electronicsCategories.has(asset.category.toLowerCase()));
 
-  const directMatches = assets.filter((asset) => {
+  const directMatches = pool.filter((asset) => {
     const haystack = (asset.title + ' ' + asset.category).toLowerCase().replace(/[-_]+/g, ' ');
     const meaningful = haystack.split(/\s+/).filter((word) => word.length > 3 && !['with', 'from', 'black', 'white'].includes(word));
     return meaningful.some((word) => prompt.includes(word));
