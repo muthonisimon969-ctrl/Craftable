@@ -27,13 +27,18 @@
 - [x] Main HEAD recorded.
 - [x] Integration branch created from main.
 - [x] PR #5 conversation and persistence changes copied onto this branch; PR #7 product-presentation guidance reconciled into the server build prompt.
-- [x] Category matcher changed to filter active assets and category pool before keyword matching; no cross-category fallback.
+- [x] Category matcher filters active assets and category pool before keyword matching; no cross-category fallback.
+- [x] Prompt asset list, commerce image QA requirements, and final image-URL sanitizer all use the same category-scoped asset selection. Unselected active assets cannot leak through URL sanitization.
 - [ ] 20 electronics prompt tests: zero wrong-category assets (not yet run).
 - [ ] 20 conversation tests: zero accidental rebuilds and zero version increments (not yet run).
 - [ ] Conversation persistence after reload (not yet run).
-- [ ] TypeScript and production build checks.
-- [ ] Preview/browser verification.
+- [ ] TypeScript and production build checks (Vercel branch check currently pending).
+- [ ] Preview/browser verification (automatic Vercel preview check has started; not yet confirmed ready).
 - [ ] Merge gate review.
+
+## Implementation commits
+- PR #5 conversation/persistence implementation and PR #7 presentation guidance are on this branch, with targeted fixes for request classification, unchanged-project detection, and category-scoped image enforcement.
+- Latest implementation commit: `f3bab049e92664d0bef4a8611b61d13105f749aa`.
 
 ## Known review risks to resolve
 - [x] Corrected PR #5's double-escaped word-boundary expressions in the request classifier.
