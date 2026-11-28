@@ -390,7 +390,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     return;
   }
 
-  if (mode === 'visual_review' && !(body.attachments ?? []).some((a) => a.dataBase64 && /^image\\/(png|jpeg|jpg|webp)$/i.test(a.mimeType))) {
+  if (mode === 'visual_review' && !(body.attachments ?? []).some((a) => a.dataBase64 && /^image\/(png|jpeg|jpg|webp)$/i.test(a.mimeType))) {
     res.status(400).json({ error: 'Visual review requires a rendered website screenshot.' });
     return;
   }
