@@ -192,9 +192,9 @@ const BUILD_QUALITY_PROMPT = `ZUNO WORLD-CLASS WEB DESIGN STANDARD — SERVER-EN
 - Use approved Supabase images as deliberate art direction: choose relevant assets, control crops with object-fit/object-position, and avoid repeating one image as a fake gallery. If no suitable asset exists, use restrained CSS/inline SVG rather than a fake photograph.
 - Never fabricate logos, customer counts, awards, testimonials, reviews, partner brands, addresses, or business claims. Use honest useful content when details are missing.
 - Before returning, privately review hierarchy, contrast, spacing, mobile navigation, every interaction, form validation, empty/error/success states, and JavaScript syntax. Fix weaknesses before output.
-- When editing an existing project, preserve its established design and working features; make only the requested changes.\n- Return the required Zuno output markers exactly.`;
+- When editing an existing project, preserve its established design and working features; make only the requested changes.\n- VISUAL SELF-REVIEW: privately inspect hero composition, image relevance, image scale, crop, object-position, text contrast, spacing, alignment, section rhythm, product-card consistency and mobile composition. Decide whether each image belongs in its exact section; remove unsuitable images rather than forcing them. Product photography must remain large enough to identify, use contain in deliberate frames, and never stretch. Use cover for lifestyle imagery only when the crop preserves the subject. Check that the headline is specific and compelling. Identify and fix the three most important weaknesses before returning. Do not claim to have viewed a browser screenshot unless one was actually supplied. Do not expose this private review.\n- Return the required Zuno output markers exactly.`;
 
-function inspectBuildDraft(answer: string): string[] {
+function inspectBuildDraft(answer: string, promptText = ''): string[] {
   const read = (name: string) => {
     const match = new RegExp('<<<' + name + '>>>([\\s\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
     return match?.[1]?.trim() ?? '';
@@ -220,6 +220,15 @@ function inspectBuildDraft(answer: string): string[] {
   if (/lorem ipsum|coming soon|placeholder text|your company name|product name here/i.test(html)) {
     issues.push('The page still contains placeholder copy instead of useful, specific content.');
   }
+  const imageTags = html.match(/<img\\b[^>]*>/gi) ?? [];
+  if (imageTags.length > 0) {
+    const missingAlt = imageTags.filter((tag) => !/\\balt\\s*=\\s*([\"'][^\"']*[\"']|[^\\s>]+)/i.test(tag)).length;
+    if (missingAlt > 0) issues.push(missingAlt + ' image(s) are missing descriptive alt text.');
+    if (!/object-fit\\s*:/i.test(css)) issues.push('Images have no explicit object-fit treatment. Set product photography to contain and lifestyle imagery to cover, with intentional image frames.');
+    if (!/(?:aspect-ratio|height\\s*:|min-height\\s*:)/i.test(css)) issues.push('Image containers need deliberate height or aspect-ratio rules so images are not tiny or stretched.');
+  }
+  const commerceBrief = /\\b(store|shop|e-?commerce|retail|product catalogue|product catalog|electronics|fashion boutique)\\b/i.test(promptText);
+  if (commerceBrief && imageTags.length > 0 && imageTags.length < 3) issues.push('The commerce page has too few visible product images. Use distinct approved products where available; do not invent or repeat assets.');
   return issues;
 }
 
@@ -294,7 +303,9 @@ async function requestBuildRepair(
   promptText: string,
   draft: string,
   issues: string[],
-  systemPrompt: string
+  systemPrompt: string,
+  attachments?: CraftAttachmentPayload[],
+  vision = false
 ): Promise<string | null> {
   const repairPrompt = [
     'QUALITY REPAIR — improve the supplied website draft before returning it.',
@@ -314,7 +325,7 @@ async function requestBuildRepair(
     provider,
     apiKey,
     model,
-    buildMessages(repairPrompt, systemPrompt + '\\n\\nYou are performing a focused repair pass. Fix the listed defects, preserve everything that already works, and return the complete required output.'),
+    buildMessages(repairPrompt, systemPrompt + '\\n\\nYou are performing a focused repair pass. Fix the listed defects, preserve everything that already works, and return the complete required output.', attachments, vision),
     0.15,
     14000,
     22000
@@ -427,8 +438,8 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     }
 
     let rawAnswer = result.content;
-    if (rawAnswer && mode === 'build' && !hasImages) {
-      const issues = inspectBuildDraft(rawAnswer);
+    if (rawAnswer && mode === 'build') {
+      const issues = inspectBuildDraft(rawAnswer, promptText);
       if (issues.length) {
         const repaired = await requestBuildRepair(
           candidate.provider,
@@ -437,7 +448,9 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           promptText,
           rawAnswer,
           issues,
-          systemPrompt
+          systemPrompt,
+          body.attachments,
+          hasImages
         );
         if (repaired) {
           const remainingIssues = inspectBuildDraft(repaired);
