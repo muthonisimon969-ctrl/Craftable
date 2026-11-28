@@ -85,9 +85,9 @@ async function fetchApprovedSupabaseAssets(): Promise<ApprovedSupabaseAsset[]> {
 function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupabaseAsset[]): ApprovedSupabaseAsset[] {
   const prompt = promptText.toLowerCase();
   const activeAssets = assets.filter((asset) => asset.is_active === true);
-  const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes?|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments|dresses?|blouses?|shirts?|trousers?|footwear|belts?|knitwear|outerwear|headwear|t-?shirts?)\b/.test(prompt);
+  const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes?|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments|dress(?:es)?|blouses?|shirts?|trousers?|footwear|belts?|knitwear|outerwear|headwear|t-?shirts?)\b/.test(prompt);
   const wantsElectronics = /\b(electronics?|gadgets?|laptops?|computers?|headphones?|earbuds?|speakers?|cameras?|smartphones?|smart\s?watch(?:es)?|keyboards?|tablets?|webcams?|projectors?|gaming|power banks?|tech store)\b/.test(prompt);
-  const wantsFood = /\b(food|foods|meals?|dishes|cuisine|rice|ugali|stews?|curries|breads?|beans|legumes|fish|seafood|meat|grilled|snacks?|nyama choma)\b/.test(prompt);
+  const wantsFood = /\b(food|foods|meals?|dish(?:es)?|cuisine|rice|ugali|stews?|curry|curries|breads?|beans?|legumes?|fish|seafood|meats?|grilled|snacks?|nyama choma)\b/.test(prompt);
   const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products)\b/.test(prompt) ||
     ((wantsFashion || wantsElectronics || wantsFood) && /\b(website|brand|business|store|shop|collection)\b/.test(prompt));
 
@@ -113,7 +113,7 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
     { pattern: /\bhandbags?\b/, category: 'handbags' },
     { pattern: /\bbelts?\b/, category: 'belts' },
     { pattern: /\bblouses?\b/, category: 'blouses' },
-    { pattern: /\bdresses?\b/, category: 'dresses' },
+    { pattern: /\bdress(?:es)?\b/, category: 'dresses' },
     { pattern: /(?<!t-)\bshirts?\b/, category: 'shirts' },
     { pattern: /\bt-?shirts?\b/, category: 't-shirts' },
     { pattern: /\btrousers?\b/, category: 'trousers' },
@@ -129,11 +129,11 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
     { pattern: /\bstreetwear\b/, category: 'streetwear' },
     { pattern: /\brice\b/, category: 'rice-dishes' },
     { pattern: /\bugali\b/, category: 'ugali-meals' },
-    { pattern: /\b(stews?|curries)\b/, category: 'stews-and-curries' },
+    { pattern: /\b(stews?|curry|curries)\b/, category: 'stews-and-curries' },
     { pattern: /\b(breads?|bakery)\b/, category: 'breads' },
-    { pattern: /\b(beans|legumes)\b/, category: 'beans-and-legumes' },
+    { pattern: /\b(beans?|legumes?)\b/, category: 'beans-and-legumes' },
     { pattern: /\b(fish|seafood)\b/, category: 'fish-and-seafood' },
-    { pattern: /\b(meat|grilled|nyama choma)\b/, category: 'grilled-meats' },
+    { pattern: /\b(meats?|grilled|nyama choma)\b/, category: 'grilled-meats' },
     { pattern: /\bsnacks?\b/, category: 'snacks' },
     { pattern: /\btraditional meals\b/, category: 'traditional-meals' },
   ];
