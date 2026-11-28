@@ -86,7 +86,7 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
   const prompt = promptText.toLowerCase();
   const activeAssets = assets.filter((asset) => asset.is_active === true);
   const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments)\b/.test(prompt);
-  const wantsElectronics = /\b(electronics?|gadgets?|laptops?|computers?|headphones?|earbuds?|speakers?|cameras?|smartphones?|smart\\s?watch(?:es)?|keyboards?|tablets?|webcams?|projectors?|gaming|power banks?|tech store)\b/.test(prompt);
+  const wantsElectronics = /\b(electronics?|gadgets?|laptops?|computers?|headphones?|earbuds?|speakers?|cameras?|smartphones?|smart\s?watch(?:es)?|keyboards?|tablets?|webcams?|projectors?|gaming|power banks?|tech store)\b/.test(prompt);
   const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products)\b/.test(prompt) ||
     ((wantsFashion || wantsElectronics) && /\b(website|brand|business|store|shop|collection)\b/.test(prompt));
 
