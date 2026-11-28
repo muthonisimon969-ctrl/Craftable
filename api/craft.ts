@@ -1,6 +1,6 @@
 import { getActiveServerKeys, parseRequestJsonBody, type HttpReq, type HttpRes } from './_keyVault.js';
 export interface CraftAttachmentPayload { name: string; mimeType: string; dataBase64?: string; textContent?: string; }
-interface CraftRequestBody { mode?: 'build' | 'chat' | 'create_3d' | 'image'; promptText?: string; systemPrompt?: string; attachments?: CraftAttachmentPayload[]; }
+interface CraftRequestBody { mode?: 'build' | 'chat' | 'create_3d' | 'image' | 'visual_review'; promptText?: string; systemPrompt?: string; attachments?: CraftAttachmentPayload[]; }
 const TEXT_MODEL = 'openai/gpt-oss-120b';
 const VISION_MODEL = 'qwen/qwen3.8-27b';
 interface ApprovedSupabaseAsset {
@@ -390,14 +390,19 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     return;
   }
 
-  const privatePrompt = mode === 'build' || mode === 'create_3d' ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim() : '';
-  const approvedAssets = mode === 'build' ? await fetchApprovedSupabaseAssets() : [];
+  if (mode === 'visual_review' && !(body.attachments ?? []).some((a) => a.dataBase64 && /^image\\/(png|jpeg|jpg|webp)$/i.test(a.mimeType))) {
+    res.status(400).json({ error: 'Visual review requires a rendered website screenshot.' });
+    return;
+  }
+  const isWebsiteBuild = mode === 'build' || mode === 'visual_review';
+  const privatePrompt = isWebsiteBuild || mode === 'create_3d' ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim() : '';
+  const approvedAssets = isWebsiteBuild ? await fetchApprovedSupabaseAssets() : [];
   const systemPrompt = [
     body.systemPrompt?.trim() ?? '',
     privatePrompt,
-    mode === 'build' ? BUILD_QUALITY_PROMPT : '',
-    mode === 'build' ? buildSupabaseImageRules(approvedAssets, promptText) : '',
-  ].filter(Boolean).join('\n\n');
+    isWebsiteBuild ? BUILD_QUALITY_PROMPT : '',
+    isWebsiteBuild ? buildSupabaseImageRules(approvedAssets, promptText) : '',
+  ].filter(Boolean).join('\\n\\n');
   const hasImages = (body.attachments ?? []).some((a) =>
     a.dataBase64 && /^image\/(png|jpeg|jpg|webp)$/i.test(a.mimeType)
   );
@@ -430,7 +435,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       buildMessages(promptText, systemPrompt, body.attachments, hasImages),
       mode === 'chat' ? 0.65 : 0.25,
       16000,
-      mode === 'build' ? 55000 : 55000
+      mode === 'build' || mode === 'visual_review' ? 55000 : 55000
     );
     if (!result.content) {
       lastError = result.error || candidate.provider.toUpperCase() + ' returned no content.';
@@ -471,7 +476,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       model: candidate.model,
       provider: candidate.provider,
       fallbackUsed: candidates.indexOf(candidate) > 0,
-      qualityReview: mode === 'build' ? 'checked' : undefined,
+      qualityReview: mode === 'build' ? 'checked' : mode === 'visual_review' ? 'visual-reviewed' : undefined,
     });
     return;
   }
