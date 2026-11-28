@@ -26,17 +26,19 @@
 ## Verification status
 - [x] Main HEAD recorded.
 - [x] Integration branch created from main.
-- [ ] PR #5 and #7 code reconciled on this branch.
-- [ ] Category matcher static checks.
-- [ ] 20 electronics prompt tests: zero wrong-category assets.
-- [ ] 20 conversation tests: zero accidental rebuilds and zero version increments.
-- [ ] Conversation persistence after reload.
+- [x] PR #5 conversation and persistence changes copied onto this branch; PR #7 product-presentation guidance reconciled into the server build prompt.
+- [x] Category matcher changed to filter active assets and category pool before keyword matching; no cross-category fallback.
+- [ ] 20 electronics prompt tests: zero wrong-category assets (not yet run).
+- [ ] 20 conversation tests: zero accidental rebuilds and zero version increments (not yet run).
+- [ ] Conversation persistence after reload (not yet run).
 - [ ] TypeScript and production build checks.
 - [ ] Preview/browser verification.
 - [ ] Merge gate review.
 
 ## Known review risks to resolve
-- PR #5's request-classification regular expressions must use real word-boundary escapes; verify they are not double-escaped.
-- A read-only project-chat turn must append messages without calling `applyIterationTurn`.
-- An empty or unmatched category pool must return no assets, never borrow from another category.
+- [x] Corrected PR #5's double-escaped word-boundary expressions in the request classifier.
+- [x] Read-only turns append messages without calling `applyIterationTurn`; the Workspace additionally verifies all project code/title/description are unchanged before taking that path.
+- [x] An empty or unmatched category pool returns no assets; keyword matching is confined to the filtered pool.
 - A successful TypeScript build is not proof of conversation safety or visual quality.
+- [x] Preserved existing responsive Workspace detection; no UI layout, palette, navigation, or feature redesign was taken.
+- [x] Electronics whitelist excludes `general`.
