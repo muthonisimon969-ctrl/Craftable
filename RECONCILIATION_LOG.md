@@ -45,5 +45,6 @@
 - [x] Read-only turns append messages without calling `applyIterationTurn`; the Workspace additionally verifies all project code/title/description are unchanged before taking that path.
 - [x] An empty or unmatched category pool returns no assets; keyword matching is confined to the filtered pool.
 - A successful TypeScript build is not proof of conversation safety or visual quality.
-- [x] Preserved existing responsive Workspace detection; no UI layout, palette, navigation, or feature redesign was taken.
+- [x] No Workspace layout or palette/navigation redesign was taken.
+- [!] Important baseline discrepancy: current `main` at `22f38a2` already contains `const isWideScreen = true` in `WorkspacePage.tsx`; the responsive width detection described in the earlier plan is not present on the actual base branch. Track B inherits this pre-existing behavior unchanged. Do not silently alter it in this production-safety track; review restoration of responsive detection as a separate explicitly approved UI fix.
 - [x] Electronics whitelist excludes `general`.
