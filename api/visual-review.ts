@@ -107,7 +107,7 @@ async function inspectWithProvider(
                 type: 'text',
                 text: 'Review this rendered Zuno project. Project: ' + String(body.projectTitle || 'Untitled').slice(0, 120) +
                   '\nOriginal brief: ' + String(body.originalBrief || '').slice(0, 2500) +
-                  '\nViewport: ' + String(body.viewport || 'workspace preview') +
+                  '\nViewports inspected: ' + screenshots.map((item) => item.viewport).join(', ') +
                   '\nConsole errors observed: ' + (body.consoleErrors ?? []).slice(0, 8).join(' | ') +
                   '\nAssess only what is visible. Return the requested JSON.'
               },
@@ -142,16 +142,20 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
   }
 
   const body = parseRequestJsonBody<VisualReviewBody>(req);
-  if (!body || typeof body.screenshot !== 'string') {
-    res.status(400).json({ error: 'A rendered screenshot is required.' });
+  const screenshots = body?.screenshots?.slice(0, 2) ??
+    (body?.screenshot ? [{ screenshot: body.screenshot, viewport: body.viewport || 'current preview' }] : []);
+  if (!body || screenshots.length === 0) {
+    res.status(400).json({ error: 'At least one rendered screenshot is required.' });
     return;
   }
-  if (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(body.screenshot)) {
-    res.status(400).json({ error: 'Screenshot must be a valid PNG, JPEG, or WebP data URL.' });
+  const validDataUrl = (value: string) => /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value);
+  if (screenshots.some((item) => !item || typeof item.screenshot !== 'string' || !validDataUrl(item.screenshot))) {
+    res.status(400).json({ error: 'Screenshots must be valid PNG, JPEG, or WebP data URLs.' });
     return;
   }
-  if (body.screenshot.length > 5_000_000) {
-    res.status(413).json({ error: 'Screenshot is too large. Capture a smaller preview and try again.' });
+  if (screenshots.some((item) => item.screenshot.length > 3_000_000) ||
+      screenshots.reduce((sum, item) => sum + item.screenshot.length, 0) > 5_000_000) {
+    res.status(413).json({ error: 'Screenshots are too large. Capture smaller previews and try again.' });
     return;
   }
 
@@ -177,5 +181,5 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     }
   }
 
-  res.status(502).json({ error: 'Zuno could not inspect this screenshot. Check that the configured vision model supports image input.' });
+  res.status(502).json({ error: 'Zuno could not inspect these screenshots. Check that the configured vision model supports image input.' });
 }
