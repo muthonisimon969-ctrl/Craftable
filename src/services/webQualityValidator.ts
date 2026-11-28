@@ -181,10 +181,13 @@ export function auditGeneratedBundle(
   // 4. Self-contained visuals & authentic copy
   const hasExternalImages = EXTERNAL_BROKEN_IMG_REGEX.test(htmlCode);
   const lowerPromptForImages = prompt.toLowerCase();
-  const expectsCommerceImages = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|shop|store|retail|marketplace|electronics|gadgets|fashion|clothing|apparel)\b/.test(lowerPromptForImages);
-  const hasVisibleImages = /<img\b[^>]*\bsrc\s*=/i.test(htmlCode);
+  const expectsCommerceImages = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|shop|store|retail|marketplace|electronics|gadgets|fashion|clothing|apparel|food|restaurant|restaurants|cafe|cafes|bakery|food truck|catering|menu)\b/.test(lowerPromptForImages);
+  const imageTags = Array.from(htmlCode.matchAll(/<img\b[^>]*>/gi), (match) => match[0]);
+  const visibleImageUrls = imageTags.map((tag) => /\bsrc\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1] ?? '').filter(Boolean);
+  const hasVisibleImages = visibleImageUrls.length > 0;
+  const hasMissingImageAlt = imageTags.some((tag) => !/\balt\s*=\s*["'][^"']+["']/i.test(tag));
   const hasPlaceholderCopy = PLACEHOLDER_TEXT_REGEX.test(htmlCode);
-  const assetsOk = !hasExternalImages && !hasPlaceholderCopy && (!expectsCommerceImages || hasVisibleImages);
+  const assetsOk = !hasExternalImages && !hasPlaceholderCopy && !hasMissingImageAlt && (!expectsCommerceImages || hasVisibleImages);
   checks.push({
     id: 'assets_and_copy',
     label: 'Self-contained visuals & authentic copy',
@@ -193,9 +196,11 @@ export function auditGeneratedBundle(
       ? 'Contains external http(s) <img> URLs that may fail offline; replace with crisp inline SVGs.'
       : hasPlaceholderCopy
       ? 'Contains placeholder/Lorem Ipsum copy; replace with domain-authentic copy.'
+      : hasMissingImageAlt
+      ? 'One or more images are missing descriptive alt text.'
       : expectsCommerceImages && !hasVisibleImages
-      ? 'Commerce page is missing visible product imagery.'
-      : 'Uses approved imagery and realistic domain copy.',
+      ? 'Commerce or hospitality page is missing visible relevant imagery.'
+      : 'Uses visible imagery with descriptive alt text and realistic domain copy.',
   });
 
   // 5. JavaScript interactivity & syntax integrity
