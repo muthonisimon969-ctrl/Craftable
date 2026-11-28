@@ -1,5 +1,6 @@
 import type { ApprovedAsset, CollectionLayout, HeroLayout, IrDocument, IrNode } from './types';
 import { resolveComposition } from './composition';
+import { validateIrV1Document } from './validator';
 
 function esc(value: string): string {
   return value.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char] ?? char);
@@ -8,10 +9,14 @@ function esc(value: string): string {
 function assetImage(document: IrDocument, id?: string, alt = ''): string {
   const asset = document.approvedAssets.find((item) => item.id === id);
   if (!asset) return '';
-  const url = new URL(asset.imageUrl);
-  const approvedOrigin = 'https://vlrpiosbqssfnycutzje.supabase.co';
-  if (url.protocol !== 'https:' || url.origin !== approvedOrigin ||
-      !url.pathname.startsWith('/storage/v1/object/public/zuno-product-images/')) return '';
+  try {
+    const url = new URL(asset.imageUrl);
+    const approvedOrigin = 'https://vlrpiosbqssfnycutzje.supabase.co';
+    if (url.protocol !== 'https:' || url.origin !== approvedOrigin ||
+        !url.pathname.startsWith('/storage/v1/object/public/zuno-product-images/')) return '';
+  } catch {
+    return '';
+  }
   return '<img src="' + esc(asset.imageUrl) + '" alt="' + esc(alt || asset.alt) + '" loading="eager">';
 }
 
@@ -42,11 +47,21 @@ function renderCollection(document: IrDocument, section: IrDocument['sections'][
 }
 
 export function compileDocument(document: IrDocument): string {
-  const heroSection = document.sections.find((section) => section.role === 'hero');
-  const collectionSection = document.sections.find((section) => section.role === 'collection');
+  const validation = validateIrV1Document(document);
+  if (!validation.canPublish) {
+    throw new Error('IR document failed validation: ' + validation.failures.map((issue) => issue.message).join(' '));
+  }
+  const heroSections = document.sections.filter((section) => section.role === 'hero');
+  const collectionSections = document.sections.filter((section) => section.role === 'collection');
+  const heroSection = heroSections[0];
+  const collectionSection = collectionSections[0];
   const hero = heroSection?.nodes[0];
   const collection = collectionSection?.nodes[0];
-  if (!hero || !collection || !heroSection || !collectionSection) throw new Error('The v1 compiler requires exactly one hero and one collection node.');
+  if (heroSections.length !== 1 || collectionSections.length !== 1 ||
+      !heroSection || !collectionSection || heroSection.nodes.length !== 1 || collectionSection.nodes.length !== 1 ||
+      hero?.type !== 'hero' || collection?.type !== 'collection') {
+    throw new Error('The v1 compiler requires one hero section and one collection section, each with exactly one matching node.');
+  }
   const { color, type, space, radius } = document.anchor.tokens;
   const contract = document.anchor.designContract;
   const typeContract = contract?.typography;
