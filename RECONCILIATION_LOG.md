@@ -32,8 +32,8 @@
 - [ ] 20 electronics prompt tests against the running builder: not yet run.
 - [ ] 20 conversation tests in Workspace: not yet run.
 - [ ] Conversation persistence after reload (not yet run).
-- [ ] TypeScript and production build checks (Vercel branch check currently pending).
-- [ ] Preview/browser verification (automatic Vercel preview check has started; not yet confirmed ready).
+- [x] TypeScript and Vite production build passed on code commit `9a749cccb112d1dcac2812697e0d47e5b1f88dc7`; Vercel preview reached READY.
+- [ ] Browser-level project-chat, IndexedDB persistence, and live image-selection verification remain outstanding.
 - [ ] Merge gate review.
 
 ## Supabase library audit (read-only)
@@ -51,7 +51,9 @@
 ## Implementation commits
 - PR #5 conversation/persistence implementation and PR #7 presentation guidance are on this branch, with targeted fixes for request classification, unchanged-project detection, and category-scoped image enforcement.
 - Latest matcher implementation commit before this log update: `9a749cccb112d1dcac2812697e0d47e5b1f88dc7`.
-- Vercel TypeScript + Vite build passed for the earlier code commit `5a27bb123aa14c349825d1c89f143d80823451d2`; later matcher refinements require their own preview build confirmation.
+- Vercel TypeScript + Vite build passed for code commit `9a749cccb112d1dcac2812697e0d47e5b1f88dc7` (preview READY).
+- Vercel's build log reported 4 high-severity npm audit findings and an esbuild install-script warning; dependency changes were intentionally left out of scope.
+- Git integration automatically generated Vercel preview deployments for branch commits. No production deployment, promotion, or merge was performed.
 
 ## Known review risks to resolve
 - [x] Corrected PR #5's double-escaped word-boundary expressions in the request classifier.
