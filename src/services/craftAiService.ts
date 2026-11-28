@@ -342,6 +342,9 @@ export async function iterateExistingApp(
   activeJs: string,
   onStageUpdate: (stage: string) => void = () => {}
 ): Promise<GeneratedAppBundle> {
+  if (project.irDocument) {
+    throw new Error('This project is IR-managed. Whole-file AI rewrites are blocked; use a scoped IR edit to protect the active design and revision history.');
+  }
   const historyTail = recentMessages.slice(-6);
   const lines: string[] = [
     `EXISTING PROJECT: "${project.title}" (v${project.version})`,

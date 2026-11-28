@@ -16,7 +16,8 @@ export function makeRevision(
   document: IrDocument,
   label: string,
   kind: IrRevision['kind'],
-  parentId: string | null
+  parentId: string | null,
+  metadata: Pick<IrRevision, 'affectedIds' | 'overrideReason' | 'drift'> = {}
 ): IrRevision {
   const id = 'rev_' + Math.random().toString(36).slice(2, 9);
   const snapshot = clone(document);
@@ -29,6 +30,7 @@ export function makeRevision(
     anchorId: snapshot.anchor.id,
     document: snapshot,
     createdAt: new Date().toISOString(),
+    ...metadata,
   });
 }
 

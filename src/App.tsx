@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { type NavSection } from './components/AppNavigation';
 import { DeleteProjectModal, RenameProjectModal } from './components/Modals';
 import { AdminPage } from './pages/AdminPage';
@@ -8,6 +8,8 @@ import { HomePage } from './pages/HomePage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { WorkspacePage } from './pages/WorkspacePage';
+import { compileDocumentParts } from './ir-engine/compiler';
+import { initialFixtureRevision, koraFixture, vektorFixture } from './ir-engine/fixtures';
 import { checkServerAiStatus, generateNewApp } from './services/craftAiService';
 import { generateCreativeProject } from './services/creativeAiService';
 import * as storage from './services/projectStorage';
@@ -24,6 +26,7 @@ import type {
   ChatThreadMessage,
   CreativeCategory,
   GeneratedVisualAsset,
+  GeneratedAppBundle,
   PromptAttachment,
   StudioCapability,
   TemplateType,
@@ -39,10 +42,13 @@ type AppRoute =
   | { view: 'settings' }
   | { view: 'admin' }
   | { view: 'workspace'; projectId: string }
-  | { view: 'creative_workspace'; projectId: string };
+  | { view: 'creative_workspace'; projectId: string }
+  | { view: 'ir_create'; fixture: 'kora' | 'vektor' };
 
 function parseRoute(): AppRoute {
   const path = window.location.pathname;
+  const irCreateMatch = /^\/ir-create\/(kora|vektor)\/?$/.exec(path);
+  if (irCreateMatch) return { view: 'ir_create', fixture: irCreateMatch[1] as 'kora' | 'vektor' };
   if (/^\/admin\/?$/.test(path)) return { view: 'admin' };
   if (/^\/chat\/?$/.test(path)) return { view: 'chat' };
   if (/^\/(create|creative|explore)\/?$/.test(path)) return { view: 'home' };
@@ -62,6 +68,7 @@ function parseRoute(): AppRoute {
 
 export default function App() {
   const [route, setRoute] = useState<AppRoute>(() => parseRoute());
+  const irCreateStarted = useRef<string | null>(null);
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
     try {
       const saved =
@@ -140,6 +147,44 @@ export default function App() {
     window.history.pushState({}, '', url);
     setRoute(next);
   };
+
+  useEffect(() => {
+    if (route.view !== 'ir_create') return;
+    const fixtureName = route.fixture;
+    if (irCreateStarted.current === fixtureName) return;
+    irCreateStarted.current = fixtureName;
+    const source = fixtureName === 'kora' ? koraFixture : vektorFixture;
+    const document = JSON.parse(JSON.stringify(source)) as typeof source;
+    const revision = initialFixtureRevision(document);
+    const activeDocument = revision.document;
+    const compiled = compileDocumentParts(activeDocument);
+    const prompt = 'Create the ' + document.brandName + ' IR design benchmark in the Zuno Builder.';
+    const bundle: GeneratedAppBundle = {
+      projectTitle: document.brandName,
+      description: 'IR-managed two-section design benchmark.',
+      summary: 'Created an IR-managed project with a Brand Anchor, hero and collection sections, and immutable revision history.',
+      htmlCode: compiled.html,
+      cssCode: compiled.css,
+      jsCode: compiled.js,
+      changedFiles: ['index.html', 'styles.css'],
+      followUpSuggestions: ['Edit the hero headline', 'Swap the approved hero image', 'Change the hero mood'],
+    };
+    storage.createProject(prompt, 'landing_page', bundle, {
+      mode: 'standard',
+      irDocument: activeDocument,
+      irRevisions: [revision],
+    }).then((created) => {
+      upsertProject(created);
+      pushRoute('/workspace/' + encodeURIComponent(created.id), {
+        view: 'workspace',
+        projectId: created.id,
+      });
+    }).catch((err) => {
+      irCreateStarted.current = null;
+      setErrorMessage(err instanceof Error ? err.message : 'Could not create the IR project.');
+      pushRoute('/', { view: 'home' });
+    });
+  }, [route]);
 
   const handleNavigateSection = (section: NavSection) => {
     if (section === 'home') {

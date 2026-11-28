@@ -69,6 +69,9 @@ export interface IrRevision {
   anchorId: string;
   document: IrDocument;
   createdAt: string;
+  affectedIds?: string[];
+  overrideReason?: string;
+  drift?: DriftReport;
 }
 
 export interface DriftReport {
