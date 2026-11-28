@@ -400,9 +400,10 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
   const systemPrompt = [
     body.systemPrompt?.trim() ?? '',
     privatePrompt,
+    mode === 'visual_review' ? 'SCREENSHOT-BASED VISUAL REVIEW: You have been given a real screenshot of the current generated website. Compare the screenshot with the supplied HTML/CSS/JS and the original business brief. Identify visible problems in hierarchy, composition, image relevance, image scale/cropping, text contrast, spacing, alignment, responsive presentation, and overall industry fit. Make only targeted improvements to the supplied website code. Preserve working functionality and every approved image URL. Do not invent assets. Return the complete Zuno output markers, including the full updated HTML, CSS and JS. Never claim to test interactions from a screenshot.' : '',
     isWebsiteBuild ? BUILD_QUALITY_PROMPT : '',
     isWebsiteBuild ? buildSupabaseImageRules(approvedAssets, promptText) : '',
-  ].filter(Boolean).join('\\n\\n');
+  ].filter(Boolean).join('\n\n');
   const hasImages = (body.attachments ?? []).some((a) =>
     a.dataBase64 && /^image\/(png|jpeg|jpg|webp)$/i.test(a.mimeType)
   );
@@ -467,7 +468,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     // Preserve the model's art direction. Generic post-generation product cards
     // can break hierarchy and visual consistency, so only sanitize image sources.
     const imageEnforcedAnswer = rawAnswer;
-    const answer = mode === 'build'
+    const answer = isWebsiteBuild
       ? sanitizeGeneratedImageSources(imageEnforcedAnswer, approvedAssets)
       : imageEnforcedAnswer;
 
