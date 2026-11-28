@@ -24,6 +24,8 @@ Treat this as a map of the current application, not a guarantee that every featu
 - Settings and an owner-only Admin/key-vault area: application preferences and server-side AI key configuration.
 - The app is a React + TypeScript + Vite web application deployed through Vercel. Server AI requests are routed through /api/craft.
 - The product has separate conversational and creation request modes. A conversational question is not automatically a request to modify a project.
+- In the current unified chat implementation, recent chat history is stored in the browser's localStorage (up to 50 messages). This is not a centralized customer-support inbox, cross-user conversation database, or customer analytics system.
+- The current `/api/craft` image mode responds with an IMAGE_PROVIDER_REQUIRED / HTTP 501 result. Do not claim that this endpoint currently completes image generation. Check for a separately verified image provider or implementation before describing image generation as working.
 
 AI MODEL AND ROUTING FACTS
 - The server code currently defines openai/gpt-oss-120b as its default text model and qwen/qwen3.8-27b as its default vision model.
