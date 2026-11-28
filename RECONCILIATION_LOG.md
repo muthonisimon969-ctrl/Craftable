@@ -27,7 +27,7 @@
 - [x] Main HEAD recorded.
 - [x] Integration branch created from main.
 - [x] PR #5 conversation and persistence changes copied onto this branch; PR #7 product-presentation guidance reconciled into the server build prompt.
-- [x] Category matcher filters active assets and the recognized electronics, fashion, or food category pool before keyword matching; unknown categories require a direct title/category match rather than receiving the mixed library.
+- [x] Category matcher filters active assets and resolves explicit product terms to exact library categories (e.g. laptop → `laptops`, smartphone → `smartphones`, rice → `rice-dishes`) before title/category keyword scoring. Generic industry briefs use only their own category family; unknown briefs require a direct match rather than receiving the mixed library.
 - [x] Prompt asset list, commerce image QA requirements, and final image-URL sanitizer all use the same category-scoped asset selection. Unselected active assets cannot leak through URL sanitization.
 - [ ] 20 electronics prompt tests against the running builder: not yet run.
 - [ ] 20 conversation tests in Workspace: not yet run.
@@ -44,13 +44,15 @@
 
 ## Preliminary source-level smoke checks (not end-to-end)
 - [x] 20 representative electronics prompts matched the electronics-intent rule (20/20); a synthetic active/inactive/general/fashion asset pool selected only active electronics categories.
-- [x] 20 fashion prompts and 20 food prompts matched their category-intent rules (20/20 each) after fixing singular `shoe` and `belt` terms.
+- [x] 20 fashion prompts and 20 food prompts matched their category-intent rules (20/20 each), including singular `shoe`, `belt`, `dress`, and `curry` terms.
+- [x] Exact product-category routing smoke checks passed 20/20 for each of electronics, fashion, and food; 20/20 conversation classification checks passed.
 - [x] 20 representative project-chat prompts matched the intended read-only vs explicit-edit classification (20/20).
 - These checks exercise the rule patterns and category whitelist with synthetic fixtures; they do not replace live API, IndexedDB persistence, browser, or Vercel preview tests.
 
 ## Implementation commits
 - PR #5 conversation/persistence implementation and PR #7 presentation guidance are on this branch, with targeted fixes for request classification, unchanged-project detection, and category-scoped image enforcement.
-- Latest matcher implementation commit before this log update: `9a749cccb112d1dcac2812697e0d47e5b1f88dc7`.
+- Latest matcher implementation commit before this log update: `b0c22082a765725de16362509fe9cf97aad446a7`.
+- Exact-category matcher changes after `9a749...` still require their own Vercel preview build confirmation.
 - Vercel TypeScript + Vite build passed for code commit `9a749cccb112d1dcac2812697e0d47e5b1f88dc7` (preview READY).
 - Vercel's build log reported 4 high-severity npm audit findings and an esbuild install-script warning; dependency changes were intentionally left out of scope.
 - Git integration automatically generated Vercel preview deployments for branch commits. No production deployment, promotion, or merge was performed.
