@@ -33,18 +33,22 @@ export function resolveComposition(document: IrDocument): CompositionPlan {
   const hasVisual = Boolean(heroNode?.imageAssetId || heroNode?.artwork);
   const intent = document.pageIntent ?? 'home';
   const mood = document.anchor.mood;
+  const layoutIntent = document.anchor.designContract?.layoutIntent;
+  const denseOrShoppable = layoutIntent?.primary === 'dense' || layoutIntent?.primary === 'shoppable' ||
+    layoutIntent?.secondary === 'shoppable';
+  const editorialLed = layoutIntent?.primary === 'editorial' || layoutIntent?.secondary === 'editorial';
 
   const preferredHero: HeroLayout =
-    intent === 'product' || mood === 'technical-dark'
+    intent === 'product' || denseOrShoppable || mood === 'technical-dark'
       ? 'product-led'
       : !hasVisual || mood === 'quiet-editorial'
         ? 'type-led'
         : 'editorial-split';
 
   const preferredCollection: CollectionLayout =
-    intent === 'product' || collectionSection?.intent === 'product-led' || mood === 'technical-dark'
+    intent === 'product' || denseOrShoppable || collectionSection?.intent === 'product-led' || mood === 'technical-dark'
       ? 'product-grid'
-      : intent === 'projects' || intent === 'services' || collectionSection?.intent === 'editorial'
+      : editorialLed || intent === 'projects' || intent === 'services' || collectionSection?.intent === 'editorial'
         ? 'editorial-grid'
         : 'index-list';
 

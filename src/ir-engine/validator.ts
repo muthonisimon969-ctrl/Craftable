@@ -55,6 +55,52 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
   const warn = (code: string, message: string, targetId?: string) =>
     warnings.push({ code, message, ...(targetId ? { targetId } : {}) });
 
+  const invalidDocument = (code: string, message: string): IrValidationReport => {
+    fail(code, message);
+    return { failures, warnings, canPublish: false };
+  };
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+  const raw = document as unknown;
+  if (!isRecord(raw)) return invalidDocument('DOCUMENT_INVALID', 'The IR document must be an object.');
+  if (typeof raw.brandName !== 'string') return invalidDocument('BRAND_NAME_INVALID', 'The IR document needs a valid brand name.');
+  if (!isRecord(raw.anchor)) return invalidDocument('ANCHOR_INVALID', 'The IR document is missing its Brand Anchor.');
+  if (!isRecord(raw.anchor.tokens)) return invalidDocument('ANCHOR_TOKENS_INVALID', 'The Brand Anchor is missing its design tokens.');
+  for (const key of ['color', 'type', 'space', 'radius']) {
+    if (!isRecord(raw.anchor.tokens[key])) {
+      return invalidDocument('ANCHOR_TOKEN_GROUP_INVALID', 'The Brand Anchor contains an incomplete ' + key + ' token group.');
+    }
+  }
+  if (!Array.isArray(raw.sections)) return invalidDocument('SECTIONS_INVALID', 'The IR document sections must be an array.');
+  if (!Array.isArray(raw.approvedAssets)) return invalidDocument('ASSETS_INVALID', 'The approved asset list must be an array.');
+  if (!Array.isArray(raw.overrides)) return invalidDocument('OVERRIDES_INVALID', 'The scoped override list must be an array.');
+  for (const section of raw.sections) {
+    if (!isRecord(section) || typeof section.id !== 'string' ||
+        (section.role !== 'hero' && section.role !== 'collection') || !Array.isArray(section.nodes)) {
+      return invalidDocument('SECTION_SHAPE_INVALID', 'Every IR section needs a valid ID, role and node list.');
+    }
+    for (const node of section.nodes) {
+      if (!isRecord(node) || typeof node.id !== 'string' ||
+          (node.type !== 'hero' && node.type !== 'collection') ||
+          (node.title !== undefined && typeof node.title !== 'string') ||
+          (node.body !== undefined && typeof node.body !== 'string') ||
+          (node.items !== undefined && !Array.isArray(node.items))) {
+        return invalidDocument('NODE_SHAPE_INVALID', 'Every IR node must have a valid ID, type and supported content fields.');
+      }
+      if (Array.isArray(node.items) && node.items.some((item) =>
+        !isRecord(item) || typeof item.id !== 'string' || typeof item.title !== 'string' || typeof item.detail !== 'string'
+      )) {
+        return invalidDocument('COLLECTION_ITEM_INVALID', 'Every collection item needs a valid ID, title and detail.');
+      }
+    }
+  }
+  for (const asset of raw.approvedAssets) {
+    if (!isRecord(asset) || typeof asset.id !== 'string' || typeof asset.title !== 'string' ||
+        typeof asset.category !== 'string' || typeof asset.imageUrl !== 'string' || typeof asset.alt !== 'string') {
+      return invalidDocument('ASSET_SHAPE_INVALID', 'Every approved asset needs valid metadata and an image URL.');
+    }
+  }
+
   if (!document.brandName.trim()) fail('BRAND_NAME_MISSING', 'A brand name is required.');
   const validIntents = ['home', 'launch', 'services', 'projects', 'about', 'product', 'contact', 'other'];
   if (document.pageIntent && !validIntents.includes(document.pageIntent)) fail('PAGE_INTENT_INVALID', 'Choose a supported page intent.');
@@ -113,9 +159,14 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
         else if (!isApprovedAssetUrl(asset.imageUrl)) fail('ASSET_URL_UNAPPROVED', 'An image URL is outside the approved asset storage path.', asset.id);
         else if (!asset.alt.trim()) warn('ASSET_ALT_MISSING', 'Add descriptive alternative text for this image.', asset.id);
       }
+      const productLedCollection = document.anchor.mood === 'technical-dark' ||
+        document.pageIntent === 'product' || section.intent === 'product-led';
       (node.items ?? []).forEach((item) => {
         registerId(item.id, 'Collection item');
         if (!item.title.trim()) fail('COLLECTION_ITEM_TITLE_MISSING', 'A collection item needs a title.', item.id);
+        if (productLedCollection && !item.imageAssetId) {
+          fail('PRODUCT_CARD_IMAGE_ID_REQUIRED', 'A product card needs a verifiable approved product image ID.', item.id);
+        }
         if (item.imageAssetId) {
           const asset = document.approvedAssets.find((candidate) => candidate.id === item.imageAssetId);
           if (!asset) fail('ASSET_REFERENCE_BROKEN', 'A collection item references an unapproved image.', item.id);
@@ -170,6 +221,102 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
   }
   if ([tokens.radius.card, tokens.radius.image].some((value) => !Number.isFinite(value) || value < 0 || value > 64)) {
     fail('RADIUS_TOKEN_INVALID', 'Radius tokens must be finite values between 0 and 64.');
+  }
+
+  const contract = document.anchor.designContract;
+  if (contract) {
+    const validIntents = ['editorial', 'dense', 'shoppable', 'trust'];
+    const layoutIntent = contract.layoutIntent;
+    if (!layoutIntent || !validIntents.includes(layoutIntent.primary) ||
+        !validIntents.includes(layoutIntent.secondary) ||
+        layoutIntent.primary === layoutIntent.secondary) {
+      fail('ANCHOR_LAYOUT_INTENT_INVALID', 'The Anchor must declare distinct primary and secondary layout intents.');
+    }
+
+    const spacing = contract.spacing;
+    if (!spacing) {
+      fail('ANCHOR_SPACING_MISSING', 'The Anchor spacing contract is missing.');
+    } else {
+      const scale = spacing.scale;
+      const expectedScale = [8, 16, 24, 32, 48, 80, 120];
+      if (!Array.isArray(scale) || scale.length !== expectedScale.length ||
+          expectedScale.some((value, index) => scale[index] !== value)) {
+        fail('ANCHOR_SPACING_SCALE_INVALID', 'The Anchor spacing scale must use the shared 8, 16, 24, 32, 48, 80, 120px reference stops.');
+      }
+      if (!Number.isFinite(spacing.contentWidth) || spacing.contentWidth < 960 || spacing.contentWidth > 1600) {
+        fail('ANCHOR_CONTENT_WIDTH_INVALID', 'Anchor content width must be between 960px and 1600px.');
+      }
+      if (!Number.isFinite(spacing.mobileScale) || spacing.mobileScale < 0.45 || spacing.mobileScale > 0.8) {
+        fail('ANCHOR_MOBILE_SCALE_INVALID', 'Mobile spacing scale must be between 0.45 and 0.8.');
+      }
+      const heroException = spacing.heroTopException;
+      if (heroException && (!Number.isFinite(heroException.value) ||
+          heroException.value < 120 || heroException.value > 200 || !heroException.reason?.trim())) {
+        fail('ANCHOR_HERO_EXCEPTION_INVALID', 'A hero spacing exception needs a value between 120px and 200px and a reason.');
+      }
+    }
+
+    const typography = contract.typography;
+    if (!typography) {
+      fail('ANCHOR_TYPOGRAPHY_MISSING', 'The Anchor typography contract is missing.');
+    } else {
+      const typefaces = [typography.displayFamily, typography.bodyFamily].filter(Boolean);
+      if (new Set(typefaces).size > 2 || typefaces.some((family) => !/^[a-zA-Z0-9 ,'-]{1,80}$/.test(family ?? ''))) {
+        fail('ANCHOR_TYPEFACES_INVALID', 'The Anchor may use at most two valid typefaces.');
+      }
+      if (![typography.display, typography.heading, typography.body, typography.label].every(Number.isFinite) ||
+          typography.display < 32 || typography.display > 120 ||
+          typography.heading < 24 || typography.heading > typography.display ||
+          typography.body < 14 || typography.body > 22 ||
+          typography.label < 9 || typography.label > 14) {
+        fail('ANCHOR_TYPE_SCALE_INVALID', 'Anchor typography sizes are outside the supported design range.');
+      }
+      const leading = typography.lineHeight;
+      if (!leading || ![leading.display, leading.heading, leading.body, leading.label].every(Number.isFinite) ||
+          leading.display < 1 || leading.display > 1.2 ||
+          leading.heading < 1.1 || leading.heading > 1.4 ||
+          leading.body < 1.4 || leading.body > 1.8 ||
+          leading.label < 1.2 || leading.label > 1.6) {
+        fail('ANCHOR_LINE_HEIGHT_INVALID', 'Anchor line heights must remain within readable display, heading, body and label ranges.');
+      }
+      if (!Number.isFinite(typography.labelLetterSpacing) ||
+          typography.labelLetterSpacing < 0 || typography.labelLetterSpacing > 0.25) {
+        fail('ANCHOR_LABEL_TRACKING_INVALID', 'Label letter spacing must be between 0 and 0.25em.');
+      }
+    }
+
+    const palette = contract.palette;
+    if (!palette) {
+      fail('ANCHOR_PALETTE_MISSING', 'The Anchor UI palette contract is missing.');
+    } else {
+      const paletteColors = [palette.dominant, palette.supporting, palette.ink, palette.accent];
+      if (paletteColors.some((value) => !/^#[0-9a-f]{6}$/i.test(value))) {
+        fail('ANCHOR_PALETTE_INVALID', 'Anchor UI palette roles must use six-digit hexadecimal colors.');
+      }
+      if (palette.gradient === 'subtle-depth' && !palette.gradientReason?.trim()) {
+        fail('ANCHOR_GRADIENT_REASON_MISSING', 'A subtle UI gradient must be declared with a reason.');
+      }
+      if (palette.gradient !== 'none' && palette.gradient !== 'subtle-depth') {
+        fail('ANCHOR_GRADIENT_INVALID', 'Only no gradient or one subtle depth gradient is supported.');
+      }
+    }
+
+    const restraint = contract.restraint;
+    if (!restraint || restraint.maxColors < 3 || restraint.maxColors > 6 ||
+        restraint.maxTypefaces < 1 || restraint.maxTypefaces > 2 ||
+        restraint.maxShadowStyles < 0 || restraint.maxShadowStyles > 1 ||
+        restraint.maxRadiusSystems !== 1) {
+      fail('ANCHOR_RESTRAINT_INVALID', 'Anchor restraint limits exceed the supported palette, typeface, shadow or radius system.');
+    }
+    if (!Array.isArray(contract.exceptions)) {
+      fail('ANCHOR_EXCEPTIONS_INVALID', 'Anchor exceptions must be an array.');
+    } else {
+      contract.exceptions.forEach((exception) => {
+        if (!exception?.rule?.trim() || !exception?.scope?.trim() || !exception?.reason?.trim()) {
+          fail('ANCHOR_EXCEPTION_INCOMPLETE', 'Every Anchor exception must declare its rule, scope and reason.');
+        }
+      });
+    }
   }
 
   if (baseline) {

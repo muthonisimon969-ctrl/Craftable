@@ -174,7 +174,9 @@ export default function App() {
       irDocument: activeDocument,
       irRevisions: [revision],
     }).then((created) => {
+      irCreateStarted.current = null;
       upsertProject(created);
+      if (window.location.pathname !== '/ir-create/' + fixtureName) return;
       pushRoute('/workspace/' + encodeURIComponent(created.id), {
         view: 'workspace',
         projectId: created.id,

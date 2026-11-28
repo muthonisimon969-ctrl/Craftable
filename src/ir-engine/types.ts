@@ -18,6 +18,44 @@ export interface DesignTokens {
   radius: { card: number; image: number };
 }
 
+export type LayoutIntent = 'editorial' | 'dense' | 'shoppable' | 'trust';
+
+export interface AnchorDesignContract {
+  layoutIntent: { primary: LayoutIntent; secondary: LayoutIntent };
+  spacing: {
+    scale: number[];
+    contentWidth: number;
+    mobileScale: number;
+    heroTopException?: { value: number; reason: string };
+  };
+  typography: {
+    displayFamily?: string;
+    bodyFamily?: string;
+    display: number;
+    heading: number;
+    body: number;
+    label: number;
+    lineHeight: { display: number; heading: number; body: number; label: number };
+    labelLetterSpacing: number;
+    labelUppercase: boolean;
+  };
+  palette: {
+    dominant: string;
+    supporting: string;
+    ink: string;
+    accent: string;
+    gradient: 'none' | 'subtle-depth';
+    gradientReason?: string;
+  };
+  restraint: {
+    maxColors: number;
+    maxTypefaces: number;
+    maxShadowStyles: number;
+    maxRadiusSystems: number;
+  };
+  exceptions: Array<{ rule: string; scope: string; reason: string }>;
+}
+
 export interface BrandIdentityAnchor {
   id: string;
   name: string;
@@ -25,6 +63,8 @@ export interface BrandIdentityAnchor {
   tokens: DesignTokens;
   createdFromRevisionId: string;
   compositionRules?: BrandCompositionRules;
+  /** Optional additive contract; legacy anchors keep their existing token behavior. */
+  designContract?: AnchorDesignContract;
 }
 
 export interface ScopedOverride {
