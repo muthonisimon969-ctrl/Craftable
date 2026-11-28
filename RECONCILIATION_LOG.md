@@ -29,16 +29,21 @@
 - [x] PR #5 conversation and persistence changes copied onto this branch; PR #7 product-presentation guidance reconciled into the server build prompt.
 - [x] Category matcher filters active assets and category pool before keyword matching; no cross-category fallback.
 - [x] Prompt asset list, commerce image QA requirements, and final image-URL sanitizer all use the same category-scoped asset selection. Unselected active assets cannot leak through URL sanitization.
-- [ ] 20 electronics prompt tests: zero wrong-category assets (not yet run).
-- [ ] 20 conversation tests: zero accidental rebuilds and zero version increments (not yet run).
+- [ ] 20 electronics prompt tests against the running builder: not yet run.
+- [ ] 20 conversation tests in Workspace: not yet run.
 - [ ] Conversation persistence after reload (not yet run).
 - [ ] TypeScript and production build checks (Vercel branch check currently pending).
 - [ ] Preview/browser verification (automatic Vercel preview check has started; not yet confirmed ready).
 - [ ] Merge gate review.
 
+## Preliminary source-level smoke checks (not end-to-end)
+- [x] 20 representative electronics prompts matched the electronics-intent rule (20/20); a synthetic active/inactive/general/fashion asset pool selected only active electronics categories.
+- [x] 20 representative project-chat prompts matched the intended read-only vs explicit-edit classification (20/20).
+- These checks exercise the rule patterns and category whitelist with synthetic fixtures; they do not replace live API, IndexedDB persistence, browser, or Vercel preview tests.
+
 ## Implementation commits
 - PR #5 conversation/persistence implementation and PR #7 presentation guidance are on this branch, with targeted fixes for request classification, unchanged-project detection, and category-scoped image enforcement.
-- Latest implementation commit: `f3bab049e92664d0bef4a8611b61d13105f749aa`.
+- Latest implementation commit before this log update: `5a27bb123aa14c349825d1c89f143d80823451d2`.
 
 ## Known review risks to resolve
 - [x] Corrected PR #5's double-escaped word-boundary expressions in the request classifier.
