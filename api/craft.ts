@@ -91,7 +91,7 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
     ((wantsFashion || wantsElectronics) && /\b(website|brand|business|store|shop|collection)\b/.test(prompt));
 
   const fashionCategories = new Set(['handbags', 'menswear', 'womenswear', 'sportswear', 'streetwear', 'sunglasses', 'sneakers']);
-  const electronicsCategories = new Set(['bluetooth-speakers', 'cameras', 'gaming-controllers', 'headphones', 'keyboards', 'laptops', 'mice', 'power-banks', 'projectors', 'smartwatches', 'tablets', 'webcams']);
+  const electronicsCategories = new Set(['bluetooth-speakers', 'cameras', 'gaming-controllers', 'headphones', 'keyboards', 'laptops', 'mice', 'power-banks', 'projectors', 'smartphones', 'smartwatches', 'tablets', 'webcams']);
 
   // Category isolation happens before title/category keyword matching.
   // A missing category pool is a no-match, never permission to borrow assets.
