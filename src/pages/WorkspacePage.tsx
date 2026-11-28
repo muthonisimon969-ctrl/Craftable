@@ -72,6 +72,8 @@ export function WorkspacePage({
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [visualReviewStatus, setVisualReviewStatus] = useState('Waiting for preview');
   const visualReviewInFlight = useRef(false);
+  const visualRepairAttempted = useRef(false);
+  const lastReviewedVersion = useRef<number | null>(null);
   const [isWideScreen, setIsWideScreen] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches
   );
@@ -121,8 +123,9 @@ export function WorkspacePage({
   }, []);
 
   const handlePreviewReady = useCallback(async (frame: HTMLIFrameElement) => {
-    if (!project || visualReviewInFlight.current) return;
+    if (!project || visualReviewInFlight.current || lastReviewedVersion.current === project.version) return;
     visualReviewInFlight.current = true;
+    lastReviewedVersion.current = project.version;
     setVisualReviewStatus('Inspecting desktop + mobile…');
     try {
       const result = await reviewRenderedWebsite(
@@ -143,17 +146,76 @@ export function WorkspacePage({
         );
       });
       result.responsiveConcerns.forEach((concern) => appendConsoleLog('WARN', `Responsive QA: ${concern}`));
+      const severeFindings = result.findings.filter((finding) =>
+        finding.severity === 'blocker' || finding.severity === 'high'
+      );
+      if (result.verdict === 'needs_repair' && severeFindings.length > 0 && !visualRepairAttempted.current) {
+        visualRepairAttempted.current = true;
+        setVisualReviewStatus('Repairing visible defects…');
+        setIsGenerating(true);
+        setGenerationStage('Zuno is repairing what the visual review found…');
+        try {
+          const repairPrompt = [
+            'Make one focused repair pass on this existing website using the visual QA findings below.',
+            'Preserve the current brand identity, art direction, content, approved images, and all working functionality.',
+            'Do not rebuild the site or add unrelated features. Fix only the clearly visible high-severity defects.',
+            ...severeFindings.map((finding) => `- ${finding.area}: ${finding.problem}. Recommended fix: ${finding.recommendation}`),
+          ].join('\\n');
+          const repairedBundle = await iterateExistingApp(
+            project,
+            repairPrompt,
+            messages,
+            draftHtml,
+            draftCss,
+            draftJs,
+            (stage) => setGenerationStage(stage)
+          );
+          const hasCodeChanges =
+            repairedBundle.htmlCode !== draftHtml ||
+            repairedBundle.cssCode !== draftCss ||
+            repairedBundle.jsCode !== draftJs;
+          if (hasCodeChanges) {
+            const saved = await storage.applyIterationTurn(
+              project.id,
+              'Visual Intelligence repair: ' + severeFindings.map((finding) => finding.area).join(', '),
+              project.version,
+              repairedBundle
+            );
+            setProject(saved.project);
+            setMessages(saved.messages);
+            onProjectUpdated(saved.project);
+            setDraftHtml(saved.project.htmlCode);
+            setDraftCss(saved.project.cssCode);
+            setDraftJs(saved.project.jsCode);
+            setHasUnsavedChanges(false);
+            setFollowUpSuggestions(repairedBundle.followUpSuggestions);
+            setReloadNonce((value) => value + 1);
+            setVisualReviewStatus('Repair applied · rechecking…');
+            appendConsoleLog('LOG', 'Visual Intelligence applied one focused repair. The updated preview will be inspected again.');
+          } else {
+            appendConsoleLog('WARN', 'Visual Intelligence found defects, but the repair pass did not produce a code change. No project files were altered.');
+          }
+        } catch (repairError) {
+          appendConsoleLog('WARN', repairError instanceof Error ? repairError.message : 'Automatic visual repair could not be completed.');
+        } finally {
+          setIsGenerating(false);
+          setGenerationStage('');
+        }
+      }
     } catch (err) {
+      lastReviewedVersion.current = null;
       setVisualReviewStatus('Inspection unavailable');
       appendConsoleLog('WARN', err instanceof Error ? err.message : 'Visual inspection failed.');
     } finally {
       visualReviewInFlight.current = false;
     }
-  }, [project, consoleLogs, appendConsoleLog]);
+  }, [project, consoleLogs, messages, draftHtml, draftCss, draftJs, appendConsoleLog, onProjectUpdated]);
 
   useEffect(() => {
     setVisualReviewStatus('Waiting for preview');
     visualReviewInFlight.current = false;
+    visualRepairAttempted.current = false;
+    lastReviewedVersion.current = null;
   }, [projectId]);
 
   const handleSelectTab = (tab: WorkspaceTab) => {
