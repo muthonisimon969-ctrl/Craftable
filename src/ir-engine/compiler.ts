@@ -20,7 +20,7 @@ function safeMetric(value: number, label: string, min: number, max: number): num
 
 function safeFontFamily(value: string): string {
   const family = value.trim();
-  if (!family || family.length > 100 || !/^[a-z0-9\\s,'\"-]+$/i.test(family)) {
+  if (!family || family.length > 100 || !/^[a-z0-9\s,-]+$/i.test(family)) {
     throw new Error('Invalid IR font-family token.');
   }
   return family;
