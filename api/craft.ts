@@ -196,7 +196,7 @@ const BUILD_QUALITY_PROMPT = `ZUNO WORLD-CLASS WEB DESIGN STANDARD — SERVER-EN
 
 function inspectBuildDraft(answer: string, promptText = ''): string[] {
   const read = (name: string) => {
-    const match = new RegExp('<<<' + name + '>>>([\s\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
+    const match = new RegExp('<<<' + name + '>>>([\\s\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
     return match?.[1]?.trim() ?? '';
   };
   const html = read('HTML');
