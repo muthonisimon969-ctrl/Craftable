@@ -415,7 +415,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     addGroq();
   }
 
-  let lastError = 'No configured AI provider returned a response.';
+  const providerErrors: string[] = [];
   for (const candidate of candidates) {
     const result = await callModel(
       candidate.provider,
@@ -427,7 +427,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       mode === 'build' ? 55000 : 55000
     );
     if (!result.content) {
-      lastError = result.error || candidate.provider.toUpperCase() + ' returned no content.';
+      providerErrors.push(result.error || candidate.provider.toUpperCase() + ' returned no content.');
       continue;
     }
 
@@ -468,5 +468,9 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     return;
   }
 
-  res.status(502).json({ error: lastError });
+  res.status(502).json({
+    code: 'ALL_AI_PROVIDERS_FAILED',
+    error: providerErrors.length ? providerErrors.join(' | ') : 'No configured AI provider returned a response.',
+    providerErrors,
+  });
 }
