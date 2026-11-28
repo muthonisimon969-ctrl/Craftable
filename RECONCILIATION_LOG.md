@@ -12,7 +12,7 @@
 |---|---|---|
 | PR #5 — project conversation safety | Selected as the starting implementation for its project_chat route, read-only request guard, conversation persistence helper, and project-chat workspace flow. | PR #5 is open and based on main. Its browser-level behavior remains unverified. |
 | PR #7 — product presentation | Keep the product-presentation prompt improvements; reconcile them into the server-side build prompt used by PR #5. | PR #7 is open and based on main. |
-| PR #7 — `general` in electronics whitelist | Rejected. | Electronics category whitelist remains electronics-only; no general assets are admitted by default. |
+| PR #7 — `general` in electronics whitelist | Rejected. | Read-only audit of `public.zuno_asset_library` found **0 general rows** (0 active). The actual table has a dedicated `smartphones` category with 1 active asset, so `smartphones` was added to the electronics whitelist instead. |
 | Category-first matcher | Must be implemented explicitly. | Filter active assets, then category pool, then perform keyword matching only inside that pool. No cross-category fallback. |
 
 ## Scope protections
@@ -36,6 +36,12 @@
 - [ ] Preview/browser verification (automatic Vercel preview check has started; not yet confirmed ready).
 - [ ] Merge gate review.
 
+## Supabase library audit (read-only)
+- Project: `Zuno AI` (`vlrpiosbqssfnycutzje`).
+- `public.zuno_asset_library` category counts confirmed `general_total = 0` and `general_active = 0`.
+- The actual catalog has a dedicated `smartphones` category with 1 active row; that category is included explicitly rather than using `general` as a catch-all.
+- No Supabase rows, schema, bucket, URL, or permission settings were changed.
+
 ## Preliminary source-level smoke checks (not end-to-end)
 - [x] 20 representative electronics prompts matched the electronics-intent rule (20/20); a synthetic active/inactive/general/fashion asset pool selected only active electronics categories.
 - [x] 20 representative project-chat prompts matched the intended read-only vs explicit-edit classification (20/20).
@@ -52,4 +58,5 @@
 - A successful TypeScript build is not proof of conversation safety or visual quality.
 - [x] No Workspace layout or palette/navigation redesign was taken.
 - [!] Important baseline discrepancy: current `main` at `22f38a2` already contains `const isWideScreen = true` in `WorkspacePage.tsx`; the responsive width detection described in the earlier plan is not present on the actual base branch. Track B inherits this pre-existing behavior unchanged. Do not silently alter it in this production-safety track; review restoration of responsive detection as a separate explicitly approved UI fix.
-- [x] Electronics whitelist excludes `general`.
+- [x] Electronics whitelist excludes `general`; Supabase audit confirmed there are 0 `general` rows and 0 active `general` rows.
+- [x] Added the real `smartphones` category to the electronics whitelist after confirming its active library asset.
