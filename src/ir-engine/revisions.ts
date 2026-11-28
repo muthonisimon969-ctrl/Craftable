@@ -1,15 +1,5 @@
 import type { BrandIdentityAnchor, DriftReport, IrDocument, IrRevision, IrSection, ScopedOverride } from './types';
 
-function colorsForMood(mood: BrandIdentityAnchor['mood']) {
-  if (mood === 'technical-dark') {
-    return { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' };
-  }
-  if (mood === 'warm-editorial') {
-    return { ink: '#29231F', paper: '#F1E9DE', accent: '#A64F35', muted: '#776D63', line: '#D8C9B9', surface: '#E8DED2' };
-  }
-  return { ink: '#24231F', paper: '#F2EFE9', accent: '#A85C43', muted: '#77736C', line: '#D8D2C8', surface: '#E8E3DA' };
-}
-
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
@@ -85,7 +75,11 @@ export function applyHeroMoodShift(document: IrDocument, sectionId: string, mood
   const previous = section.intent;
   section.intent = mood === 'technical-dark' ? 'product-led' : 'editorial';
   section.moodOverride = mood;
-  section.tokenOverrides = { color: colorsForMood(mood) };
+  section.tokenOverrides = {
+    color: mood === 'warm-editorial'
+      ? { ink: '#29231F', paper: '#F1E9DE', accent: '#A64F35', muted: '#776D63', line: '#D8C9B9', surface: '#E8DED2' }
+      : { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' },
+  };
   next.overrides = next.overrides.filter((override) => !(override.targetId === sectionId && override.field === 'intent+tokens'));
   next.overrides.push({
     id: 'override_' + Math.random().toString(36).slice(2, 8),
@@ -113,10 +107,17 @@ export function applyFullRedesign(document: IrDocument, mood: BrandIdentityAncho
     moodOverride: undefined,
     tokenOverrides: undefined,
   }));
-  next.anchor.tokens = {
-    ...next.anchor.tokens,
-    color: colorsForMood(mood),
-  };
+  if (mood === 'technical-dark') {
+    next.anchor.tokens = {
+      ...next.anchor.tokens,
+      color: { ink: '#F4F5F7', paper: '#101317', accent: '#B8D8E8', muted: '#929BA5', line: '#303840', surface: '#1B2229' },
+    };
+  } else if (mood === 'warm-editorial') {
+    next.anchor.tokens = {
+      ...next.anchor.tokens,
+      color: { ink: '#29231F', paper: '#F1E9DE', accent: '#A64F35', muted: '#776D63', line: '#D8C9B9', surface: '#E8DED2' },
+    };
+  }
   return next;
 }
 
