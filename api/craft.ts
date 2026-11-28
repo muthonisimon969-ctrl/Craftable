@@ -1,6 +1,6 @@
 import { getActiveServerKeys, parseRequestJsonBody, type HttpReq, type HttpRes } from './_keyVault.js';
 export interface CraftAttachmentPayload { name: string; mimeType: string; dataBase64?: string; textContent?: string; }
-interface CraftRequestBody { mode?: 'build' | 'chat' | 'create_3d' | 'image'; promptText?: string; systemPrompt?: string; attachments?: CraftAttachmentPayload[]; }
+interface CraftRequestBody { mode?: 'build' | 'chat' | 'create_3d' | 'image' | 'visual_review'; promptText?: string; systemPrompt?: string; attachments?: CraftAttachmentPayload[]; }
 const TEXT_MODEL = 'openai/gpt-oss-120b';
 const VISION_MODEL = 'qwen/qwen3.8-27b';
 interface ApprovedSupabaseAsset {
@@ -195,9 +195,11 @@ const BUILD_QUALITY_PROMPT = `ZUNO WORLD-CLASS WEB DESIGN STANDARD — SERVER-EN
 - Use approved Supabase images as deliberate art direction: choose relevant assets, control crops with object-fit/object-position, and avoid repeating one image as a fake gallery. If no suitable asset exists, use restrained CSS/inline SVG rather than a fake photograph.
 - Never fabricate logos, customer counts, awards, testimonials, reviews, partner brands, addresses, or business claims. Use honest useful content when details are missing.
 - Before returning, privately review hierarchy, contrast, spacing, mobile navigation, every interaction, form validation, empty/error/success states, and JavaScript syntax. Fix weaknesses before output.
-- When editing an existing project, preserve its established design and working features; make only the requested changes.\n- Return the required Zuno output markers exactly.`;
+- When editing an existing project, preserve its established design and working features; make only the requested changes.\n- HERO IMAGE ART DIRECTION — treat the hero image as the most important image decision on the page, not as another card image. Choose an approved asset only when its subject, visual mood, orientation, resolution suitability and composition support the exact business and headline. Prefer wide/lifestyle/editorial assets with deliberate negative space for text; do not promote an isolated square product-card image into a full-width hero just because it matches the category. If no approved asset is suitable for a hero, use a deliberate typography-led or CSS composition instead of stretching an unsuitable image. Keep the source image intact: never distort aspect ratio, never use transform:scale to fake resolution, never apply blur or pixelation, and never claim CSS enlargement improves image quality. Use object-fit:cover only for a deliberate hero crop with object-position chosen to keep the subject visible; use object-fit:contain when the entire isolated product must remain visible. Prefer an image element with a stable aspect-ratio/frame and responsive sizing over an arbitrary background when it improves control. Leave enough contrast behind hero text without obscuring the subject. On mobile, change object-position or use a separately approved mobile-appropriate image only if one is supplied; never invent or rewrite image URLs. Do not force every hero to use a photograph.
+- IMAGE RESOLUTION & DISPLAY — never upscale a low-resolution source through CSS. Do not render a small thumbnail as a large full-bleed hero. Prefer the highest-resolution approved source available; when source dimensions are unknown, avoid extreme enlargement and choose a composition that respects the asset's natural proportions. Do not add width/height rules that distort the intrinsic ratio; use width:100%, height:100% only inside a fixed-ratio frame with object-fit and a deliberate object-position. Product images should remain crisp, identifiable and consistently framed. Lifestyle images may use cover only when the crop is intentional. Do not apply image filters that conceal poor source quality.
+- VISUAL SELF-REVIEW: privately inspect hero composition, image relevance, image scale, crop, object-position, text contrast, spacing, alignment, section rhythm, product-card consistency and mobile composition. Decide whether each image belongs in its exact section; remove unsuitable images rather than forcing them. Product photography must remain large enough to identify, use contain in deliberate frames, and never stretch. Use cover for lifestyle imagery only when the crop preserves the subject. Check that the headline is specific and compelling. Identify and fix the three most important weaknesses before returning. Do not claim to have viewed a browser screenshot unless one was actually supplied. Do not expose this private review.\n- Return the required Zuno output markers exactly.`;
 
-function inspectBuildDraft(answer: string): string[] {
+function inspectBuildDraft(answer: string, promptText = ''): string[] {
   const read = (name: string) => {
     const match = new RegExp('<<<' + name + '>>>([\\s\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
     return match?.[1]?.trim() ?? '';
@@ -223,6 +225,15 @@ function inspectBuildDraft(answer: string): string[] {
   if (/lorem ipsum|coming soon|placeholder text|your company name|product name here/i.test(html)) {
     issues.push('The page still contains placeholder copy instead of useful, specific content.');
   }
+  const imageTags = html.match(/<img\b[^>]*>/gi) ?? [];
+  if (imageTags.length > 0) {
+    const missingAlt = imageTags.filter((tag) => !/\balt\s*=\s*([\"'][^\"']*[\"']|[^\s>]+)/i.test(tag)).length;
+    if (missingAlt > 0) issues.push(missingAlt + ' image(s) are missing descriptive alt text.');
+    if (!/object-fit\s*:/i.test(css)) issues.push('Images have no explicit object-fit treatment. Set product photography to contain and lifestyle imagery to cover, with intentional image frames.');
+    if (!/(?:aspect-ratio|height\s*:|min-height\s*:)/i.test(css)) issues.push('Image containers need deliberate height or aspect-ratio rules so images are not tiny or stretched.');
+  }
+  const commerceBrief = /\b(store|shop|e-?commerce|retail|product catalogue|product catalog|electronics|fashion boutique)\b/i.test(promptText);
+  if (commerceBrief && imageTags.length > 0 && imageTags.length < 3) issues.push('The commerce page has too few visible product images. Use distinct approved products where available; do not invent or repeat assets.');
   return issues;
 }
 
@@ -297,7 +308,9 @@ async function requestBuildRepair(
   promptText: string,
   draft: string,
   issues: string[],
-  systemPrompt: string
+  systemPrompt: string,
+  attachments?: CraftAttachmentPayload[],
+  vision = false
 ): Promise<string | null> {
   const repairPrompt = [
     'QUALITY REPAIR — improve the supplied website draft before returning it.',
@@ -317,7 +330,7 @@ async function requestBuildRepair(
     provider,
     apiKey,
     model,
-    buildMessages(repairPrompt, systemPrompt + '\\n\\nYou are performing a focused repair pass. Fix the listed defects, preserve everything that already works, and return the complete required output.'),
+    buildMessages(repairPrompt, systemPrompt + '\\n\\nYou are performing a focused repair pass. Fix the listed defects, preserve everything that already works, and return the complete required output.', attachments, vision),
     0.15,
     14000,
     22000
@@ -382,13 +395,19 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     return;
   }
 
-  const privatePrompt = mode === 'build' || mode === 'create_3d' ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim() : '';
-  const approvedAssets = mode === 'build' ? await fetchApprovedSupabaseAssets() : [];
+  if (mode === 'visual_review' && !(body.attachments ?? []).some((a) => a.dataBase64 && /^image\/(png|jpeg|jpg|webp)$/i.test(a.mimeType))) {
+    res.status(400).json({ error: 'Visual review requires a rendered website screenshot.' });
+    return;
+  }
+  const isWebsiteBuild = mode === 'build' || mode === 'visual_review';
+  const privatePrompt = isWebsiteBuild || mode === 'create_3d' ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim() : '';
+  const approvedAssets = isWebsiteBuild ? await fetchApprovedSupabaseAssets() : [];
   const systemPrompt = [
     body.systemPrompt?.trim() ?? '',
     privatePrompt,
-    mode === 'build' ? BUILD_QUALITY_PROMPT : '',
-    mode === 'build' ? buildSupabaseImageRules(approvedAssets, promptText) : '',
+    mode === 'visual_review' ? 'SCREENSHOT-BASED VISUAL REVIEW: You have been given a real screenshot of the current generated website. Compare the screenshot with the supplied HTML/CSS/JS and the original business brief. Identify visible problems in hierarchy, composition, image relevance, image scale/cropping, text contrast, spacing, alignment, responsive presentation, and overall industry fit. Make only targeted improvements to the supplied website code. Preserve working functionality and every approved image URL. Do not invent assets. Return the complete Zuno output markers, including the full updated HTML, CSS and JS. Never claim to test interactions from a screenshot.' : '',
+    isWebsiteBuild ? BUILD_QUALITY_PROMPT : '',
+    isWebsiteBuild ? buildSupabaseImageRules(approvedAssets, promptText) : '',
   ].filter(Boolean).join('\n\n');
   const hasImages = (body.attachments ?? []).some((a) =>
     a.dataBase64 && /^image\/(png|jpeg|jpg|webp)$/i.test(a.mimeType)
@@ -422,7 +441,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       buildMessages(promptText, systemPrompt, body.attachments, hasImages),
       mode === 'chat' ? 0.65 : 0.25,
       16000,
-      mode === 'build' ? 55000 : 55000
+      mode === 'build' || mode === 'visual_review' ? 55000 : 55000
     );
     if (!result.content) {
       lastError = result.error || candidate.provider.toUpperCase() + ' returned no content.';
@@ -430,8 +449,8 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     }
 
     let rawAnswer = result.content;
-    if (rawAnswer && mode === 'build' && !hasImages) {
-      const issues = inspectBuildDraft(rawAnswer);
+    if (rawAnswer && mode === 'build') {
+      const issues = inspectBuildDraft(rawAnswer, promptText);
       if (issues.length) {
         const repaired = await requestBuildRepair(
           candidate.provider,
@@ -440,10 +459,12 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           promptText,
           rawAnswer,
           issues,
-          systemPrompt
+          systemPrompt,
+          body.attachments,
+          hasImages
         );
         if (repaired) {
-          const remainingIssues = inspectBuildDraft(repaired);
+          const remainingIssues = inspectBuildDraft(repaired, promptText);
           if (remainingIssues.length < issues.length) rawAnswer = repaired;
         }
       }
@@ -452,7 +473,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     // Preserve the model's art direction. Generic post-generation product cards
     // can break hierarchy and visual consistency, so only sanitize image sources.
     const imageEnforcedAnswer = rawAnswer;
-    const answer = mode === 'build'
+    const answer = isWebsiteBuild
       ? sanitizeGeneratedImageSources(imageEnforcedAnswer, approvedAssets)
       : imageEnforcedAnswer;
 
@@ -461,7 +482,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
       model: candidate.model,
       provider: candidate.provider,
       fallbackUsed: candidates.indexOf(candidate) > 0,
-      qualityReview: mode === 'build' ? 'checked' : undefined,
+      qualityReview: mode === 'build' ? 'checked' : mode === 'visual_review' ? 'visual-reviewed' : undefined,
     });
     return;
   }

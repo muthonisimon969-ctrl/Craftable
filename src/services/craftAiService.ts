@@ -246,7 +246,10 @@ async function executeZunoServerRequest(
 
     if (res.ok) {
       const data = (await res.json()) as { text?: string };
-      if (data.text) return data.text;
+      if (data.text) {
+        onStageUpdate('Zuno is reviewing the design, image presentation and responsive rules...');
+        return data.text;
+      }
       throw new Error('Zuno AI returned an empty response. Please tap Retry.');
     }
 
@@ -283,7 +286,7 @@ function finalizeBundle(
     return { ...bundle, changedFiles: [] };
   }
 
-  onStageUpdate('Running quality checks...');
+  onStageUpdate('Checking website structure, image framing, typography and responsive quality...');
   const audit = auditGeneratedBundle(userRequest, bundle.htmlCode, bundle.cssCode, bundle.jsCode);
   const fullSummary = bundle.summary.trim()
     ? `${bundle.summary.trim()}\n\n${audit.conciseSummary}`

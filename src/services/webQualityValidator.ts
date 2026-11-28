@@ -193,7 +193,55 @@ export function auditGeneratedBundle(
       : 'Uses self-contained visuals and realistic domain copy.',
   });
 
-  // 5. JavaScript interactivity & syntax integrity
+  // 5. Image presentation: presence, accessibility, framing, and sizing.
+  const imageTags = htmlCode.match(/<img\b[^>]*>/gi) ?? [];
+  const imagesHaveAlt = imageTags.every((tag) => /\balt\s*=\s*([\"'][^\"']*[\"']|[^\s>]+)/i.test(tag));
+  const hasImageFit = /object-fit\s*:/i.test(cssCode) || /object-fit\s*=/i.test(htmlCode);
+  const hasImageFrame = /(?:aspect-ratio|height\s*:|min-height\s*:)/i.test(cssCode);
+  const imagePresentationOk = imageTags.length === 0 || (imagesHaveAlt && hasImageFit && hasImageFrame);
+  checks.push({
+    id: 'image_presentation',
+    label: 'Image sizing, cropping & accessibility',
+    passed: imagePresentationOk,
+    detail: imagePresentationOk
+      ? imageTags.length === 0
+        ? 'No photographic assets were used; visual placeholders are not being mistaken for product photography.'
+        : 'Images have alt text and explicit fit/framing rules to reduce tiny, stretched, or poorly cropped visuals.'
+      : [
+          !imagesHaveAlt ? 'Add meaningful alt text to every image.' : '',
+          !hasImageFit ? 'Define object-fit per image role (contain for isolated products, cover for lifestyle imagery).' : '',
+          !hasImageFrame ? 'Give image containers deliberate aspect-ratio or height rules.' : '',
+        ].filter(Boolean).join(' '),
+  });
+
+  // 6. Hero image art direction and non-distorting display.
+  const heroMarkupMatch = /<(?:section|header|div)\b[^>]*(?:class|id)=[\"'][^\"']*\bhero\b[^\"']*[\"'][^>]*>([\s\S]*?)<\/(?:section|header|div)>/i.exec(htmlCode);
+  const heroMarkup = heroMarkupMatch?.[0] ?? '';
+  const heroImagePresent = /<(?:img|picture)\b/i.test(heroMarkup) ||
+    /(?:background(?:-image)?\s*:[^;{]*url\()/i.test(cssCode) && /hero/i.test(cssCode);
+  const heroCssRules = cssCode.match(/[^{}]*hero[^{}]*\{[^}]*\}/gi) ?? [];
+  const heroCss = heroCssRules.join(' ');
+  const heroHasFit = /object-fit\s*:\s*(?:cover|contain)/i.test(heroCss) ||
+    /background-size\s*:\s*cover/i.test(heroCss);
+  const heroHasPosition = /object-position\s*:/i.test(heroCss) || /background-position\s*:/i.test(heroCss);
+  const heroDistortsImage = /(?:image-rendering\s*:\s*pixelated|filter\s*:[^;}]*blur\s*\()/i.test(heroCss);
+  const heroImageOk = !heroImagePresent || (heroHasFit && !heroDistortsImage);
+  checks.push({
+    id: 'hero_image_art_direction',
+    label: 'Hero image composition & quality preservation',
+    passed: heroImageOk,
+    detail: !heroImagePresent
+      ? 'No hero photograph detected; a deliberate typography-led hero is acceptable.'
+      : heroDistortsImage
+        ? 'Hero image uses blur or pixelated rendering; preserve the source image instead of disguising quality loss.'
+        : !heroHasFit
+          ? 'Hero image needs an explicit non-distorting fit rule (cover for intentional lifestyle crops, contain for isolated products).'
+          : heroHasPosition
+            ? 'Hero image has explicit fit and focal positioning.'
+            : 'Hero image fit is defined; review focal positioning at desktop and mobile to keep the subject visible.',
+  });
+
+  // 7. JavaScript interactivity & syntax integrity
   const hasJsListeners =
     /addEventListener/i.test(jsCode) ||
     /onclick/i.test(jsCode) ||
@@ -214,7 +262,7 @@ export function auditGeneratedBundle(
       : 'Balanced JavaScript syntax with active event listeners and clean UI feedback.',
   });
 
-  // 6. Industry, manual-payment preference & Kenyan context alignment
+  // 7. Industry, manual-payment preference & Kenyan context alignment
   const lowerPrompt = prompt.toLowerCase();
   const expectsKenyan =
     KENYAN_PROMPT_KEYWORDS.some((kw) => lowerPrompt.includes(kw)) ||
@@ -270,7 +318,7 @@ export function auditGeneratedBundle(
     `QA Audit (${passedCount}/${totalCount} checks passed)` +
     (failedChecks.length > 0
       ? `: needs attention on ${failedChecks.map((c) => c.label).join('; ')}`
-      : ': structure, typography, responsive CSS, self-contained assets, JS syntax, and market context verified.');
+      : ': structure, typography, responsive CSS, image presentation, self-contained assets, JS syntax, and market context verified.');
 
   return {
     checks,
