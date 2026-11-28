@@ -32,7 +32,8 @@
 - [ ] 20 electronics prompt tests against the running builder: not yet run.
 - [ ] 20 conversation tests in Workspace: not yet run.
 - [ ] Conversation persistence after reload (not yet run).
-- [x] TypeScript and Vite production build passed on code commit `9a749cccb112d1dcac2812697e0d47e5b1f88dc7`; Vercel preview reached READY.
+- [x] Latest branch commit `2e20f204985db9f3a1ca418300ec3d0078bdb944` reached Vercel READY; Vercel combined commit status is success. TypeScript checks and Vite production build completed.
+- [x] Preview smoke check: root page returned HTTP 200 and `/api/craft` GET returned HTTP 200 with `ready: true` and chat/build/vision capabilities enabled.
 - [ ] Browser-level project-chat, IndexedDB persistence, and live image-selection verification remain outstanding.
 - [ ] Merge gate review.
 
@@ -52,8 +53,8 @@
 ## Implementation commits
 - PR #5 conversation/persistence implementation and PR #7 presentation guidance are on this branch, with targeted fixes for request classification, unchanged-project detection, and category-scoped image enforcement.
 - Latest matcher implementation commit before this log update: `b0c22082a765725de16362509fe9cf97aad446a7`.
-- Exact-category matcher changes after `9a749...` still require their own Vercel preview build confirmation.
-- Vercel TypeScript + Vite build passed for code commit `9a749cccb112d1dcac2812697e0d47e5b1f88dc7` (preview READY).
+- Exact-category matcher changes are included in the latest READY deployment at `2e20f204985db9f3a1ca418300ec3d0078bdb944`.
+- Vercel TypeScript + Vite build passed for latest branch commit `2e20f204985db9f3a1ca418300ec3d0078bdb944` (preview READY; combined commit status success).
 - Vercel's build log reported 4 high-severity npm audit findings and an esbuild install-script warning; dependency changes were intentionally left out of scope.
 - Git integration automatically generated Vercel preview deployments for branch commits. No production deployment, promotion, or merge was performed.
 
