@@ -144,9 +144,19 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
   const hasExplicitProductCategory = explicitCategories.size > 0;
   const requestedCategories = new Set<string>();
 
+  const hasBroadFashionIntent = wantsFashion && /\\b(fashion|clothing|apparel|boutique)\\b/.test(prompt);
+  const hasBroadElectronicsIntent = wantsElectronics && /\\b(electronics?|gadgets?|tech store)\\b/.test(prompt);
+  const hasBroadFoodIntent = wantsFood && /\\b(food|foods|meals?|cuisine)\\b/.test(prompt);
+
   if (hasExplicitProductCategory) {
     explicitCategories.forEach((category) => requestedCategories.add(category));
-  } else {
+  }
+  // A broad store brief needs a varied, relevant collection even when it names
+  // one hero product. Keep narrow single-category briefs narrowly scoped.
+  if (hasBroadFashionIntent) fashionCategories.forEach((category) => requestedCategories.add(category));
+  if (hasBroadElectronicsIntent) electronicsCategories.forEach((category) => requestedCategories.add(category));
+  if (hasBroadFoodIntent) foodCategories.forEach((category) => requestedCategories.add(category));
+  if (!hasExplicitProductCategory && requestedCategories.size === 0) {
     if (wantsFashion) fashionCategories.forEach((category) => requestedCategories.add(category));
     if (wantsElectronics) electronicsCategories.forEach((category) => requestedCategories.add(category));
     if (wantsFood) foodCategories.forEach((category) => requestedCategories.add(category));
@@ -164,10 +174,15 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
     return meaningful.some((word) => prompt.includes(word));
   });
 
-  // If a category was explicit, return only that product pool. For generic
-  // industry briefs, use the industry's pool. Unknown briefs need a direct
-  // title/category match; never send the mixed library as a generic fallback.
-  const ordered = directMatches.length ? directMatches : hasCategoryIntent ? pool : [];
+  // For broad industry storefronts, put exact matches first but retain the
+  // rest of that approved industry pool to provide a real multi-product range.
+  // Narrow product briefs stay exact; unknown briefs never receive mixed assets.
+  const broadIndustryCommerce = isCommerce && (
+    hasBroadFashionIntent || hasBroadElectronicsIntent || hasBroadFoodIntent
+  );
+  const ordered = broadIndustryCommerce
+    ? [...directMatches, ...pool.filter((asset) => !directMatches.some((match) => match.id === asset.id))]
+    : directMatches.length ? directMatches : hasCategoryIntent ? pool : [];
   return ordered.slice(0, isCommerce ? 12 : 28);
 }
 function buildSupabaseImageRules(selected: ApprovedSupabaseAsset[], promptText: string): string {
