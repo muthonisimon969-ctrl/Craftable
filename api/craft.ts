@@ -196,7 +196,7 @@ const BUILD_QUALITY_PROMPT = `ZUNO WORLD-CLASS WEB DESIGN STANDARD — SERVER-EN
 
 function inspectBuildDraft(answer: string, promptText = ''): string[] {
   const read = (name: string) => {
-    const match = new RegExp('<<<' + name + '>>>([\\s\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
+    const match = new RegExp('<<<' + name + '>>>([\s\\S]*?)(?=<<<(?:TITLE|DESCRIPTION|SUMMARY|HTML|CSS|JS|SUGGESTIONS)>>>|$)', 'i').exec(answer);
     return match?.[1]?.trim() ?? '';
   };
   const html = read('HTML');
@@ -220,14 +220,14 @@ function inspectBuildDraft(answer: string, promptText = ''): string[] {
   if (/lorem ipsum|coming soon|placeholder text|your company name|product name here/i.test(html)) {
     issues.push('The page still contains placeholder copy instead of useful, specific content.');
   }
-  const imageTags = html.match(/<img\\b[^>]*>/gi) ?? [];
+  const imageTags = html.match(/<img\b[^>]*>/gi) ?? [];
   if (imageTags.length > 0) {
-    const missingAlt = imageTags.filter((tag) => !/\\balt\\s*=\\s*([\"'][^\"']*[\"']|[^\\s>]+)/i.test(tag)).length;
+    const missingAlt = imageTags.filter((tag) => !/\balt\s*=\s*([\"'][^\"']*[\"']|[^\s>]+)/i.test(tag)).length;
     if (missingAlt > 0) issues.push(missingAlt + ' image(s) are missing descriptive alt text.');
-    if (!/object-fit\\s*:/i.test(css)) issues.push('Images have no explicit object-fit treatment. Set product photography to contain and lifestyle imagery to cover, with intentional image frames.');
-    if (!/(?:aspect-ratio|height\\s*:|min-height\\s*:)/i.test(css)) issues.push('Image containers need deliberate height or aspect-ratio rules so images are not tiny or stretched.');
+    if (!/object-fit\s*:/i.test(css)) issues.push('Images have no explicit object-fit treatment. Set product photography to contain and lifestyle imagery to cover, with intentional image frames.');
+    if (!/(?:aspect-ratio|height\s*:|min-height\s*:)/i.test(css)) issues.push('Image containers need deliberate height or aspect-ratio rules so images are not tiny or stretched.');
   }
-  const commerceBrief = /\\b(store|shop|e-?commerce|retail|product catalogue|product catalog|electronics|fashion boutique)\\b/i.test(promptText);
+  const commerceBrief = /\b(store|shop|e-?commerce|retail|product catalogue|product catalog|electronics|fashion boutique)\b/i.test(promptText);
   if (commerceBrief && imageTags.length > 0 && imageTags.length < 3) issues.push('The commerce page has too few visible product images. Use distinct approved products where available; do not invent or repeat assets.');
   return issues;
 }
@@ -453,7 +453,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           hasImages
         );
         if (repaired) {
-          const remainingIssues = inspectBuildDraft(repaired);
+          const remainingIssues = inspectBuildDraft(repaired, promptText);
           if (remainingIssues.length < issues.length) rawAnswer = repaired;
         }
       }
