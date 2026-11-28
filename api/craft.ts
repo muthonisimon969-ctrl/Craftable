@@ -85,22 +85,27 @@ async function fetchApprovedSupabaseAssets(): Promise<ApprovedSupabaseAsset[]> {
 function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupabaseAsset[]): ApprovedSupabaseAsset[] {
   const prompt = promptText.toLowerCase();
   const activeAssets = assets.filter((asset) => asset.is_active === true);
-  const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments)\b/.test(prompt);
+  const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments|dresses?|blouses?|shirts?|trousers?|footwear|belts|knitwear|outerwear|headwear|t-?shirts?)\b/.test(prompt);
   const wantsElectronics = /\b(electronics?|gadgets?|laptops?|computers?|headphones?|earbuds?|speakers?|cameras?|smartphones?|smart\s?watch(?:es)?|keyboards?|tablets?|webcams?|projectors?|gaming|power banks?|tech store)\b/.test(prompt);
+  const wantsFood = /\b(food|foods|meals?|dishes|cuisine|rice|ugali|stews?|curries|breads?|beans|legumes|fish|seafood|meat|grilled|snacks?|nyama choma)\b/.test(prompt);
   const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products)\b/.test(prompt) ||
-    ((wantsFashion || wantsElectronics) && /\b(website|brand|business|store|shop|collection)\b/.test(prompt));
+    ((wantsFashion || wantsElectronics || wantsFood) && /\b(website|brand|business|store|shop|collection)\b/.test(prompt));
 
-  const fashionCategories = new Set(['handbags', 'menswear', 'womenswear', 'sportswear', 'streetwear', 'sunglasses', 'sneakers']);
+  const fashionCategories = new Set(['belts', 'blouses', 'dresses', 'fashion-displays', 'footwear', 'handbags', 'headwear', 'knitwear', 'menswear', 'outerwear', 'shirts', 'sneakers', 'sportswear', 'streetwear', 'sunglasses', 't-shirts', 'trousers', 'womenswear']);
   const electronicsCategories = new Set(['bluetooth-speakers', 'cameras', 'gaming-controllers', 'headphones', 'keyboards', 'laptops', 'mice', 'power-banks', 'projectors', 'smartphones', 'smartwatches', 'tablets', 'webcams']);
+  const foodCategories = new Set(['beans-and-legumes', 'breads', 'fish-and-seafood', 'grilled-meats', 'rice-dishes', 'snacks', 'stews-and-curries', 'traditional-meals', 'ugali-meals']);
 
-  // Category isolation happens before title/category keyword matching.
-  // A missing category pool is a no-match, never permission to borrow assets.
-  let pool = activeAssets;
-  if (wantsFashion) {
-    pool = activeAssets.filter((asset) => fashionCategories.has(asset.category.toLowerCase()));
-  } else if (wantsElectronics) {
-    pool = activeAssets.filter((asset) => electronicsCategories.has(asset.category.toLowerCase()));
-  }
+  // Build the allowed category set before looking at titles or keywords.
+  // Multiple explicit intents may use their own category families, never other ones.
+  const requestedCategories = new Set<string>();
+  if (wantsFashion) fashionCategories.forEach((category) => requestedCategories.add(category));
+  if (wantsElectronics) electronicsCategories.forEach((category) => requestedCategories.add(category));
+  if (wantsFood) foodCategories.forEach((category) => requestedCategories.add(category));
+
+  const hasCategoryIntent = requestedCategories.size > 0;
+  const pool = hasCategoryIntent
+    ? activeAssets.filter((asset) => requestedCategories.has(asset.category.toLowerCase()))
+    : activeAssets;
   if (pool.length === 0) return [];
 
   const directMatches = pool.filter((asset) => {
@@ -109,8 +114,10 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
     return meaningful.some((word) => prompt.includes(word));
   });
 
-  // Prefer exact matches; otherwise return only the category-scoped pool.
-  const ordered = directMatches.length ? directMatches : pool;
+  // For a known industry, a no-keyword match may use only that industry's pool.
+  // For unknown industries, require a direct title/category match; never dump
+  // the entire mixed-category library into the prompt.
+  const ordered = directMatches.length ? directMatches : hasCategoryIntent ? pool : [];
   return ordered.slice(0, isCommerce ? 12 : 28);
 }
 function buildSupabaseImageRules(selected: ApprovedSupabaseAsset[], promptText: string): string {
