@@ -88,8 +88,8 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
   const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes?|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments|dress(?:es)?|blouses?|shirts?|trousers?|footwear|belts?|knitwear|outerwear|headwear|t-?shirts?)\b/.test(prompt);
   const wantsElectronics = /\b(electronics?|gadgets?|laptops?|computers?|headphones?|earbuds?|speakers?|cameras?|smartphones?|smart\s?watch(?:es)?|keyboards?|tablets?|webcams?|projectors?|gaming|power banks?|tech store)\b/.test(prompt);
   const wantsFood = /\b(food|foods|meals?|dish(?:es)?|cuisine|rice|ugali|stews?|curry|curries|breads?|beans?|legumes?|fish|seafood|meats?|grilled|snacks?|nyama choma)\b/.test(prompt);
-  const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products)\b/.test(prompt) ||
-    ((wantsFashion || wantsElectronics || wantsFood) && /\b(website|brand|business|store|shop|collection)\b/.test(prompt));
+  const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products|restaurant|cafe|coffee shop|bakery|food truck|catering|menu)\b/.test(prompt) ||
+    ((wantsFashion || wantsElectronics || wantsFood) && /\b(website|brand|business|store|shop|collection|restaurant|cafe|bakery)\b/.test(prompt));
 
   const fashionCategories = new Set(['belts', 'blouses', 'dresses', 'fashion-displays', 'footwear', 'handbags', 'headwear', 'knitwear', 'menswear', 'outerwear', 'shirts', 'sneakers', 'sportswear', 'streetwear', 'sunglasses', 't-shirts', 'trousers', 'womenswear']);
   const electronicsCategories = new Set(['bluetooth-speakers', 'cameras', 'gaming-controllers', 'headphones', 'keyboards', 'laptops', 'mice', 'power-banks', 'projectors', 'smartphones', 'smartwatches', 'tablets', 'webcams']);
@@ -144,9 +144,9 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
   const hasExplicitProductCategory = explicitCategories.size > 0;
   const requestedCategories = new Set<string>();
 
-  const hasBroadFashionIntent = wantsFashion && /\\b(fashion|clothing|apparel|boutique)\\b/.test(prompt);
-  const hasBroadElectronicsIntent = wantsElectronics && /\\b(electronics?|gadgets?|tech store)\\b/.test(prompt);
-  const hasBroadFoodIntent = wantsFood && /\\b(food|foods|meals?|cuisine)\\b/.test(prompt);
+  const hasBroadFashionIntent = wantsFashion && /\b(fashion|clothing|apparel|boutique)\b/.test(prompt);
+  const hasBroadElectronicsIntent = wantsElectronics && /\b(electronics?|gadgets?|tech store)\b/.test(prompt);
+  const hasBroadFoodIntent = wantsFood && /\b(food|foods|meals?|cuisine|restaurant|restaurants|cafe|cafes|bakery|catering)\b/.test(prompt);
 
   if (hasExplicitProductCategory) {
     explicitCategories.forEach((category) => requestedCategories.add(category));
@@ -189,7 +189,7 @@ function buildSupabaseImageRules(selected: ApprovedSupabaseAsset[], promptText: 
   const approved = selected.map(({ title, category, alt_text, usage_type, image_url }) => ({
     title, category, alt_text, usage_type, image_url,
   }));
-  const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products|fashion|clothing|apparel|electronics|gadgets)\b/i.test(promptText);
+  const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products|fashion|clothing|apparel|electronics|gadgets|food|restaurant|restaurants|cafe|cafes|bakery|food truck|catering|menu)\b/i.test(promptText);
   return [
     'STRICT IMAGE SOURCE POLICY — SERVER ENFORCED:',
     'The only permitted photographic/raster image sources are exact image_url values in this approved Supabase library list.',
@@ -313,7 +313,10 @@ function inspectBuildDraft(answer: string, requiredImageUrls: string[] = []): st
   if (!/(?:@media\s*\(|clamp\s*\(|minmax\s*\()/i.test(css)) {
     issues.push('The CSS has no clear responsive layout strategy for phone and desktop sizes.');
   }
-  const matchedApprovedImages = requiredImageUrls.filter((url) => html.includes(url)).length;
+  const renderedImageUrls = new Set(
+    Array.from(html.matchAll(/<img\b[^>]*>/gi), (match) => readHtmlAttribute(match[0], 'src')).filter(Boolean)
+  );
+  const matchedApprovedImages = requiredImageUrls.filter((url) => renderedImageUrls.has(url)).length;
   if (requiredImageUrls.length > 0 && matchedApprovedImages < Math.min(3, requiredImageUrls.length)) {
     issues.push('The commerce website is missing enough visible product imagery. Include at least three different relevant images, or every available approved image when fewer than three exist, using exact image URLs from the supplied asset list.');
   }
@@ -532,7 +535,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
 
     let rawAnswer = result.content;
     if (rawAnswer && mode === 'build' && !hasImages) {
-      const expectsCommerceImages = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|shop|store|retail|marketplace|electronics|gadgets|fashion|clothing|apparel)\b/i.test(promptText) && selectedAssets.length > 0;
+      const expectsCommerceImages = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|shop|store|retail|marketplace|electronics|gadgets|fashion|clothing|apparel|food|restaurant|restaurants|cafe|cafes|bakery|food truck|catering|menu)\b/i.test(promptText) && selectedAssets.length > 0;
       const requiredImageUrls = expectsCommerceImages ? selectedAssets.map((asset) => asset.image_url) : [];
       const issues = inspectBuildDraft(rawAnswer, requiredImageUrls);
       if (issues.length) {
