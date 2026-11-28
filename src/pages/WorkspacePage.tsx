@@ -69,9 +69,17 @@ export function WorkspacePage({
   const [consoleLogs, setConsoleLogs] = useState<ConsoleEntry[]>([]);
   const [showConsoleSheet, setShowConsoleSheet] = useState(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
-  // Keep the builder in its full desktop workspace on every device.
-  // Narrow screens pan the same chat + preview canvas instead of switching editors.
-  const isWideScreen = true;
+  const [isWideScreen, setIsWideScreen] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 900px)');
+    const update = () => setIsWideScreen(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     let active = true;
