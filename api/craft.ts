@@ -85,7 +85,7 @@ async function fetchApprovedSupabaseAssets(): Promise<ApprovedSupabaseAsset[]> {
 function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupabaseAsset[]): ApprovedSupabaseAsset[] {
   const prompt = promptText.toLowerCase();
   const activeAssets = assets.filter((asset) => asset.is_active === true);
-  const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes?|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments|dresses?|blouses?|shirts?|trousers?|footwear|belts|knitwear|outerwear|headwear|belts?|t-?shirts?)\b/.test(prompt);
+  const wantsFashion = /\b(fashion|clothing|apparel|streetwear|sneakers?|shoes?|handbags?|menswear|womenswear|sportswear|sunglasses|boutique|luxury wear|garments|dresses?|blouses?|shirts?|trousers?|footwear|belts?|knitwear|outerwear|headwear|t-?shirts?)\b/.test(prompt);
   const wantsElectronics = /\b(electronics?|gadgets?|laptops?|computers?|headphones?|earbuds?|speakers?|cameras?|smartphones?|smart\s?watch(?:es)?|keyboards?|tablets?|webcams?|projectors?|gaming|power banks?|tech store)\b/.test(prompt);
   const wantsFood = /\b(food|foods|meals?|dishes|cuisine|rice|ugali|stews?|curries|breads?|beans|legumes|fish|seafood|meat|grilled|snacks?|nyama choma)\b/.test(prompt);
   const isCommerce = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|product page|shop|store|retail|marketplace|sell products|buy products)\b/.test(prompt) ||
@@ -95,12 +95,61 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
   const electronicsCategories = new Set(['bluetooth-speakers', 'cameras', 'gaming-controllers', 'headphones', 'keyboards', 'laptops', 'mice', 'power-banks', 'projectors', 'smartphones', 'smartwatches', 'tablets', 'webcams']);
   const foodCategories = new Set(['beans-and-legumes', 'breads', 'fish-and-seafood', 'grilled-meats', 'rice-dishes', 'snacks', 'stews-and-curries', 'traditional-meals', 'ugali-meals']);
 
-  // Build the allowed category set before looking at titles or keywords.
-  // Multiple explicit intents may use their own category families, never other ones.
+  // Resolve explicit product terms to exact library categories first.
+  const productCategoryRules: Array<{ pattern: RegExp; category: string }> = [
+    { pattern: /\bsmartphones?\b/, category: 'smartphones' },
+    { pattern: /\bsmart\s?watch(?:es)?\b/, category: 'smartwatches' },
+    { pattern: /\b(laptops?|computers?)\b/, category: 'laptops' },
+    { pattern: /\b(headphones?|earbuds?)\b/, category: 'headphones' },
+    { pattern: /\bspeakers?\b/, category: 'bluetooth-speakers' },
+    { pattern: /\bcameras?\b/, category: 'cameras' },
+    { pattern: /\bgaming controllers?\b/, category: 'gaming-controllers' },
+    { pattern: /\bkeyboards?\b/, category: 'keyboards' },
+    { pattern: /\b(mouse|mice)\b/, category: 'mice' },
+    { pattern: /\bpower banks?\b/, category: 'power-banks' },
+    { pattern: /\bprojectors?\b/, category: 'projectors' },
+    { pattern: /\btablets?\b/, category: 'tablets' },
+    { pattern: /\bwebcams?\b/, category: 'webcams' },
+    { pattern: /\bhandbags?\b/, category: 'handbags' },
+    { pattern: /\bbelts?\b/, category: 'belts' },
+    { pattern: /\bblouses?\b/, category: 'blouses' },
+    { pattern: /\bdresses?\b/, category: 'dresses' },
+    { pattern: /\bshirts?\b/, category: 'shirts' },
+    { pattern: /\bt-?shirts?\b/, category: 't-shirts' },
+    { pattern: /\btrousers?\b/, category: 'trousers' },
+    { pattern: /\b(sneakers?|shoes?|footwear)\b/, category: 'footwear' },
+    { pattern: /\bsunglasses\b/, category: 'sunglasses' },
+    { pattern: /\bknitwear\b/, category: 'knitwear' },
+    { pattern: /\bouterwear\b/, category: 'outerwear' },
+    { pattern: /\bheadwear\b/, category: 'headwear' },
+    { pattern: /\bmenswear\b/, category: 'menswear' },
+    { pattern: /\bwomenswear\b/, category: 'womenswear' },
+    { pattern: /\bsportswear\b/, category: 'sportswear' },
+    { pattern: /\bstreetwear\b/, category: 'streetwear' },
+    { pattern: /\brice\b/, category: 'rice-dishes' },
+    { pattern: /\bugali\b/, category: 'ugali-meals' },
+    { pattern: /\b(stews?|curries)\b/, category: 'stews-and-curries' },
+    { pattern: /\b(breads?|bakery)\b/, category: 'breads' },
+    { pattern: /\b(beans|legumes)\b/, category: 'beans-and-legumes' },
+    { pattern: /\b(fish|seafood)\b/, category: 'fish-and-seafood' },
+    { pattern: /\b(meat|grilled|nyama choma)\b/, category: 'grilled-meats' },
+    { pattern: /\bsnacks?\b/, category: 'snacks' },
+    { pattern: /\btraditional meals\b/, category: 'traditional-meals' },
+  ];
+
+  const explicitCategories = new Set(
+    productCategoryRules.filter((rule) => rule.pattern.test(prompt)).map((rule) => rule.category)
+  );
+  const hasExplicitProductCategory = explicitCategories.size > 0;
   const requestedCategories = new Set<string>();
-  if (wantsFashion) fashionCategories.forEach((category) => requestedCategories.add(category));
-  if (wantsElectronics) electronicsCategories.forEach((category) => requestedCategories.add(category));
-  if (wantsFood) foodCategories.forEach((category) => requestedCategories.add(category));
+
+  if (hasExplicitProductCategory) {
+    explicitCategories.forEach((category) => requestedCategories.add(category));
+  } else {
+    if (wantsFashion) fashionCategories.forEach((category) => requestedCategories.add(category));
+    if (wantsElectronics) electronicsCategories.forEach((category) => requestedCategories.add(category));
+    if (wantsFood) foodCategories.forEach((category) => requestedCategories.add(category));
+  }
 
   const hasCategoryIntent = requestedCategories.size > 0;
   const pool = hasCategoryIntent
@@ -114,9 +163,9 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
     return meaningful.some((word) => prompt.includes(word));
   });
 
-  // For a known industry, a no-keyword match may use only that industry's pool.
-  // For unknown industries, require a direct title/category match; never dump
-  // the entire mixed-category library into the prompt.
+  // If a category was explicit, return only that product pool. For generic
+  // industry briefs, use the industry's pool. Unknown briefs need a direct
+  // title/category match; never send the mixed library as a generic fallback.
   const ordered = directMatches.length ? directMatches : hasCategoryIntent ? pool : [];
   return ordered.slice(0, isCommerce ? 12 : 28);
 }
