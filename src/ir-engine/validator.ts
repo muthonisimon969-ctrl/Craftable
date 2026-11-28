@@ -55,6 +55,52 @@ export function validateIrV1Document(document: IrDocument, baseline?: IrDocument
   const warn = (code: string, message: string, targetId?: string) =>
     warnings.push({ code, message, ...(targetId ? { targetId } : {}) });
 
+  const invalidDocument = (code: string, message: string): IrValidationReport => {
+    fail(code, message);
+    return { failures, warnings, canPublish: false };
+  };
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+  const raw = document as unknown;
+  if (!isRecord(raw)) return invalidDocument('DOCUMENT_INVALID', 'The IR document must be an object.');
+  if (typeof raw.brandName !== 'string') return invalidDocument('BRAND_NAME_INVALID', 'The IR document needs a valid brand name.');
+  if (!isRecord(raw.anchor)) return invalidDocument('ANCHOR_INVALID', 'The IR document is missing its Brand Anchor.');
+  if (!isRecord(raw.anchor.tokens)) return invalidDocument('ANCHOR_TOKENS_INVALID', 'The Brand Anchor is missing its design tokens.');
+  for (const key of ['color', 'type', 'space', 'radius']) {
+    if (!isRecord(raw.anchor.tokens[key])) {
+      return invalidDocument('ANCHOR_TOKEN_GROUP_INVALID', 'The Brand Anchor contains an incomplete ' + key + ' token group.');
+    }
+  }
+  if (!Array.isArray(raw.sections)) return invalidDocument('SECTIONS_INVALID', 'The IR document sections must be an array.');
+  if (!Array.isArray(raw.approvedAssets)) return invalidDocument('ASSETS_INVALID', 'The approved asset list must be an array.');
+  if (!Array.isArray(raw.overrides)) return invalidDocument('OVERRIDES_INVALID', 'The scoped override list must be an array.');
+  for (const section of raw.sections) {
+    if (!isRecord(section) || typeof section.id !== 'string' ||
+        (section.role !== 'hero' && section.role !== 'collection') || !Array.isArray(section.nodes)) {
+      return invalidDocument('SECTION_SHAPE_INVALID', 'Every IR section needs a valid ID, role and node list.');
+    }
+    for (const node of section.nodes) {
+      if (!isRecord(node) || typeof node.id !== 'string' ||
+          (node.type !== 'hero' && node.type !== 'collection') ||
+          (node.title !== undefined && typeof node.title !== 'string') ||
+          (node.body !== undefined && typeof node.body !== 'string') ||
+          (node.items !== undefined && !Array.isArray(node.items))) {
+        return invalidDocument('NODE_SHAPE_INVALID', 'Every IR node must have a valid ID, type and supported content fields.');
+      }
+      if (Array.isArray(node.items) && node.items.some((item) =>
+        !isRecord(item) || typeof item.id !== 'string' || typeof item.title !== 'string' || typeof item.detail !== 'string'
+      )) {
+        return invalidDocument('COLLECTION_ITEM_INVALID', 'Every collection item needs a valid ID, title and detail.');
+      }
+    }
+  }
+  for (const asset of raw.approvedAssets) {
+    if (!isRecord(asset) || typeof asset.id !== 'string' || typeof asset.title !== 'string' ||
+        typeof asset.category !== 'string' || typeof asset.imageUrl !== 'string' || typeof asset.alt !== 'string') {
+      return invalidDocument('ASSET_SHAPE_INVALID', 'Every approved asset needs valid metadata and an image URL.');
+    }
+  }
+
   if (!document.brandName.trim()) fail('BRAND_NAME_MISSING', 'A brand name is required.');
   const validIntents = ['home', 'launch', 'services', 'projects', 'about', 'product', 'contact', 'other'];
   if (document.pageIntent && !validIntents.includes(document.pageIntent)) fail('PAGE_INTENT_INVALID', 'Choose a supported page intent.');
