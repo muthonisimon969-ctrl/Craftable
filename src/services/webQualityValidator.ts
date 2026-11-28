@@ -194,10 +194,10 @@ export function auditGeneratedBundle(
   });
 
   // 5. Image presentation: presence, accessibility, framing, and sizing.
-  const imageTags = htmlCode.match(/<img\\b[^>]*>/gi) ?? [];
-  const imagesHaveAlt = imageTags.every((tag) => /\\balt\\s*=\\s*([\"'][^\"']*[\"']|[^\\s>]+)/i.test(tag));
-  const hasImageFit = /object-fit\\s*:/i.test(cssCode) || /object-fit\\s*=/i.test(htmlCode);
-  const hasImageFrame = /(?:aspect-ratio|height\\s*:|min-height\\s*:)/i.test(cssCode);
+  const imageTags = htmlCode.match(/<img\b[^>]*>/gi) ?? [];
+  const imagesHaveAlt = imageTags.every((tag) => /\balt\s*=\s*([\"'][^\"']*[\"']|[^\s>]+)/i.test(tag));
+  const hasImageFit = /object-fit\s*:/i.test(cssCode) || /object-fit\s*=/i.test(htmlCode);
+  const hasImageFrame = /(?:aspect-ratio|height\s*:|min-height\s*:)/i.test(cssCode);
   const imagePresentationOk = imageTags.length === 0 || (imagesHaveAlt && hasImageFit && hasImageFrame);
   checks.push({
     id: 'image_presentation',
