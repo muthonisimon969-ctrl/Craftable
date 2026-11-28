@@ -113,8 +113,7 @@ function selectRelevantSupabaseAssets(promptText: string, assets: ApprovedSupaba
   const ordered = directMatches.length ? directMatches : pool;
   return ordered.slice(0, isCommerce ? 12 : 28);
 }
-function buildSupabaseImageRules(assets: ApprovedSupabaseAsset[], promptText: string): string {
-  const selected = selectRelevantSupabaseAssets(promptText, assets);
+function buildSupabaseImageRules(selected: ApprovedSupabaseAsset[], promptText: string): string {
   const approved = selected.map(({ title, category, alt_text, usage_type, image_url }) => ({
     title, category, alt_text, usage_type, image_url,
   }));
@@ -413,13 +412,14 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
 
   const privatePrompt = mode === 'build' || mode === 'create_3d' ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim() : '';
   const approvedAssets = mode === 'build' ? await fetchApprovedSupabaseAssets() : [];
+  const selectedAssets = mode === 'build' ? selectRelevantSupabaseAssets(promptText, approvedAssets) : [];
   const systemPrompt = [
     mode === 'build' ? SERVER_BUILD_BASE_PROMPT : '',
     mode === 'chat' ? CHAT_SYSTEM_PROMPT : '',
     mode === 'project_chat' ? PROJECT_CHAT_SYSTEM_PROMPT : '',
     privatePrompt,
     mode === 'build' ? BUILD_QUALITY_PROMPT : '',
-    mode === 'build' ? buildSupabaseImageRules(approvedAssets, promptText) : '',
+    mode === 'build' ? buildSupabaseImageRules(selectedAssets, promptText) : '',
   ].filter(Boolean).join('\n\n');
   const hasImages = (body.attachments ?? []).some((a) =>
     a.dataBase64 && /^image\/(png|jpeg|jpg|webp)$/i.test(a.mimeType)
@@ -460,8 +460,8 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
 
     let rawAnswer = result.content;
     if (rawAnswer && mode === 'build' && !hasImages) {
-      const expectsCommerceImages = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|shop|store|retail|marketplace|electronics|gadgets|fashion|clothing|apparel)\b/i.test(promptText) && approvedAssets.length > 0;
-      const requiredImageUrls = expectsCommerceImages ? approvedAssets.map((asset) => asset.image_url) : [];
+      const expectsCommerceImages = /\b(online shop|online store|e-?commerce|storefront|product catalog|product catalogue|product listing|shop|store|retail|marketplace|electronics|gadgets|fashion|clothing|apparel)\b/i.test(promptText) && selectedAssets.length > 0;
+      const requiredImageUrls = expectsCommerceImages ? selectedAssets.map((asset) => asset.image_url) : [];
       const issues = inspectBuildDraft(rawAnswer, requiredImageUrls);
       if (issues.length) {
         const repaired = await requestBuildRepair(
@@ -486,7 +486,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     // can break hierarchy and visual consistency, so only sanitize image sources.
     const imageEnforcedAnswer = rawAnswer;
     const answer = mode === 'build'
-      ? sanitizeGeneratedImageSources(imageEnforcedAnswer, approvedAssets)
+      ? sanitizeGeneratedImageSources(imageEnforcedAnswer, selectedAssets)
       : (mode === 'chat' || mode === 'project_chat')
         ? sanitizeCustomerChatText(imageEnforcedAnswer)
         : imageEnforcedAnswer;
