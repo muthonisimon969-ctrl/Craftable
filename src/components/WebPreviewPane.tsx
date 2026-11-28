@@ -16,6 +16,7 @@ interface WebPreviewPaneProps {
   onDismissConsole: () => void;
   onClearConsole: () => void;
   onConsoleMessage: (level: ConsoleEntry['level'], message: string) => void;
+  onPreviewReady?: (frame: HTMLIFrameElement) => void;
 }
 
 export function WebPreviewPane({
@@ -31,6 +32,7 @@ export function WebPreviewPane({
   onDismissConsole,
   onClearConsole,
   onConsoleMessage,
+  onPreviewReady,
 }: WebPreviewPaneProps) {
   const channelId = useId();
 
@@ -73,6 +75,7 @@ export function WebPreviewPane({
           srcDoc={srcDoc}
           sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
           className="preview-iframe"
+          onLoad={(event) => onPreviewReady?.(event.currentTarget)}
         />
 
         {isFullscreen && (
