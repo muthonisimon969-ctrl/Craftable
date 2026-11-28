@@ -1,4 +1,6 @@
 import { getActiveServerKeys, parseRequestJsonBody, type HttpReq, type HttpRes } from './_keyVault.js';
+import { validateIrV1Document } from '../src/ir-engine/validator.js';
+import type { IrDocument } from '../src/ir-engine/types.js';
 export interface CraftAttachmentPayload { name: string; mimeType: string; dataBase64?: string; textContent?: string; }
 interface CraftRequestBody { mode?: 'build' | 'chat' | 'create_3d' | 'image' | 'ir_build'; promptText?: string; systemPrompt?: string; attachments?: CraftAttachmentPayload[]; }
 const TEXT_MODEL = 'openai/gpt-oss-120b';
@@ -501,7 +503,8 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
           ...(role === 'collection' ? { items } : {}),
         };
       };
-      const sections = rawSections.map((section) => {
+      const sections = rawSections.map((rawSection) => {
+        const section = rawSection && typeof rawSection === 'object' ? rawSection : {};
         const role = section.role === 'hero' ? 'hero' : 'collection';
         const rawNodes = Array.isArray(section.nodes) ? section.nodes : [];
         return {
@@ -540,6 +543,12 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
         })),
         overrides: [],
       };
+      const validation = validateIrV1Document(document as unknown as IrDocument);
+      if (!validation.canPublish) {
+        lastError = 'The generated IR did not pass deterministic validation: ' +
+          validation.failures.map((issue) => issue.message).join(' ');
+        continue;
+      }
       res.status(200).json({ irDocument: document, model: candidate.model, provider: candidate.provider, fallbackUsed: candidates.indexOf(candidate) > 0 });
       return;
     }
