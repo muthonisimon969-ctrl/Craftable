@@ -139,7 +139,14 @@ export function WorkspacePage({
         (stage) => setGenerationStage(stage)
       );
 
-      if (bundle.changedFiles.length === 0) {
+      if (
+        bundle.changedFiles.length === 0 &&
+        bundle.htmlCode === draftHtml &&
+        bundle.cssCode === draftCss &&
+        bundle.jsCode === draftJs &&
+        bundle.projectTitle === project.title &&
+        bundle.description === project.description
+      ) {
         const updatedMsgs = await storage.appendProjectConversationTurn(project.id, prompt, bundle.summary);
         setMessages(updatedMsgs);
         setPendingUserPrompt(null);
@@ -148,7 +155,7 @@ export function WorkspacePage({
         return;
       }
 
-      setGenerationStage(`Deploying v\${project.version + 1} to preview...`);
+      setGenerationStage(`Deploying v${project.version + 1} to preview...`);
       const { project: updatedProj, messages: updatedMsgs } = await storage.applyIterationTurn(
         project.id,
         prompt,
