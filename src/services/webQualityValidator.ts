@@ -215,16 +215,16 @@ export function auditGeneratedBundle(
   });
 
   // 6. Hero image art direction and non-distorting display.
-  const heroMarkupMatch = /<(?:section|header|div)\\b[^>]*(?:class|id)=[\"'][^\"']*\\bhero\\b[^\"']*[\"'][^>]*>([\\s\\S]*?)<\\/(?:section|header|div)>/i.exec(htmlCode);
+  const heroMarkupMatch = /<(?:section|header|div)\b[^>]*(?:class|id)=[\"'][^\"']*\bhero\b[^\"']*[\"'][^>]*>([\s\S]*?)<\/(?:section|header|div)>/i.exec(htmlCode);
   const heroMarkup = heroMarkupMatch?.[0] ?? '';
-  const heroImagePresent = /<(?:img|picture)\\b/i.test(heroMarkup) ||
-    /(?:background(?:-image)?\\s*:[^;{]*url\\()/i.test(cssCode) && /hero/i.test(cssCode);
-  const heroCssRules = cssCode.match(/[^{}]*hero[^{}]*\\{[^}]*\\}/gi) ?? [];
+  const heroImagePresent = /<(?:img|picture)\b/i.test(heroMarkup) ||
+    /(?:background(?:-image)?\s*:[^;{]*url\()/i.test(cssCode) && /hero/i.test(cssCode);
+  const heroCssRules = cssCode.match(/[^{}]*hero[^{}]*\{[^}]*\}/gi) ?? [];
   const heroCss = heroCssRules.join(' ');
-  const heroHasFit = /object-fit\\s*:\\s*(?:cover|contain)/i.test(heroCss) ||
-    /background-size\\s*:\\s*cover/i.test(heroCss);
-  const heroHasPosition = /object-position\\s*:/i.test(heroCss) || /background-position\\s*:/i.test(heroCss);
-  const heroDistortsImage = /(?:image-rendering\\s*:\\s*pixelated|filter\\s*:[^;}]*blur\\s*\\()/i.test(heroCss);
+  const heroHasFit = /object-fit\s*:\s*(?:cover|contain)/i.test(heroCss) ||
+    /background-size\s*:\s*cover/i.test(heroCss);
+  const heroHasPosition = /object-position\s*:/i.test(heroCss) || /background-position\s*:/i.test(heroCss);
+  const heroDistortsImage = /(?:image-rendering\s*:\s*pixelated|filter\s*:[^;}]*blur\s*\()/i.test(heroCss);
   const heroImageOk = !heroImagePresent || (heroHasFit && !heroDistortsImage);
   checks.push({
     id: 'hero_image_art_direction',
