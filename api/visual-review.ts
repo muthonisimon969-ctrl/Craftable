@@ -140,6 +140,19 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
     res.status(405).json({ error: 'Method not allowed.' });
     return;
   }
+  const rawOrigin = req.headers?.origin;
+  const rawHost = req.headers?.host;
+  const origin = Array.isArray(rawOrigin) ? rawOrigin[0] : rawOrigin;
+  const host = Array.isArray(rawHost) ? rawHost[0] : rawHost;
+  try {
+    if (!origin || !host || new URL(origin).host !== host) {
+      res.status(403).json({ error: 'Visual inspection requests must come from the Zuno app.' });
+      return;
+    }
+  } catch {
+    res.status(403).json({ error: 'Invalid request origin.' });
+    return;
+  }
 
   const body = parseRequestJsonBody<VisualReviewBody>(req);
   const screenshots = body?.screenshots?.slice(0, 2) ??
