@@ -69,9 +69,17 @@ export function WorkspacePage({
   const [consoleLogs, setConsoleLogs] = useState<ConsoleEntry[]>([]);
   const [showConsoleSheet, setShowConsoleSheet] = useState(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
-  // Keep the builder in its full desktop workspace on every device.
-  // Narrow screens pan the same chat + preview canvas instead of switching editors.
-  const isWideScreen = true;
+  const [isWideScreen, setIsWideScreen] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches
+  );
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 900px)');
+    const update = () => setIsWideScreen(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -138,6 +146,22 @@ export function WorkspacePage({
         draftJs,
         (stage) => setGenerationStage(stage)
       );
+
+      if (
+        bundle.changedFiles.length === 0 &&
+        bundle.htmlCode === draftHtml &&
+        bundle.cssCode === draftCss &&
+        bundle.jsCode === draftJs &&
+        bundle.projectTitle === project.title &&
+        bundle.description === project.description
+      ) {
+        const updatedMsgs = await storage.appendProjectConversationTurn(project.id, prompt, bundle.summary);
+        setMessages(updatedMsgs);
+        setPendingUserPrompt(null);
+        setIsGenerating(false);
+        setGenerationStage('');
+        return;
+      }
 
       setGenerationStage(`Deploying v${project.version + 1} to preview...`);
       const { project: updatedProj, messages: updatedMsgs } = await storage.applyIterationTurn(
