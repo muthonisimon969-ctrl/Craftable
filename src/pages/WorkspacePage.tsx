@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Code2,
@@ -26,6 +26,7 @@ import type {
   WorkspaceTab,
 } from '../types/project';
 import { assembleStandaloneExport } from '../utils/webBundleAssembler';
+import { reviewRenderedWebsite } from '../services/visualIntelligence';
 
 interface WorkspacePageProps {
   projectId: string;
@@ -69,6 +70,10 @@ export function WorkspacePage({
   const [consoleLogs, setConsoleLogs] = useState<ConsoleEntry[]>([]);
   const [showConsoleSheet, setShowConsoleSheet] = useState(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
+  const [visualReviewStatus, setVisualReviewStatus] = useState('Waiting for preview');
+  const visualReviewInFlight = useRef(false);
+  const visualRepairAttempted = useRef(false);
+  const lastReviewedVersion = useRef<number | null>(null);
   const [isWideScreen, setIsWideScreen] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches
   );
@@ -116,6 +121,102 @@ export function WorkspacePage({
       },
     ]);
   }, []);
+
+  const handlePreviewReady = useCallback(async (frame: HTMLIFrameElement) => {
+    if (!project || visualReviewInFlight.current || lastReviewedVersion.current === project.version) return;
+    visualReviewInFlight.current = true;
+    lastReviewedVersion.current = project.version;
+    setVisualReviewStatus('Inspecting desktop + mobile…');
+    try {
+      const result = await reviewRenderedWebsite(
+        frame,
+        project.title,
+        project.initialPrompt,
+        consoleLogs.filter((entry) => entry.level === 'ERROR').map((entry) => entry.message)
+      );
+      setVisualReviewStatus(`${result.score}/100 · ${result.verdict.replace(/_/g, ' ')}`);
+      appendConsoleLog(
+        result.verdict === 'ready' ? 'LOG' : result.verdict === 'needs_repair' ? 'ERROR' : 'WARN',
+        `Visual Intelligence: ${result.score}/100 — ${result.summary}`
+      );
+      result.findings.forEach((finding) => {
+        appendConsoleLog(
+          finding.severity === 'blocker' || finding.severity === 'high' ? 'ERROR' : 'WARN',
+          `Visual QA [${finding.severity}] ${finding.area}: ${finding.problem} Fix: ${finding.recommendation}`
+        );
+      });
+      result.responsiveConcerns.forEach((concern) => appendConsoleLog('WARN', `Responsive QA: ${concern}`));
+      const severeFindings = result.findings.filter((finding) =>
+        finding.severity === 'blocker' || finding.severity === 'high'
+      );
+      if (result.verdict === 'needs_repair' && severeFindings.length > 0 && !visualRepairAttempted.current) {
+        visualRepairAttempted.current = true;
+        setVisualReviewStatus('Repairing visible defects…');
+        setIsGenerating(true);
+        setGenerationStage('Zuno is repairing what the visual review found…');
+        try {
+          const repairPrompt = [
+            'Make one focused repair pass on this existing website using the visual QA findings below.',
+            'Preserve the current brand identity, art direction, content, approved images, and all working functionality.',
+            'Do not rebuild the site or add unrelated features. Fix only the clearly visible high-severity defects.',
+            ...severeFindings.map((finding) => `- ${finding.area}: ${finding.problem}. Recommended fix: ${finding.recommendation}`),
+          ].join('\\n');
+          const repairedBundle = await iterateExistingApp(
+            project,
+            repairPrompt,
+            messages,
+            draftHtml,
+            draftCss,
+            draftJs,
+            (stage) => setGenerationStage(stage)
+          );
+          const hasCodeChanges =
+            repairedBundle.htmlCode !== draftHtml ||
+            repairedBundle.cssCode !== draftCss ||
+            repairedBundle.jsCode !== draftJs;
+          if (hasCodeChanges) {
+            const saved = await storage.applyIterationTurn(
+              project.id,
+              'Visual Intelligence repair: ' + severeFindings.map((finding) => finding.area).join(', '),
+              project.version,
+              repairedBundle
+            );
+            setProject(saved.project);
+            setMessages(saved.messages);
+            onProjectUpdated(saved.project);
+            setDraftHtml(saved.project.htmlCode);
+            setDraftCss(saved.project.cssCode);
+            setDraftJs(saved.project.jsCode);
+            setHasUnsavedChanges(false);
+            setFollowUpSuggestions(repairedBundle.followUpSuggestions);
+            setReloadNonce((value) => value + 1);
+            setVisualReviewStatus('Repair applied · rechecking…');
+            appendConsoleLog('LOG', 'Visual Intelligence applied one focused repair. The updated preview will be inspected again.');
+          } else {
+            appendConsoleLog('WARN', 'Visual Intelligence found defects, but the repair pass did not produce a code change. No project files were altered.');
+          }
+        } catch (repairError) {
+          appendConsoleLog('WARN', repairError instanceof Error ? repairError.message : 'Automatic visual repair could not be completed.');
+        } finally {
+          setIsGenerating(false);
+          setGenerationStage('');
+        }
+      }
+    } catch (err) {
+      lastReviewedVersion.current = null;
+      setVisualReviewStatus('Inspection unavailable');
+      appendConsoleLog('WARN', err instanceof Error ? err.message : 'Visual inspection failed.');
+    } finally {
+      visualReviewInFlight.current = false;
+    }
+  }, [project, consoleLogs, messages, draftHtml, draftCss, draftJs, appendConsoleLog, onProjectUpdated]);
+
+  useEffect(() => {
+    setVisualReviewStatus('Waiting for preview');
+    visualReviewInFlight.current = false;
+    visualRepairAttempted.current = false;
+    lastReviewedVersion.current = null;
+  }, [projectId]);
 
   const handleSelectTab = (tab: WorkspaceTab) => {
     setActiveTab(tab);
@@ -293,6 +394,7 @@ export function WorkspacePage({
       onDismissConsole={() => setShowConsoleSheet(false)}
       onClearConsole={() => setConsoleLogs([])}
       onConsoleMessage={appendConsoleLog}
+      onPreviewReady={handlePreviewReady}
     />
   );
 
@@ -338,6 +440,9 @@ export function WorkspacePage({
               <span className="workspace-title-text">{project.title}</span>
               <span className="badge font-mono" style={{ flexShrink: 0 }}>
                 v{project.version}
+              </span>
+              <span className="badge font-mono" style={{ flexShrink: 0, maxWidth: 142, overflow: 'hidden', textOverflow: 'ellipsis' }} title="Rendered desktop and mobile visual review">
+                {visualReviewStatus}
               </span>
             </button>
           </div>
