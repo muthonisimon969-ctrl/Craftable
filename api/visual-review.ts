@@ -5,6 +5,7 @@ interface VisualReviewBody {
   originalBrief?: string;
   screenshot?: string;
   viewport?: string;
+  screenshots?: Array<{ screenshot: string; viewport: string }>;
   consoleErrors?: string[];
 }
 
@@ -66,7 +67,8 @@ function parseReview(raw: string): VisualReview | null {
 async function inspectWithProvider(
   provider: 'groq' | 'openrouter',
   apiKey: string,
-  body: VisualReviewBody
+  body: VisualReviewBody,
+  screenshots: Array<{ screenshot: string; viewport: string }>
 ): Promise<VisualReview | null> {
   const endpoint = provider === 'groq'
     ? 'https://api.groq.com/openai/v1/chat/completions'
@@ -109,7 +111,7 @@ async function inspectWithProvider(
                   '\nConsole errors observed: ' + (body.consoleErrors ?? []).slice(0, 8).join(' | ') +
                   '\nAssess only what is visible. Return the requested JSON.'
               },
-              { type: 'image_url', image_url: { url: body.screenshot } },
+              ...screenshots.map((item) => ({ type: 'image_url', image_url: { url: item.screenshot } })),
             ],
           },
         ],
@@ -161,14 +163,14 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
   }
 
   for (const key of keys) {
-    const result = await inspectWithProvider('groq', key, body);
+    const result = await inspectWithProvider('groq', key, body, screenshots);
     if (result) {
       res.status(200).json({ review: result, provider: 'groq' });
       return;
     }
   }
   if (openRouterKey.length >= 16) {
-    const result = await inspectWithProvider('openrouter', openRouterKey, body);
+    const result = await inspectWithProvider('openrouter', openRouterKey, body, screenshots);
     if (result) {
       res.status(200).json({ review: result, provider: 'openrouter' });
       return;
