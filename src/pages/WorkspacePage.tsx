@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Code2,
@@ -26,6 +26,7 @@ import type {
   WorkspaceTab,
 } from '../types/project';
 import { assembleStandaloneExport } from '../utils/webBundleAssembler';
+import { reviewRenderedWebsite } from '../services/visualIntelligence';
 
 interface WorkspacePageProps {
   projectId: string;
@@ -69,6 +70,8 @@ export function WorkspacePage({
   const [consoleLogs, setConsoleLogs] = useState<ConsoleEntry[]>([]);
   const [showConsoleSheet, setShowConsoleSheet] = useState(false);
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
+  const [visualReviewStatus, setVisualReviewStatus] = useState('Waiting for preview');
+  const visualReviewInFlight = useRef(false);
   const [isWideScreen, setIsWideScreen] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches
   );
@@ -116,6 +119,42 @@ export function WorkspacePage({
       },
     ]);
   }, []);
+
+  const handlePreviewReady = useCallback(async (frame: HTMLIFrameElement) => {
+    if (!project || visualReviewInFlight.current) return;
+    visualReviewInFlight.current = true;
+    setVisualReviewStatus('Inspecting desktop + mobile…');
+    try {
+      const result = await reviewRenderedWebsite(
+        frame,
+        project.title,
+        project.initialPrompt,
+        consoleLogs.filter((entry) => entry.level === 'ERROR').map((entry) => entry.message)
+      );
+      setVisualReviewStatus(`${result.score}/100 · ${result.verdict.replace(/_/g, ' ')}`);
+      appendConsoleLog(
+        result.verdict === 'ready' ? 'LOG' : result.verdict === 'needs_repair' ? 'ERROR' : 'WARN',
+        `Visual Intelligence: ${result.score}/100 — ${result.summary}`
+      );
+      result.findings.forEach((finding) => {
+        appendConsoleLog(
+          finding.severity === 'blocker' || finding.severity === 'high' ? 'ERROR' : 'WARN',
+          `Visual QA [${finding.severity}] ${finding.area}: ${finding.problem} Fix: ${finding.recommendation}`
+        );
+      });
+      result.responsiveConcerns.forEach((concern) => appendConsoleLog('WARN', `Responsive QA: ${concern}`));
+    } catch (err) {
+      setVisualReviewStatus('Inspection unavailable');
+      appendConsoleLog('WARN', err instanceof Error ? err.message : 'Visual inspection failed.');
+    } finally {
+      visualReviewInFlight.current = false;
+    }
+  }, [project, consoleLogs, appendConsoleLog]);
+
+  useEffect(() => {
+    setVisualReviewStatus('Waiting for preview');
+    visualReviewInFlight.current = false;
+  }, [projectId]);
 
   const handleSelectTab = (tab: WorkspaceTab) => {
     setActiveTab(tab);
@@ -293,6 +332,7 @@ export function WorkspacePage({
       onDismissConsole={() => setShowConsoleSheet(false)}
       onClearConsole={() => setConsoleLogs([])}
       onConsoleMessage={appendConsoleLog}
+      onPreviewReady={handlePreviewReady}
     />
   );
 
@@ -338,6 +378,9 @@ export function WorkspacePage({
               <span className="workspace-title-text">{project.title}</span>
               <span className="badge font-mono" style={{ flexShrink: 0 }}>
                 v{project.version}
+              </span>
+              <span className="badge font-mono" style={{ flexShrink: 0, maxWidth: 142, overflow: 'hidden', textOverflow: 'ellipsis' }} title="Rendered desktop and mobile visual review">
+                {visualReviewStatus}
               </span>
             </button>
           </div>
