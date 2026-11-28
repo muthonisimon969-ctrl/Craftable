@@ -269,19 +269,40 @@ async function callModel(
       }),
     });
     const payload = await upstream.json().catch(() => null) as {
-      choices?: Array<{ message?: { content?: string | Array<{ type?: string; text?: string }> } }>;
-      error?: { message?: string };
+      id?: string;
+      choices?: Array<{
+        message?: { content?: string | Array<{ type?: string; text?: string }> };
+        error?: { code?: string | number; message?: string; metadata?: { error_type?: string } };
+        finish_reason?: string | null;
+      }>;
+      error?: { code?: string | number; message?: string; metadata?: { error_type?: string } };
     } | null;
-    if (!upstream.ok) {
-      return { content: null, error: payload?.error?.message || provider.toUpperCase() + ' returned HTTP ' + upstream.status };
+
+    // OpenRouter can return HTTP 200 while placing a provider failure in the
+    // JSON body. Treat both top-level and choice-level errors as failures so
+    // the fallback loop can move to the next provider.
+    const responseError = payload?.error ?? payload?.choices?.[0]?.error;
+    if (!upstream.ok || responseError || payload?.choices?.[0]?.finish_reason === 'error') {
+      const detail = responseError?.message ||
+        (payload?.choices?.[0]?.finish_reason === 'error' ? 'model finished with an error' : '');
+      const code = responseError?.code ? ' (' + responseError.code + ')' : '';
+      const errorType = responseError?.metadata?.error_type ? ' [' + responseError.metadata.error_type + ']' : '';
+      return {
+        content: null,
+        error: provider.toUpperCase() + ' ' + (detail || 'returned HTTP ' + upstream.status) + code + errorType,
+      };
     }
+
     const responseContent = payload?.choices?.[0]?.message?.content;
     const content = typeof responseContent === 'string'
       ? responseContent.trim()
       : Array.isArray(responseContent)
         ? responseContent.map((part) => typeof part.text === 'string' ? part.text : '').join('').trim()
         : '';
-    return { content: content || null, error: content ? '' : provider.toUpperCase() + ' returned an empty response.' };
+    return {
+      content: content || null,
+      error: content ? '' : provider.toUpperCase() + ' returned no usable content (HTTP ' + upstream.status + ').',
+    };
   } catch (err) {
     return { content: null, error: err instanceof Error ? err.message : provider.toUpperCase() + ' request failed.' };
   } finally {
