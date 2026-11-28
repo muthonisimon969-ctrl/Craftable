@@ -1,4 +1,5 @@
 import { getActiveServerKeys, parseRequestJsonBody, type HttpReq, type HttpRes } from './_keyVault.js';
+import { ZUNO_PRODUCT_GROUNDING_PROMPT } from './_zunoKnowledge.js';
 export interface CraftAttachmentPayload { name: string; mimeType: string; dataBase64?: string; textContent?: string; }
 interface CraftRequestBody { mode?: 'build' | 'chat' | 'create_3d' | 'image'; promptText?: string; systemPrompt?: string; attachments?: CraftAttachmentPayload[]; }
 const TEXT_MODEL = 'openai/gpt-oss-120b';
@@ -385,6 +386,7 @@ export default async function handler(req: HttpReq, res: HttpRes): Promise<void>
   const privatePrompt = mode === 'build' || mode === 'create_3d' ? (process.env.ZUNO_DESIGN_INTELLIGENCE_PROMPT ?? '').trim() : '';
   const approvedAssets = mode === 'build' ? await fetchApprovedSupabaseAssets() : [];
   const systemPrompt = [
+    ZUNO_PRODUCT_GROUNDING_PROMPT,
     body.systemPrompt?.trim() ?? '',
     privatePrompt,
     mode === 'build' ? BUILD_QUALITY_PROMPT : '',
