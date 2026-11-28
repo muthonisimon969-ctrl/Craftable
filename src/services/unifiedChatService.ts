@@ -125,17 +125,18 @@ export async function generateAiVisual(
     clearTimeout(timer);
 
     const data = (await res.json().catch(() => null)) as {
+      code?: string;
       imageDataUrl?: string;
       text?: string;
       model?: string;
       error?: string;
     } | null;
 
+    if (data?.code === 'IMAGE_PROVIDER_REQUIRED') {
+      throw new Error('Zuno image generation is not connected yet. A dedicated image-generation provider must be configured before this feature can create images.');
+    }
     if (!res.ok || !data?.imageDataUrl) {
-      throw new Error(
-        data?.error ||
-          `Image generation did not succeed (HTTP ${res.status}). Verify that your server Gemini key allows image generation.`
-      );
+      throw new Error(data?.error || `Image generation did not succeed (HTTP ${res.status}).`);
     }
 
     return {
